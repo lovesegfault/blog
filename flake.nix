@@ -21,7 +21,7 @@
           name = "blog";
           src = gitignoreSource ./.;
 
-          nativeBuildInputs = [ zola ];
+          nativeBuildInputs = [ hugo ];
 
           makeFlags = [ "PREFIX=${placeholder "out"}" ];
         };
@@ -29,7 +29,6 @@
         devShell = self.defaultPackage.${system}.overrideAttrs (oldAttrs: {
           buildInputs = with pkgs; (oldAttrs.buildInputs or [ ]) ++ [
             git-lfs
-            hugo
             mdl
             proselint
           ];

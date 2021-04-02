@@ -1,3 +1,47 @@
-baseURL = "http://example.org/"
+baseURL = "http://lovesegfault.com/"
 languageCode = "en-us"
-title = "My New Hugo Site"
+title = "null pointer"
+theme = "hugo-theme-terminal"
+paginate = 5
+
+[params]
+contentTypeName = "posts"
+themeColor = "green"
+showMenuItems = 2
+showLanguageSelector = false
+fullWidthTheme = false
+centerTheme = true
+favicon = "favicon.png"
+showLastUpdated = false
+
+[params.twitter]
+creator = "lovesegfault"
+
+[languages]
+[languages.en]
+languageName = "English"
+title = "null pointer"
+subtitle = "Bernardo's ramblings and non sequuntur"
+owner = "Bernardo Meurer"
+copyright = "Copyright &copy; 2021 - Bernardo Meurer"
+menuMore = "Show more"
+readMore = "Read more"
+readOtherPosts = "Read other posts"
+newerPosts = "Newer posts"
+olderPosts = "Older posts"
+missingContentMessage = "Page not found..."
+missingBackButtonLabel = "Back to home page"
+
+[languages.en.params.logo]
+logoText = "null pointer"
+logoHomeLink = "/"
+
+[languages.en.menu]
+[[languages.en.menu.main]]
+identifier = "about"
+name = "About"
+url = "/about"
+# [[languages.en.menu.main]]
+# identifier = "showcase"
+# name = "Showcase"
+# url = "/showcase"

@@ -11,7 +11,7 @@ showMenuItems = 2
 showLanguageSelector = false
 fullWidthTheme = false
 centerTheme = true
-favicon = "favicon.png"
+favicon = "images/favicon.png"
 showLastUpdated = false
 
 [params.twitter]

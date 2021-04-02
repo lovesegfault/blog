@@ -35,10 +35,10 @@ over on [Ndless SDK][ndless-sdk] on how to do that, but we will be going over
 the steps here.
 
 1. Clone the SDK
-    1. `git clone --recursive https://github.com/ndless-nspire/Ndless.git`
+    - `git clone --recursive https://github.com/ndless-nspire/Ndless.git`
 
 1. Run the `ndless-sdk/toolchain/build_toolchain.sh` script.
-    1. This will download the toolchain as well as build it for you. It will
+    - This will download the toolchain as well as build it for you. It will
     take a while.
     {{<figure src="./images/compiling.jpg" caption="Compiling is tough on the CPU">}}
 
@@ -71,13 +71,13 @@ supported. For the rest of this guide we will be using Kernel `4.3.0`, although
 nothing should change for future versions.
 
 1. Download the Linux kernel and untar it
-    1. [`linux-4.3.tar.xz`][linux]
+    - [`linux-4.3.tar.xz`][linux]
 
 1. Clone the configurations repository
-    1. `git clone https://github.com/lovesegfault/nspire-kernel`
+    - `git clone https://github.com/lovesegfault/nspire-kernel`
 
 1. Copy the configuration file to the kernel folder, name it .config
-    1. `cp nspire-kernel/4.3.0/config linux-4.3/.config`
+    - `cp nspire-kernel/4.3.0/config linux-4.3/.config`
 
 {{<figure src="./images/config.jpg" caption="You should be able to get output like this">}}
 
@@ -91,13 +91,13 @@ compilation, we can start it. Make sure you have your .config file in the right
 place. Also confirm that you have the toolchain we compiled in your `PATH`.
 
 1. `ARCH=arm make -jX`
-    1. `ARCH=arm` specifies the architecture we're building to
-    1. `-jX` parallelizes compilation. Replace `X` with your thread count.
+    - `ARCH=arm` specifies the architecture we're building to
+    - `-jX` parallelizes compilation. Replace `X` with your thread count.
     {{<figure src="./images/linux-compiling.jpg" class="mid" caption="Compiling the kernel, get yourself a cup of coffee">}}
 
 1. Check that you have the following files
-    1. `arch/arm/boot/zImage`
-    1. `arch/arm/boot/dts/cx.dtb`
+    - `arch/arm/boot/zImage`
+    - `arch/arm/boot/dts/cx.dtb`
 
 The compilation step is now complete. We have built our kernel image (`zImage`)
 and out device tree file (`nspire-cx.dtb`) which are the files we needed.
@@ -114,17 +114,17 @@ Arch Linux port for the ARM architecture.
 ### Getting the files
 
 1. Download the latest version of ALARM for ARMv5
-    1. <http://os.archlinuxarm.org/os/ArchLinuxARM-armv5-latest.tar.gz>
+    - <http://os.archlinuxarm.org/os/ArchLinuxARM-armv5-latest.tar.gz>
 
 1. Make sure your USB drive uses an MBR partition table
 
 1. Format the drive. Add some SWAP space, it will be useful for doing more
     memory-hungry operations.
-    1. I'm using 512MiB Swap space on my drive, reason for which is the fact
+    - I'm using 512MiB Swap space on my drive, reason for which is the fact
         that my drive is small at 8GB.
 
 1. Untar the file you downloaded into the drive
-    1. `sudo bsdtar xzf ArchLinuxARM-armv5-latest.tar.gz -C ~/mnt/`
+    - `sudo bsdtar xzf ArchLinuxARM-armv5-latest.tar.gz -C ~/mnt/`
         Replace `~/mnt` with wherever you mounted your drive.
         {{<figure src="./images/rootfs.jpg" class="mid" caption="Your rootfs should look like this">}}
 
@@ -135,7 +135,7 @@ Arch Linux port for the ARM architecture.
 1. Make sure the `arm-none-eabi` toolchain is in your `PATH`
 
 1. Install modules to the USB drive
-   1. `sudo ARCH=arm make modules_install INSTALL_MOD_PATH=~/mnt/`
+   - `sudo ARCH=arm make modules_install INSTALL_MOD_PATH=~/mnt/`
 
 {{<figure src="./images/modules.jpg" caption="Modules installed">}}
 
@@ -148,7 +148,7 @@ Arch Linux port for the ARM architecture.
 
 1. Register `qemu-arm-static` as an ARM interpreter in the kernel (must be
     root)
-    1. {{<gist lovesegfault eded4fe8ef2fb88bfa1e08529e2cb6ca>}}
+    - {{<gist lovesegfault eded4fe8ef2fb88bfa1e08529e2cb6ca>}}
 
 1. Change root into the new rootfs. If you are running arch and you have the
     `arch-install-scripts` package installed you can use `arch-chroot`
@@ -172,7 +172,7 @@ that with either [`distcc`][distcc] (recommended) or with the following steps:
 1. Clone the ALARM [PKGBUILD repository][pkgbuild]
 
 1. Roll it back to commit `c82145d0d491c2e216ff49ec60d3e83c13e73230`
-    1. `git reset --hard c82145d0d491c2e216ff49ec60d3e83c13e73230`
+    - `git reset --hard c82145d0d491c2e216ff49ec60d3e83c13e73230`
 
 1. Copy the `core/linux-armv5` folder somewhere else
 
@@ -225,7 +225,7 @@ under Wine), you will require either a Windows or MacOS machine to get
 files to and from your calculator, Virtual Machines work.
 
 1. Edit the `ndless.cfg.tns` file and append `ext.ll2 linuxloader2` to it.
-    1. This associates our starting script to the bootloader program
+    - This associates our starting script to the bootloader program
 
 1. Create a folder named `linux`
 

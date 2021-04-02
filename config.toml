@@ -45,3 +45,28 @@ url = "/about"
 # identifier = "showcase"
 # name = "Showcase"
 # url = "/showcase"
+
+[markup]
+[markup.goldmark]
+[markup.goldmark.extensions]
+    definitionList = true
+    footnote = true
+    linkify = true
+    strikethrough = true
+    table = true
+    taskList = true
+    typographer = true
+[markup.goldmark.parser]
+    attribute = true
+    autoHeadingID = true
+[markup.goldmark.renderer]
+    hardWraps = false
+    unsafe = true
+    xHTML = false
+[markup.highlight]
+    codeFences = true
+    guessSyntax = true
+    lineNoStart = 1
+    lineNos = true
+    lineNumbersInTable = true
+    style = "dracula"

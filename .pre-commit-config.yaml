@@ -1,0 +1,34 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.4.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-yaml
+  - id: detect-private-key
+  - id: end-of-file-fixer
+    exclude: themes/
+  - id: forbid-new-submodules
+  - id: mixed-line-ending
+  - id: trailing-whitespace
+
+- repo: local
+  hooks:
+  - name: nixpkgs-fmt
+    entry: nixpkgs-fmt
+    files: \.nix$
+    language: system
+    description: Nix code formatter
+    id: nixpkgs-fmt
+  - name: nix-linter
+    entry: nix-linter
+    files: \.nix$
+    language: system
+    description: Nix code linter
+    id: nix-linter
+  - id: markdownlint
+    name: Markdownlint
+    description: Run markdownlint on your Markdown files
+    entry: mdl
+    language: system
+    files: \.(md|mdown|markdown)$
+    exclude: themes/*

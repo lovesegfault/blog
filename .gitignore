@@ -1,0 +1,10 @@
+# Direnv
+.direnv
+
+# Nix
+result
+result-*
+*.drv
+
+# Zola
+public

@@ -17,7 +17,7 @@ possible
 
 ## Hadware Requirements
 
-{{<figure src="./static/io.jpg">}}
+{{<figure src="./images/io.jpg">}}
 
 The IO of the Nspire is poor. As you can see in the image above, the TI has one
 mini USB port (left) and one non-standard connector (right) used for their
@@ -136,4 +136,4 @@ calculator now runs a fully functional Linux distro.
 [kernel]: https://tiplanet.org/nspire-linux-builds/devicetree/zImage_expanded_latest.tns
 [dtb]: https://tiplanet.org/nspire-linux-builds/devicetree/nspire-cx.dtb
 [loader]: https://tiplanet.org/nspire-linux-builds/linuxloader2.tns
-[startup]: ./static/start_usb.ll2.tns
+[startup]: ./files/start_usb.ll2.tns

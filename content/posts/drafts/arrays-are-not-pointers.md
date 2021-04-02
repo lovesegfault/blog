@@ -138,7 +138,7 @@ Luckily nowadays we have smart compilers that will yield warnings in case you
 try to do something like this, namely as I was building this example locally I
 got the following
 
-```
+```text
 sizeof.c:14:24: warning: sizeof on array function parameter will return size of 'int *' instead of 'int []' [-Wsizeof-array-argument]
     size_t len = sizeof(arr)/sizeof(int);
                        ^

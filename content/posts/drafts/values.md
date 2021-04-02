@@ -5,6 +5,7 @@ tags = [ "values" ]
 categories = [ "essay" ]
 draft = true
 +++
+
 Introspect into most startups today, and you'll find many shared structures
 among their bureaucracies. One such structures are company values, a document
 that attempts to create a code of ethics for the organization. Values exist to
@@ -39,9 +40,9 @@ versions of profit maximization.
 
 In both companies and state there exists an interstice between goals and law,
 this is where Ethics and values emerge. The fundamental function of values is to
-bridge societal goals and rules. 
+bridge societal goals and rules.
 
 Converse to how values help employees make decisions that align with the
 company's expectation, they too help the company make decisions regarding its
 employees. While the law is the code that governments rule by, values ought to
-be the code of companies. 
+be the code of companies.

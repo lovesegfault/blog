@@ -197,20 +197,41 @@ this power away from us, the people.
 
 ---
 
-<a name="favale"></a> 1. Favale, Marcella. "Death and Resurrection of copyright between Law and Technology." *Information & Communications Technology Law*, vol. 23, no. 2, Apr. 2014, pp. 117–135., doi:10.1080/13600834.2014.925631.
+<a name="favale"></a> 1. Favale, Marcella. "Death and Resurrection of copyright
+between Law and Technology." *Information & Communications Technology Law*, vol.
+23, no. 2, Apr. 2014, pp. 117–135., doi:10.1080/13600834.2014.925631.
 
-<a name="goldstein"></a>2. Goldstein, Paul. ``The Future of Copyright in a Digital Environment: Summary of Discussion,'' in *The Future of Copyright in a Digital Environment: Proceedings of the Royal Academy Colloquium* (Amsterdam, 6-7 July 1995), Kluwer Law International, 1996.
+<a name="goldstein"></a>2. Goldstein, Paul. ``The Future of Copyright in a
+Digital Environment: Summary of Discussion,'' in *The Future of Copyright in a
+Digital Environment: Proceedings of the Royal Academy Colloquium* (Amsterdam,
+6-7 July 1995), Kluwer Law International, 1996.
 
-<a name="locke"></a>3. Locke, John. "Second Treatise." *Locke: Two Treatises of Government*, edited by Peter Laslett, Cambridge University Press, Cambridge, 1988, pp. 265–428. Cambridge Texts in the History of Political Thought.
+<a name="locke"></a>3. Locke, John. "Second Treatise." *Locke: Two Treatises of
+Government*, edited by Peter Laslett, Cambridge University Press, Cambridge,
+1988, pp. 265–428. Cambridge Texts in the History of Political Thought.
 
-<a name="hegel"></a>4. Hegel, Georg Wilhelm Friedrich. "Elements of the Philosophy of Right." Edited by Allen W. Wood. Translated by Hugh Barr Nisbet, Cambridge University Press, 2012.
+<a name="hegel"></a>4. Hegel, Georg Wilhelm Friedrich. "Elements of the
+Philosophy of Right." Edited by Allen W. Wood. Translated by Hugh Barr Nisbet,
+Cambridge University Press, 2012.
 
-<a name="gordon"></a>5. Gordon, Wendy J. "A Property Right in Self-Expression: Equality and Individualism in the Natural Law of Intellectual Property." *The Yale Law Journal*, vol. 102, no. 7, 1993, pp. 1533–1609. JSTOR, [www.jstor.org/stable/796826](http://www.jstor.org/stable/796826).
+<a name="gordon"></a>5. Gordon, Wendy J. "A Property Right in Self-Expression:
+Equality and Individualism in the Natural Law of Intellectual Property." *The
+Yale Law Journal*, vol. 102, no. 7, 1993, pp. 1533–1609. JSTOR,
+[www.jstor.org/stable/796826](http://www.jstor.org/stable/796826).
 
-<a name="netanel"></a>6. Netanel, Neil Weinstock, "Locating Copyright Within the First Amendment" Skein. *Stanford Law Review*, Vol. 54, October 2001. Available at SSRN: [www.ssrn.com/abstract=267848](http://www.ssrn.com/abstract=267848) or [www.dx.doi.org/10.2139/ssrn.267848](http://www.dx.doi.org/10.2139/ssrn.267848)
+<a name="netanel"></a>6. Netanel, Neil Weinstock, "Locating Copyright Within the
+First Amendment" Skein. *Stanford Law Review*, Vol. 54, October 2001. Available
+at SSRN: [www.ssrn.com/abstract=267848](http://www.ssrn.com/abstract=267848) or
+[www.dx.doi.org/10.2139/ssrn.267848](http://www.dx.doi.org/10.2139/ssrn.267848)
 
-<a name="wortley"></a>7. Wortley, Edward. "Statute of Anne." *The Avalon Project: The Statute of Anne*; April 10, 1710, [avalon.law.yale.edu/18th_century/anne_1710.asp](http://avalon.law.yale.edu/18th_century/anne_1710.asp).
+<a name="wortley"></a>7. Wortley, Edward. "Statute of Anne." *The Avalon
+Project: The Statute of Anne*; April 10, 1710,
+[avalon.law.yale.edu/18th_century/anne_1710.asp](http://avalon.law.yale.edu/18th_century/anne_1710.asp).
 
-<a name="felten"></a>8. Felten, Edward W. "DRM and Public Policy." *Communications of the ACM*, vol. 48, no. 7, July 2005, p. 112. EBSCOhost, doi:10.1145/1070838.1070871.
+<a name="felten"></a>8. Felten, Edward W. "DRM and Public Policy."
+*Communications of the ACM*, vol. 48, no. 7, July 2005, p. 112. EBSCOhost,
+doi:10.1145/1070838.1070871.
 
-<a name="rushdie"></a>9. Rushdie, Salman. "Excerpts From Rushdie's Address: 1,000 Days `Trapped Inside a Metaphor'." *The New York Times*, 12 Dec. 1991, [www.nytimes.com/books/99/04/18/specials/rushdie-address.html](http://www.nytimes.com/books/99/04/18/specials/rushdie-address.html).
+<a name="rushdie"></a>9. Rushdie, Salman. "Excerpts From Rushdie's Address:
+1,000 Days `Trapped Inside a Metaphor'." *The New York Times*, 12 Dec. 1991,
+[www.nytimes.com/books/99/04/18/specials/rushdie-address.html](http://www.nytimes.com/books/99/04/18/specials/rushdie-address.html).

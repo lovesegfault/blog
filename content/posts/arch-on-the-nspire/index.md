@@ -134,7 +134,7 @@ Arch Linux port for the ARM architecture.
 1. Make sure the `arm-none-eabi` toolchain is in your `PATH`
 
 1. Install modules to the USB drive
-   - `sudo ARCH=arm make modules_install INSTALL_MOD_PATH=~/mnt/`
+    - `sudo ARCH=arm make modules_install INSTALL_MOD_PATH=~/mnt/`
 
 {{<figure src="./images/modules.jpg" caption="Modules installed">}}
 

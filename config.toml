@@ -31,4 +31,5 @@ show_tags = true
 theme_color = "green"
 favicon = "favicon.png"
 copyright = "Copyright &copy; 2021 - Bernardo Meurer"
+center = true
 logo_text = "null pointer"

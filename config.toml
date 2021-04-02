@@ -1,4 +1,4 @@
-baseURL = "http://lovesegfault.com/"
+baseURL = "./"
 languageCode = "en-us"
 title = "null pointer"
 theme = "hugo-theme-terminal"

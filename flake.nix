@@ -32,7 +32,7 @@
           installPhase = ''
             runHook preInstall
             mkdir -p $out
-            cp -r public $out
+            cp -r public/* $out
             runHook postInstall
           '';
         };

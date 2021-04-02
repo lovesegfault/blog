@@ -23,7 +23,18 @@
 
           nativeBuildInputs = [ hugo ];
 
-          makeFlags = [ "PREFIX=${placeholder "out"}" ];
+          buildPhase = ''
+            runHook preBuild
+            hugo --minify
+            runHook postBuild
+          '';
+
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out
+            cp -r public $out
+            runHook postInstall
+          '';
         };
 
         devShell = self.defaultPackage.${system}.overrideAttrs (oldAttrs: {

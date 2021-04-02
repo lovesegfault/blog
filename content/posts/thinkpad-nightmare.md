@@ -4,7 +4,6 @@ date = 2019-01-24T23:38:15Z
 draft = false
 tags = [ "lenovo", "thinkpad", "bios", "nightmare" ]
 categories = [ "essay" ]
-comments = true
 +++
 
 A few weeks ago I finally got my new work computer. I had been using an

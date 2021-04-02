@@ -3,7 +3,6 @@ title = "Running Arch on the TI Nspire CX Calculator"
 categories = [ "tutorial" ]
 date = 2016-10-28T00:00:00Z
 tags = [ "linux", "ti", "arm", "calculator" ]
-comments = true
 +++
 
 This is a follow up to my previous post on how to run Debian on the Nspire,

@@ -4,7 +4,6 @@ date = 2018-08-30T00:00:00Z
 draft = false
 tags = [ "linear", "algebra", "mathematics", "euclidean" ]
 categories = [ "notes" ]
-comments = true
 +++
 
 ## Real euclidean spaces

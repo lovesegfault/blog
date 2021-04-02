@@ -1,11 +1,9 @@
-
 +++
 title = "Home"
 date = 2019-02-13T23:41:15Z
 draft = false
 tags = [ "home", "farm", "lost" ]
 categories = [ "essay" ]
-comments = true
 +++
 
 I grew up in a farm, a farm in the middle of nowhere. Well, of course it is

@@ -4,7 +4,6 @@ date = 2017-12-22T13:34:17Z
 draft = false
 tags = [ "drm", "intellectual", "property", "philosophy", "law" ]
 categories = [ "essay" ]
-comments = true
 +++
 
 In the Digital Era, copyright has become harder to enforce than ever before.

@@ -3,7 +3,6 @@ title = "My New iPhone Sucks"
 date = 2017-12-20T11:12:17Z
 tags = [ "iphone", "apple", "opinion" ]
 categories = [ "essay" ]
-comments = true
 +++
 
 {{<figure src="./images/rotten-apple.jpg">}}

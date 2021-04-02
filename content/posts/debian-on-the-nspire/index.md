@@ -3,7 +3,6 @@ title = "Running Debian on the TI Nspire CX Calculator"
 date = 2016-05-30T00:00:00Z
 tags = [ "linux", "ti", "arm", "calculator" ]
 categories = [ "tutorial" ]
-comments = true
 +++
 
 I've been taking a look at running Linux on ARM microprocessors,

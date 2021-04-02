@@ -4,7 +4,6 @@ date = 2017-10-25T00:00:00Z
 draft = false
 tags = [ "philosophy", "logic", "leibniz", "theory" ]
 categories = [ "essay" ]
-comments = true
 +++
 
 Let a *statement* be any sentence of form

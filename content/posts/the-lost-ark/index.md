@@ -5,7 +5,6 @@ date = 2019-04-22T00:54:01Z
 draft = false
 tags = [ "vinyl", "records", "lisbon", "lost" ]
 categories = [ "essay" ]
-comments = true
 +++
 
 I was 18 when I moved to Lisbon. I wasn't really sure who I wanted to be, and I

@@ -7,7 +7,7 @@ paginate = 5
 [params]
 contentTypeName = "posts"
 themeColor = "green"
-showMenuItems = 2
+showMenuItems = 5
 showLanguageSelector = false
 fullWidthTheme = false
 centerTheme = true
@@ -41,10 +41,14 @@ logoHomeLink = "/"
 identifier = "about"
 name = "About"
 url = "/about"
-# [[languages.en.menu.main]]
-# identifier = "showcase"
-# name = "Showcase"
-# url = "/showcase"
+[[languages.en.menu.main]]
+identifier = "tags"
+name = "Tags"
+url = "/tags"
+[[languages.en.menu.main]]
+identifier = "categories"
+name = "Categories"
+url = "/categories"
 
 [markup]
 [markup.goldmark]

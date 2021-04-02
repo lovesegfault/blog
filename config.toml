@@ -33,3 +33,8 @@ favicon = "favicon.png"
 copyright = "Copyright &copy; 2021 - Bernardo Meurer"
 center = true
 logo_text = "null pointer"
+main_menu = [
+              {url="/about/", name="about"},
+]
+menu_more = "show more"
+read_more = "read more"

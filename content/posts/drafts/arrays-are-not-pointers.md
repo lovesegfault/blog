@@ -1,5 +1,5 @@
 +++
-title = "Arrays Are Not Pointers"
+title = "C Arrays Are Not Pointers"
 date = 2021-04-01T22:04:19-07:00
 tags = [ "arrays", "pointers", "C", "programming" ]
 categories = [ "essay" ]
@@ -20,7 +20,7 @@ stating the truth - arrays are not pointers. Not at all. In this post I want to
 explore, with examples, the three main differences between arrays and pointers
 in C.
 
-## 1. `sizeof()` Implementation
+## 1. `sizeof()`
 
 This is the first situation that caused me to see how arrays and pointers are
 really distinct. Consider the following code:
@@ -232,6 +232,12 @@ incorrect[^4], but nonetheless this can be quite annoying to beginners.
 Not incidentally, the `print_arr()` function shows the correct way to do this
 kind of thing; you really have to pass the length[^5] along with the "array."
 
+## 3. Provenance
+
+TODO
+
+`http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2263.htm`
+
 > **7.1.4 item 1**
 >
 > If a function argument is described as being an array,the pointer actually
@@ -249,8 +255,8 @@ kind of thing; you really have to pass the length[^5] along with the "array."
     guaranteed to not evaluate `x` and be done at compile time, that isn't the
     case with VLAs. If `x` is a VLA then it's evaluated at runtime and the
     length computed. See **6.5.3.4 item 2**.
-[^3]: For VLAs (Variable Length Arrays) the standard specifies the similar
-    behavior to arrays, with the additional complications coming from their
+[^3]: For VLAs (Variable Length Arrays) the standard specifies similar behavior
+    to arrays, with the additional complications coming from their
     runtime-determined sizes.
 [^4]: That we now have warnings that are this easy to read and grasp in C is
     absolutely amazing, and a crucial effort that often goes overlooked.

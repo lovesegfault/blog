@@ -33,20 +33,20 @@ A real linear space \\(V\\) equipped with an inner product is called an (real)
 ### Examples
 
 1. Usual inner product in \\(\mathbb R^n\\)
-    1. \\(\mathbb R^2\\) \\[ \begin{aligned} \langle x, y\rangle &= \lVert
+    * \\(\mathbb R^2\\) \\[ \begin{aligned} \langle x, y\rangle &= \lVert
       x\rVert\lVert y\rVert \cos\theta \\\\ &= x\_1 y\_1 + x\_2 y\_2 \quad\text{in
       }\mathbb R^2 \end{aligned}\\ \\] where \\(\theta\in[0, \pi]\\) is the
       angle between the vectors \\(x\\) and \\(y\\). Note that the norm of the
       vector \\(x\\) satisfies \\[ \lVert x\rVert^2 = \langle x, x\rangle \\]
-    1. \\(\mathbb R^n\\) \\[ \begin{aligned} \langle x, y\rangle &= x\_1 y\_1 + x\_2
+    * \\(\mathbb R^n\\) \\[ \begin{aligned} \langle x, y\rangle &= x\_1 y\_1 + x\_2
       y\_2 + \cdots + x\_n y\_n \\\\ \langle x, y\rangle &= y^Tx = x^Ty
       \end{aligned}\\ \\]
 1. Another inner product in \\(\mathbb R^2\\)
-    1. **Exercise.** Determine the circumference \\(C\\) of radius \\(1\\) and
+    * **Exercise.** Determine the circumference \\(C\\) of radius \\(1\\) and
         centered at \\((0, 0)\\) \\[ C = \{(x\_1, x\_2)\in\mathbb R^2\colon
         \lVert(x\_1, x\_2)\rVert = 1\} \\] considering
-        1. The usual inner product
-        1. The inner product \\[\langle (x\_1, x\_2), (y\_1, y\_2) \rangle =
+        * The usual inner product
+        * The inner product \\[\langle (x\_1, x\_2), (y\_1, y\_2) \rangle =
            \frac{1}{9} x\_1y\_1 + \frac{1}{4} x\_2y_2 \\]
 
 ### Norm and the triangle inequality
@@ -94,7 +94,7 @@ For all matrices \\(A, B \in \mathbb M\_{2\times 2}(\mathbb R)\\) we define \\[
 \begin{aligned} \langle A, B\rangle &= tr(B^T A) \\\\ &= \sum^2\_{i,
 j=1}{a\_{ij}b\_{ij}} \end{aligned}\\] with \\(A = [a\_{ij}]\\) and \\(B =
 [b\_{ij}]\\)[^1]. Note that, letting \\(B\_c\\) be the canonical basis of
-\\(\mathbb M\_{2\times 2}(\mathbb R)\\),
+\\(\mathbb M\_{2\times 2}(\mathbb R)\\)
 
 \\[\langle A, B \rangle\_{\mathbb M\_{2\times 2}(\mathbb R)} =
 \langle (A)\_{B\_c}, (B)\_{B\_c}\rangle\_{\mathbb R^4}\\]
@@ -549,7 +549,7 @@ The minimal value for this distance can be obtained for \\(y =
 \\[\begin{aligned}d(q, S) &= d(q - p, W)
 \\\\ &= \lVert \text{proj}\_{W^\perp}(q - p )\rVert\end{aligned}\\]
 
-**Exercise.** Compute the distance from \\((3, 2, -1\\) to the plane \\(S\\)
+**Exercise.** Compute the distance from \\((3, 2, -1)\\) to the plane \\(S\\)
 from the previous exercise.
 
 [^1]: Note that \\(tr(B^T A) = tr(A^T B)\\), which allows us to define

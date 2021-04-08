@@ -112,7 +112,7 @@ pointer itself (not the data it points to), which in x86_64 is 8 bytes. The
 second `sizeof()` hits the special behavior for arrays, and computes the total
 length of `arr` in bytes, which is `20`.
 
-## 2. Crossing scopes
+## 2. Function Arguments
 
 Consider the following example:
 

@@ -3,7 +3,6 @@ title = "C Arrays Are Not Pointers"
 date = 2021-04-01T22:04:19-07:00
 tags = [ "arrays", "pointers", "C", "programming" ]
 categories = [ "essay" ]
-draft = true
 +++
 
 One of the biggest traps C lays for beginners is its idiosyncratic and confusing

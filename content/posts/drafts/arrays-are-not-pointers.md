@@ -6,19 +6,11 @@ categories = [ "essay" ]
 draft = true
 +++
 
-One of the biggest traps people who start learning C fall into is
-
-I've know C, and in particular C99, for quite a while now. I've finally reached
-the point where I've had more years of my life knowing (at least some) C than
-not. With this in mind, and to commemorate the language that got me into
-programming, and which I am still extremely fond of, I want to talk about what I
-think is one of the biggest misconceptions in people's knowledge of C: the
-difference between an array and a pointer. Having been a TA for a couple of C
-courses, and having had to attend C courses, I could not believe how many
-professors will teach this as a "useful simplification." So, let's start by
-stating the truth - arrays are not pointers. Not at all. In this post I want to
-explore, with examples, the three main differences between arrays and pointers
-in C.
+One of the biggest traps C lays for beginners is its idiosyncratic and confusing
+treatment of arrays. I often times see people learn, or conclude themselves,
+that arrays in C are just pointers, which is not the case. In C arrays are not
+pointers, and in this post I want to go over the main reasons why that is the
+case.[^1]
 
 ## 1. `sizeof()`
 
@@ -80,8 +72,8 @@ The first clue lies here, where we already learn that arrays are decidedly
 view, to the length of the data they point to. It's up to you, the programmer,
 to keep track of how large the object you are pointing to is. Arrays, on the
 other hand, are _characterized_ by their length. The type of a given "array of
-T" is really "array of T with length N."[^1] There can be no array without a known
-length[^2], in stark contrast to pointers, where the compiler never knows their
+T" is really "array of T with length N."[^2] There can be no array without a known
+length[^3], in stark contrast to pointers, where the compiler never knows their
 length.
 
 > **6.5.3.4 item 4**
@@ -93,7 +85,7 @@ length.
 > is the total number of bytes in such an object, including internal and trailing
 > padding. *[Emphasis mine]*
 
-And there's the final clue, `sizeof()` has special behavior for arrays[^3]! For
+And there's the final clue, `sizeof()` has special behavior for arrays[^4]! For
 an array it will look at the `sizeof()` the object type, the length of the
 array, and compute the total length. For example, if I have `int foo[5];` and I
 do `sizeof(foo)` I will hit this special behavior, and get the size as being
@@ -130,7 +122,7 @@ Consider the following example:
 #include<stdlib.h>
 
 // Prints an array
-void print_arr(int arr[], size_t len) {
+void print_arr(int *arr, size_t len) {
     printf("arr[ ");
     for(size_t i = 0; i < len; ++i) {
         printf("%d ", arr[i]);
@@ -151,9 +143,9 @@ void randomize(int arr[]) {
 }
 
 int main(void) {
-    // Initialize the seed
+    // Initialize the seed.
     sranddev();
-    // Suppose we get this guy from user input, or some file, or w/e.
+    // 0-initialize it.
     int arr[10] = {0};
     // Let's randomize it!
     size_t len = sizeof(arr) / sizeof(int);
@@ -203,19 +195,48 @@ the standard for a moment:
 > shall provide access to the first element of an array with at least as many
 > elements as specified by the size expression. _[Emphasis mine]_
 
-So, when we pass `arr` to the `randomize()` function, it is actually _demoted_
-to a regular pointer (`int*` in this case) and thus _loses_ it's length
-information. It's as if C arrays are _fat pointers_[^3], but only the inner,
-"thin," pointer actually gets passed when you use it as a function argument.
+As if things weren't confusing enough, the standard defines that whenever you
+declare a parameter to a function as an array, such as `void randomize(int
+arr[])`, it is automatically "adjusted" to a pointer such that you end up with,
+for example, `void randomize(int *arr)`. So even though arrays are not pointers,
+when you put an array in argument position, you are actually writing a pointer
+as argument! Sometimes you'll hear people refer to this as the array being
+"demoted" to a pointer.
 
-Since the length of an `int*` is 8 bytes, and the length of an `int` is 4 bytes,
-we have the computed length equal to `2`, and thus only the first two elements
-of the array are initialized. This is a not-too-bad manifestation of this issue,
-consider for a moment what could happen if the array had length 1.
+This means that whenever you have a function taking in an array as argument, you
+fall into the `sizeof()` issue we saw in the previous section. In the caller
+scope, `sizeof(arr)` will evaluate to the total length in bytes of the array,
+whereas in the function scope `sizeof(arr)` will evaluate to the length in bytes
+of a pointer.
 
-Luckily nowadays we have smart compilers that will yield warnings in case you
-try to do something like this, namely as I was building this example locally I
-got the following
+With this in mind, let's revisit the output we got:
+
+```text
+(main) len = 10
+(randomize) len = 2
+arr[ 987922591 1583865774 0 0 0 0 0 0 0 0 ]
+```
+
+Recall that we had `size_t len = sizeof(arr) / sizeof(int)`, and `sizeof(int) ==
+4`.
+
+So, the length in the caller scope is `10` because `sizeof(arr)` computes the
+total length of our array, which is `40`, and `40 / 4 == 10`. On the scope of
+the `randomize()` function though, `arr` is not an array, despite looking like
+it in the function signature, but a _pointer_. Due to this we get `sizeof(arr)
+== 8` and `8 / 4 == 2`. Finally, because this caused us to computer `len`
+incorrectly, we only actually randomize the first two elements of the array,
+which is what we see in the output.
+
+To reiterate, whenever you have `someType my_function(myType my_arg[])` it may look like
+you have an argument `my_arg` of type "array of `myType`", but that is an
+illusion, you will actually end up with a pointer to `myType`. Personally, I
+find the usage of `[]` in function arguments misleading, and that you're always
+better off by just making it clear that the input is a pointer.
+
+Luckily, nowadays we have smart compilers that will yield warnings in case you
+try to do something like this, as I was building this example locally I got the
+following warning[^5]:
 
 ```text
 sizeof.c:14:24: warning: sizeof on array function parameter will return size of 'int *' instead of 'int []' [-Wsizeof-array-argument]
@@ -226,17 +247,40 @@ void randomize(int arr[]) {
                    ^
 ```
 
-This very precisely tells us we're about to do something that is most likely
-incorrect[^4], but nonetheless this can be quite annoying to beginners.
+This is trying to tell us "Hey, this `sizeof(arr)` call that you think is
+returning the size of an array, will actually return the type of a pointer and
+you should wise up." Despite these warnings, this issue with automatic demotion
+of arrays to pointers when crossing scopes is something I see beginners trip on
+often.
 
-Not incidentally, the `print_arr()` function shows the correct way to do this
-kind of thing; you really have to pass the length[^5] along with the "array."
+Not incidentally, the `print_arr()` function shows the correct way to pass an
+array to a function; you have to pass the array's length alongside a pointer to
+the first element of the array.
 
 ## 3. Provenance
 
-TODO
+If you've ever learned that pointers in C are just numeric values, maybe
+representing an address in memory, then you may want to sit down. In response to
+[Defect Report 260][dr260] (DR-260) the Committe says:
 
-`http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2263.htm`
+> If two objects have identical bit-pattern representations and their types are
+> the same they may still compare as unequal (for example if one object has an
+> indeterminate value) and if one is an indeterminate value attempting to read
+> such an object invokes undefined behavior. Implementations are permitted to
+> track the origins of a bit-pattern and treat those representing an
+> indeterminate value as distinct from those representing a determined value.
+> **They may also treat pointers based on different origins as distinct even
+> though they are bitwise identical.** _[Emphasis mine]_
+
+This answer brings forth the idea of **pointer provenance**, that pointers are
+characterized not only by their value, but also by their origin. Pointers with
+identical numerical values, but distinct origins, can still be different.
+
+It is no surprise, then, that pointers created by passing an array to a
+function, like we saw in the previous section, and pointers created by, for
+example, `malloc()` have different provenances. The standard touches on this
+indirectly when they talk about library functions that take an array as
+argument:
 
 > **7.1.4 item 1**
 >
@@ -245,22 +289,45 @@ TODO
 > and accesses to objects (that would be valid if the pointer did point to the
 > first element of such an array) are in fact valid.
 
-[^1]: You'll commonly see this type of data structure, a pointer to the first
+Now, this isn't _precisely_ the same issue that motivates DR-260, but
+nonetheless it alludes to the fact that there is a semantic difference between a
+function that takes a pointer as argument and one that takes an array. There are
+different expectations in place.
+
+There is a lot more to be said about provenance beyond the shallow point I'm
+making here, I recommend anyone interest take a look at ["n2263: Clarifying
+Pointer Provenance v4"][ptrprov] for an in-depth look into the issues that arise
+from pointer provenance and the proposed changes to the standard.
+
+## Conclusion
+
+So there you have it folks, arrays are definitely not pointers and now you know
+way too much about why!
+
+If you belive I missed something in this post, please feel free to mention it on
+the comments bellow or reach me at [bernardo@arraysarenotpointers.dev](mail).
+
+[^1]: This post is aimed at beginners and, to a lesser degree, intermediate
+  users of C. If you are an expert you are unlikely to be surprised by what I
+  show here but, hey, maybe you realize I missed something and help me improve
+  the list :)
+[^2]: You'll commonly see this type of data structure, a pointer to the first
     element together with the length of the data, be referred to as a _fat
     pointer_. It's called that because it's larger than a normal pointer, since
     it needs to contain the length information too.
-[^2]: Okay, I'm lying! There are these things called variable length arrays,
+[^3]: Okay, I'm lying! There are these things called variable length arrays,
     VLAs, that don't have a length known at compile time. The standard lays out
     some special behavior for them, for example, while `sizeof(x)` is usually
     guaranteed to not evaluate `x` and be done at compile time, that isn't the
     case with VLAs. If `x` is a VLA then it's evaluated at runtime and the
     length computed. See **6.5.3.4 item 2**.
-[^3]: For VLAs (Variable Length Arrays) the standard specifies similar behavior
+[^4]: For VLAs (Variable Length Arrays) the standard specifies similar behavior
     to arrays, with the additional complications coming from their
     runtime-determined sizes.
-[^4]: That we now have warnings that are this easy to read and grasp in C is
+[^5]: That we now have warnings that are this easy to read and grasp in C is
     absolutely amazing, and a crucial effort that often goes overlooked.
-[^5]: Note the use of `size_t` for the lengths, if you didn't know about it, you
-    should check it out https://man7.org/linux/man-pages/man7/system_data_types.7.html.
 
 [cstd]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1548.pdf
+[dr260]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_260.htm
+[ptrprov]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2263.htm
+[mail]: mailto://bernardo@arraysarenotpointers.dev

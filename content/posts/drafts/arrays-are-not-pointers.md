@@ -248,7 +248,7 @@ void randomize(int arr[]) {
 ```
 
 This is trying to tell us "Hey, this `sizeof(arr)` call that you think is
-returning the size of an array, will actually return the type of a pointer and
+returning the size of an array, will actually return the type of a pointer, and
 you should wise up." Despite these warnings, this issue with automatic demotion
 of arrays to pointers when crossing scopes is something I see beginners trip on
 often.
@@ -284,7 +284,7 @@ argument:
 
 > **7.1.4 item 1**
 >
-> If a function argument is described as being an array,the pointer actually
+> If a function argument is described as being an array, the pointer actually
 > passed to the function shall have a value such that all address computations
 > and accesses to objects (that would be valid if the pointer did point to the
 > first element of such an array) are in fact valid.
@@ -304,8 +304,8 @@ from pointer provenance and the proposed changes to the standard.
 So there you have it folks, arrays are definitely not pointers and now you know
 way too much about why!
 
-If you belive I missed something in this post, please feel free to mention it on
-the comments bellow or reach me at [bernardo@arraysarenotpointers.dev](mail).
+If you believe I missed something in this post, please feel free to mention it
+on the comments bellow or reach me at [bernardo@arraysarenotpointers.dev](mail).
 
 [^1]: This post is aimed at beginners and, to a lesser degree, intermediate
   users of C. If you are an expert you are unlikely to be surprised by what I

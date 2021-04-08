@@ -305,7 +305,8 @@ So there you have it folks, arrays are definitely not pointers and now you know
 way too much about why!
 
 If you believe I missed something in this post, please feel free to mention it
-on the comments bellow or reach me at [bernardo@arraysarenotpointers.dev](mail).
+in the comments bellow, or reach me at
+[bernardo@arraysarenotpointers.dev](mail).
 
 [^1]: This post is aimed at beginners and, to a lesser degree, intermediate
   users of C. If you are an expert you are unlikely to be surprised by what I

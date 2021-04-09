@@ -295,8 +295,8 @@ different expectations in place.
 
 There is a lot more to be said about provenance beyond the shallow point I'm
 making here, I recommend anyone interest take a look at ["n2263: Clarifying
-Pointer Provenance v4"][ptrprov] for an in-depth look into the issues that arise
-from pointer provenance and the proposed changes to the standard.
+Pointer Provenance v4"][ptrprov] for an in-depth analysis of the issues that
+arise from pointer provenance and the proposed changes to the standard.
 
 ## Conclusion
 

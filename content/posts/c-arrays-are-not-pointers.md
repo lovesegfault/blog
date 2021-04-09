@@ -223,7 +223,7 @@ So, the length in the caller scope is `10` because `sizeof(arr)` computes the
 total length of our array, which is `40`, and `40 / 4 == 10`. On the scope of
 the `randomize()` function though, `arr` is not an array, despite looking like
 it in the function signature, but a _pointer_. Due to this we get `sizeof(arr)
-== 8` and `8 / 4 == 2`. Finally, because this caused us to computer `len`
+== 8` and `8 / 4 == 2`. Finally, because this caused us to compute `len`
 incorrectly, we only actually randomize the first two elements of the array,
 which is what we see in the output.
 

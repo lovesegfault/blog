@@ -260,7 +260,7 @@ the first element of the array.
 
 If you've ever learned that pointers in C are just numeric values, maybe
 representing an address in memory, then you may want to sit down. In response to
-[Defect Report 260][dr260] (DR-260) the Committe says:
+[Defect Report 260][dr260] (DR-260), the Committee says:
 
 > If two objects have identical bit-pattern representations and their types are
 > the same they may still compare as unequal (for example if one object has an

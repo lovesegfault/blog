@@ -7,9 +7,9 @@ categories = [ "essay" ]
 
 One of the biggest traps C lays for beginners is its idiosyncratic and confusing
 treatment of arrays. I often times see people learn, or conclude themselves,
-that arrays in C are just pointers, which is not the case. In C arrays are not
-pointers, and in this post I want to go over the main reasons why that is the
-case.[^1]
+that arrays in C are just pointers, which is not the case. In C, arrays _are
+not_ pointers, and in this post I want to go over the main reasons why that is
+the case.[^1]
 
 ## 1. `sizeof()`
 

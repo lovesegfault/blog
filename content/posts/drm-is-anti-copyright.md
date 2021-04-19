@@ -1,5 +1,5 @@
 +++
-title = "DRM is Anti-Copyright"
+title = "DRM Is Anti-Copyright"
 date = 2017-12-22T13:34:17Z
 draft = false
 tags = [ "drm", "intellectual", "property", "copyright", "law" ]

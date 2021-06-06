@@ -8,16 +8,44 @@
 {{ template "_internal/google_analytics.html" . }}
 
 <!-- Theme CSS -->
-<link rel="stylesheet" href="{{ "assets/style.css" | absURL }}">
+<link rel="preload"
+      href="{{ "assets/style.css" | absURL }}"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'">
+<noscript>
+  <link rel="stylesheet"
+        href="{{ "assets/style.css" | absURL }}">
+</noscript>
 {{ if (isset .Params "color") }}
-  <link rel="stylesheet" href="{{ (printf "assets/%s.css" .Params.color) | absURL }}">
+  <link rel="preload"
+        href="{{ (printf "assets/%s.css" .Params.color) | absURL }}"
+        as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet"
+          href="{{ (printf "assets/%s.css" .Params.color) | absURL }}">
+  </noscript>
 {{ else if and (ne $.Site.Params.ThemeColor "orange") (ne $.Site.Params.ThemeColor "color" "") }}
-  <link rel="stylesheet" href="{{ (printf "assets/%s.css" $.Site.Params.ThemeColor) | absURL }}">
+  <link rel="preload"
+        href="{{ (printf "assets/%s.css" $.Site.Params.ThemeColor) | absURL }}"
+        as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet"
+          href="{{ (printf "assets/%s.css" $.Site.Params.ThemeColor) | absURL }}">
+  </noscript>
 {{ end }}
 
 <!-- Custom CSS to override theme properties (/static/style.css) -->
 {{ if (fileExists "static/style.css") -}}
-  <link rel="stylesheet" href="{{ "style.css" | absURL }}">
+  <link rel="preload"
+        href="{{ "style.css" | absURL }}"
+        as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet"
+          href="{{ "style.css" | absURL }}">
+  </noscript>
 {{- end }}
 
 <!-- Icons -->

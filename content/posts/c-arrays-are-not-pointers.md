@@ -56,7 +56,7 @@ wat?
 
 Alright, let's go take a gander at the standard again
 
-> **6.2.5 item 20**
+> **6.2.5, item 20**
 >
 > An array type describes a contiguously allocated nonempty set of objects with
 > a particular member object type, called the element type. Array types are
@@ -75,7 +75,7 @@ T" is really "array of T with length N."[^2] There can be no array without a kno
 length[^3], in stark contrast to pointers, where the compiler never knows their
 length.
 
-> **6.5.3.4 item 4**
+> **6.5.3.4, item 4**
 >
 > When `sizeof` is applied to an operand that has type `char`, `unsigned char`, or
 > `signed char`, (or a qualified version thereof) the result is 1. **When applied to
@@ -184,7 +184,7 @@ What? How did the length change? And why is only the beginning of the array
 getting filled up with data? What the hell is going on here! Let's go back to
 the standard for a moment:
 
-> **6.7.5.3 item 7**
+> **6.7.5.3, item 7**
 >
 > **A declaration of a parameter as "array of type" shall be adjusted to
 > "qualified pointer to type"**, where the type qualifiers (if any) are those
@@ -281,7 +281,7 @@ example, `malloc()` have different provenances. The standard touches on this
 indirectly when they talk about library functions that take an array as
 argument:
 
-> **7.1.4 item 1**
+> **7.1.4, item 1**
 >
 > If a function argument is described as being an array, the pointer actually
 > passed to the function shall have a value such that all address computations
@@ -320,7 +320,7 @@ in the comments bellow, or reach me at
     some special behavior for them, for example, while `sizeof(x)` is usually
     guaranteed to not evaluate `x` and be done at compile time, that isn't the
     case with VLAs. If `x` is a VLA then it's evaluated at runtime and the
-    length computed. See **6.5.3.4 item 2**.
+    length computed. See **6.5.3.4, item 2**.
 [^4]: For VLAs (Variable Length Arrays) the standard specifies similar behavior
     to arrays, with the additional complications coming from their
     runtime-determined sizes.

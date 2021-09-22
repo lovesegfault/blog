@@ -5,8 +5,8 @@ meta = "false"
 
 <img src="./me.jpg" alt="picture of me" width="30%" style="float:left;margin:10px">
 
-I'm Bernardo, a Systems Software Engineer at [Standard Cognition][stcg] where I
-work writing high-performance Rust.
+I'm Bernardo, a Quantum Software Engineer at Google, where I
+work on QKernel and QCC (Quantum Circuit Compiler).
 
 I was born in Brazil, and studied Computer Engineering at [IST][ist] in Lisbon,
 Portugal before dropping out. I now live in San Francisco, California, and you
@@ -58,6 +58,5 @@ Here are, for curiosity's sake, some other things I enjoy:
     * In Defense of Lost Causes - Slavoj Žižek
 
 [cv]: https://github.com/lovesegfault/cv/releases/latest/download/cv.pdf
-[stcg]: https://standard.ai
 [ist]: https://tecnico.ulisboa.pt/en/
 [persmail]: mailto://bernardo@meurer.org

@@ -16,8 +16,7 @@ jobs:
         with:
           extra_nix_config: experimental-features = nix-command flakes
       - name: markdownlint
-        run: |
-          nix develop -c mdl content
+        run: nix develop -c mdl content
   build:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>standard on null pointer</title><link>/tags/standard/</link><description>Recent content in standard on null pointer</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Copyright &amp;copy; 2021 - Bernardo Meurer</copyright><lastBuildDate>Sun, 24 Nov 2019 20:38:15 +0000</lastBuildDate><atom:link href="/tags/standard/index.xml" rel="self" type="application/rss+xml"/><item><title>Rust 2020 🦀</title><link>/posts/rust-2020/</link><pubDate>Sun, 24 Nov 2019 20:38:15 +0000</pubDate><guid>/posts/rust-2020/</guid><description>Every year I think of writing a &amp;ldquo;Rust 20xx&amp;rdquo;1 post, and I never do, but this year I&amp;rsquo;ve decided to power through the procrastination, I&amp;rsquo;m also on a 5 hour flight with no Wi-Fi, so this will at least provide me with some form of entertainment!
+Since I&amp;rsquo;m blessed enough to work full-time using Rust I end up having two separate sets of goals for Rust, one from the point of view of Standard Cognition (Sc) as a company that is committed to Rust, and another as someone who likes to work on projects in Rust in his free time.</description><content>&lt;p>Every year I think of writing a &amp;ldquo;Rust 20xx&amp;rdquo;&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup> post, and I never do, but this
+year I&amp;rsquo;ve decided to power through the procrastination, I&amp;rsquo;m also on a 5 hour
+flight with no Wi-Fi, so this will at least provide me with some form of
+entertainment!&lt;/p>
+&lt;p>Since I&amp;rsquo;m blessed enough to work full-time using Rust I end up having two
+separate sets of goals for Rust, one from the point of view of &lt;a href="https://standard.ai">Standard
+Cognition&lt;/a> (Sc) as a company that is committed to Rust, and another as
+someone who likes to work on projects in Rust in his free time. I&amp;rsquo;ll separate
+both, and try to not jumble my wishes for Standard and my personal ones.&lt;/p>
+&lt;h2 id="standard-cognition--rust-in-2020">Standard Cognition &amp;amp; Rust in 2020&lt;/h2>
+&lt;p>One of our main annoyances at Sc is the fact that we are still on the nightly
+compiler, mostly due to a number of features that we couldn&amp;rsquo;t build our
+product without, but that still haven&amp;rsquo;t seen their way through to
+stabilization. Namely, these are:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Bash" data-lang="Bash">&lt;span style="display:flex;">&lt;span>rg --no-filename &lt;span style="color:#e6db74">&amp;#39;^#!\[feature(.+)]&amp;#39;&lt;/span> | sort -u
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Rust" data-lang="Rust">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/52662
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(associated_type_bounds)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/62290
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(async_closure)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/61356
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(bound_cloned)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// We use this for printing the type name in generic errors,
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// an alternative has been recently stabilized, IIRC
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(core_intrinsics)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/43244
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(drain_filter)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/44732
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(external_doc)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/29625
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(fn_traits)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/56167
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(hash_raw_entry)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/53485
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(is_sorted)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/35121
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(never_type)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/13231
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(optin_builtin_traits)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/60258
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(option_flattening)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/53268
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(result_map_or_else)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/31844
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(specialization)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/42168
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(step_trait)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/41517
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(trait_alias)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/42327
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(try_trait)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/29625
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(unboxed_closures)]&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>I&amp;rsquo;m fairly sure a couple of these have only recently been stabilized, but we
+only bump the compiler once in a blue moon since it&amp;rsquo;s usually a bit of a
+chore. Most notably, the &lt;code>never_type&lt;/code> was just stabilized!&lt;/p>
+&lt;p>There are some other features that we don&amp;rsquo;t use, but only because the path for
+them to be stabilized is so unclear and we didn&amp;rsquo;t want to further commit to
+using unstable features. The big ones here, where stabilization would be a
+revolution in our codebase are const generics and GATs. My understanding is
+that for the former we would ideally achieve lazy normalization inside the
+compiler, and that there&amp;rsquo;s still quite a bit of work ahead of us for that. For
+GATs I&amp;rsquo;m not quite sure which yaks will need to be shaven.&lt;/p>
+&lt;p>Another thing we&amp;rsquo;d like to see at Sc is a number of improvements to Cargo,
+some things that come to mind are:&lt;/p>
+&lt;ol>
+&lt;li>Constraining &lt;code>build.rs&lt;/code>
+&lt;ul>
+&lt;li>We&amp;rsquo;d like for it to &lt;em>not&lt;/em> have network access, and possibly only
+limited filesystem access. Right now the build script has unlimited
+power, which is really no good.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better dependency handling
+&lt;ul>
+&lt;li>There are a number of annoyances in Cargo relating to
+dependencies. The primary one being that if a crate exposes both a
+binary and a library (c.f. &lt;code>clap&lt;/code> + &lt;code>bindgen&lt;/code>, etc) but you only use
+the library portion you must still download and build all the
+binary-only dependencies. Another issue is that
+&lt;code>build-dependencies&lt;/code> share the same resolution graph with
+&lt;code>dev-dependencies&lt;/code> and &lt;code>dependencies&lt;/code> which causes issues in
+settings where the target doesn&amp;rsquo;t support a build dependency even
+though only the host needs it (for building.)&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better integration with other build systems
+&lt;ul>
+&lt;li>Cargo is pretty great as a standalone build tool for Rust, but it&amp;rsquo;s
+pretty bad at integrating with anything else. At Sc we use Nix
+everywhere, and the intgration with Rust has been painful, though
+there are promising projects like crate2nix.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;p>The last big thing we&amp;rsquo;re excited about is async/await, here are some of the
+things we&amp;rsquo;re still missing from it:&lt;/p>
+&lt;ol>
+&lt;li>Streams
+&lt;ul>
+&lt;li>Ideally we&amp;rsquo;d model a lot of our workloads with streams, so we&amp;rsquo;d love to
+see them stabilized and well-supported.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Stable ecosystem
+&lt;ul>
+&lt;li>It feels like Tokio has been around since forever without reaching 1.0
+status, we&amp;rsquo;d like to see more proactiveness around stabilization;
+async-std has been a positive force in this space.&lt;/li>
+&lt;li>On a separate note, the Rust ecosystem as a whole has started abusing
+semver in weird ways, such as versioning crates to the liking of
+&lt;code>0.1.0alpha7&lt;/code> as opposed to just bumping the revision. Let&amp;rsquo;s bump
+revisions in the 0.x range quickly and aim for stabilization; having to
+tag a &lt;code>2.0&lt;/code> some day isn&amp;rsquo;t the end of the world.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Clear performance metrics
+&lt;ul>
+&lt;li>As the ecosystem becomes increasingly diverse it&amp;rsquo;ll become necessary
+for there to be a &amp;ldquo;unified measuring stick&amp;rdquo; so that performance can be
+reasonably compared.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;p>As a final note on Sc, I think it&amp;rsquo;s easy for us who are heavily invested and
+deeply embedded into Rust to miss the forest for the trees and think that the
+lack of this or that feature, or that the existence of one or another wart in
+the ecosystem is a much bigger deal than it really is. Asking my coworkers who
+learned Rust on the job and transitioned from C++ and Java the feedback is
+overwhelmingly positive, even about the &amp;lsquo;wartiest&amp;rsquo; parts of the ecosystem. I
+think Rust has achieved a lot more than we give ourselves credit for.&lt;/p>
+&lt;h2 id="bernardo--rust-in-2020">Bernardo &amp;amp; Rust in 2020&lt;/h2>
+&lt;p>While most of my desires for Rust align with Sc&amp;rsquo;s there are a few things that
+are strictly personal wishes, namely:&lt;/p>
+&lt;ol>
+&lt;li>Rust 2021
+&lt;ul>
+&lt;li>I think we should have an edition in 2021, and if the 2018 edition
+taught us anything it&amp;rsquo;s that we should take more time in the edition
+process, I think two years instead of one will be a huge win.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better embedded support
+&lt;ul>
+&lt;li>It&amp;rsquo;s a bit silly that we still need to use cargo-xbuild (fka. xargo)
+it&amp;rsquo;s about time Cargo has first-class support for these use-cases.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Stable ABI&lt;/li>
+&lt;li>Lazy normalization&lt;/li>
+&lt;li>Simple ways to unify CLI options and config
+&lt;ul>
+&lt;li>Right now it&amp;rsquo;s simple to create a CLI app with rust using
+structopt, and it&amp;rsquo;s also trivial to define and source a TOML config
+file, but combining both is not nearly as easy as it could be.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better IDE support
+&lt;ul>
+&lt;li>RLS is alright, but still has ways to go, and the 2.0 efforts are
+promising, but we have to see these things through.&lt;/li>
+&lt;li>Parsing Rust is not easy, the vim syntax highlighter struggles with
+large Rust files.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Further work on unsafe guidelines.&lt;/li>
+&lt;/ol>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>If you&amp;rsquo;re reading this after 2099, sorry for the inconsistency.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item></channel></rss>

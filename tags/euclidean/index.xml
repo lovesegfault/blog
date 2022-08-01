@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>euclidean on null pointer</title><link>/tags/euclidean/</link><description>Recent content in euclidean on null pointer</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Copyright &amp;copy; 2021 - Bernardo Meurer</copyright><lastBuildDate>Thu, 30 Aug 2018 00:00:00 +0000</lastBuildDate><atom:link href="/tags/euclidean/index.xml" rel="self" type="application/rss+xml"/><item><title>Notes on Euclidean Spaces</title><link>/posts/notes-on-euclidean-spaces/</link><pubDate>Thu, 30 Aug 2018 00:00:00 +0000</pubDate><guid>/posts/notes-on-euclidean-spaces/</guid><description>Real euclidean spaces Real euclidean spaces have definitions of inner product and norm. Examples in \(\mathbb R^n\):
+The usual inner product The unit-radius circumference when considering an unusual inner product Cauchy-Schwarz inequality Let \(V\) be a real vector space. A form or real function \[ \begin{aligned} \langle\cdot,\cdot\rangle\colon V\times V &amp;amp;\rightarrow \mathbb R \\ (x, y) &amp;amp;\mapsto \langle x,y\rangle \end{aligned}\ \] is said to be an inner product if, for all \(x, y, z \in V\) and all \(\alpha \in \mathbb R\),</description><content>&lt;h2 id="real-euclidean-spaces">Real euclidean spaces&lt;/h2>
+&lt;p>Real euclidean spaces have definitions of inner product and norm. Examples in
+\(\mathbb R^n\):&lt;/p>
+&lt;ul>
+&lt;li>The usual inner product&lt;/li>
+&lt;li>The unit-radius circumference when considering an unusual inner product&lt;/li>
+&lt;li>Cauchy-Schwarz inequality&lt;/li>
+&lt;/ul>
+&lt;p>Let \(V\) be a real vector space. A form or real function \[
+\begin{aligned} \langle\cdot,\cdot\rangle\colon V\times V &amp;amp;\rightarrow \mathbb R
+\\ (x, y) &amp;amp;\mapsto \langle x,y\rangle \end{aligned}\ \] is said to be an
+&lt;em>inner product&lt;/em> if, for all \(x, y, z \in V\) and all \(\alpha \in \mathbb
+R\),&lt;/p>
+&lt;ol>
+&lt;li>\(\langle x,y \rangle = \langle y, x \rangle\)&lt;/li>
+&lt;li>\(\langle \alpha x, y\rangle = \alpha\langle x, y\rangle\)&lt;/li>
+&lt;li>\(\langle x+y, z\rangle = \langle x, z\rangle + \langle y, z\rangle\)&lt;/li>
+&lt;li>\(\langle x, x\rangle \geq 0 \wedge (\langle x, x\rangle = 0 \implies x =
+0)\)&lt;/li>
+&lt;/ol>
+&lt;p>A real linear space \(V\) equipped with an inner product is called an (real)
+&lt;strong>Euclidean Space&lt;/strong>.&lt;/p>
+&lt;h3 id="examples">Examples&lt;/h3>
+&lt;ol>
+&lt;li>Usual inner product in \(\mathbb R^n\)
+&lt;ul>
+&lt;li>\(\mathbb R^2\) \[ \begin{aligned} \langle x, y\rangle &amp;amp;= \lVert
+x\rVert\lVert y\rVert \cos\theta \\ &amp;amp;= x_1 y_1 + x_2 y_2 \quad\text{in
+}\mathbb R^2 \end{aligned}\ \] where \(\theta\in[0, \pi]\) is the
+angle between the vectors \(x\) and \(y\). Note that the norm of the
+vector \(x\) satisfies \[ \lVert x\rVert^2 = \langle x, x\rangle \]&lt;/li>
+&lt;li>\(\mathbb R^n\) \[ \begin{aligned} \langle x, y\rangle &amp;amp;= x_1 y_1 + x_2
+y_2 + \cdots + x_n y_n \\ \langle x, y\rangle &amp;amp;= y^Tx = x^Ty
+\end{aligned}\ \]&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Another inner product in \(\mathbb R^2\)
+&lt;ul>
+&lt;li>&lt;strong>Exercise.&lt;/strong> Determine the circumference \(C\) of radius \(1\) and
+centered at \((0, 0)\) \[ C = {(x_1, x_2)\in\mathbb R^2\colon
+\lVert(x_1, x_2)\rVert = 1} \] considering
+&lt;ul>
+&lt;li>The usual inner product&lt;/li>
+&lt;li>The inner product \[\langle (x_1, x_2), (y_1, y_2) \rangle =
+\frac{1}{9} x_1y_1 + \frac{1}{4} x_2y_2 \]&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="norm-and-the-triangle-inequality">Norm and the triangle inequality&lt;/h3>
+&lt;p>For all vectors \(x\in V\), we define the &lt;strong>norm&lt;/strong> of \(x\) as \[ \lVert
+x\rVert = \sqrt{\langle x, x\rangle} \] such that, for all \(x\in V\) and all
+\(\alpha\in\mathbb R\) we have&lt;/p>
+&lt;ol>
+&lt;li>\(\lvert x\rVert\geq 0\qquad \text{and}\qquad \lVert x\rVert \iff x = 0\)&lt;/li>
+&lt;li>\(\lVert \alpha x\rVert = \lvert\alpha\rvert\lVert x\rVert\)&lt;/li>
+&lt;li>\(\lVert x + y\rVert\leq\lVert x\rVert + \lVert y\rVert \qquad\qquad
+\text{(triangle inequality)} \)&lt;/li>
+&lt;/ol>
+&lt;p>A function \(V \to \mathbb R\) that satisfies the above conditions is said to
+be a &lt;strong>norm&lt;/strong> defined in \(V\).&lt;/p>
+&lt;p>The proof that the function we defined earlier and called &amp;ldquo;inner product&amp;rdquo;
+satisfies the triangle inequality will be done at a later point, since it relies
+on the Cauchy-Schwarz inequality.&lt;/p>
+&lt;h3 id="cauchy-schwarz-inequality">Cauchy-Schwarz Inequality&lt;/h3>
+&lt;p>&lt;strong>Theorem 1.&lt;/strong> &lt;em>Let \(V\) be an euclidean space. For all \(x, y \in V\) we
+have&lt;/em> \[ \lvert\langle x, y\rangle\rvert \leq \lVert x\rVert \lVert y\rVert \]
+Note that in \(\mathbb R^2\) and \(\mathbb R^3\) we have: \[ \langle x,
+y\rangle = \lVert x\rVert\lVert y\rVert\cos\theta \] where \[ \lvert\langle x,
+y\rangle\rvert = \lVert x\rVert\lVert y\rVert\lvert \cos\theta\rvert \leq \lVert
+x\rVert \lVert y\rVert \]&lt;/p>
+&lt;h3 id="distance">Distance&lt;/h3>
+&lt;p>For all \(x, y \in V\), we define the &lt;strong>distance from \(x\) to \(y\)&lt;/strong> as
+\[ d(x, y) = \lVert x - y\rVert \]&lt;/p>
+&lt;h3 id="parallelogram-law">Parallelogram Law&lt;/h3>
+&lt;p>For all vectors \(x, y \in V\), we have \[ \lVert x + y\rVert^2 + \lVert x -
+y\rVert^2 = 2(\lVert x\rVert^2 + \lVert y\rVert^2) \]&lt;/p>
+&lt;h3 id="example">Example&lt;/h3>
+&lt;p>An inner product in \(\mathbb M_{2\times 2}(\mathbb R)\).&lt;/p>
+&lt;p>For all matrices \(A, B \in \mathbb M_{2\times 2}(\mathbb R)\) we define \[
+\begin{aligned} \langle A, B\rangle &amp;amp;= tr(B^T A) \\ &amp;amp;= \sum^2_{i,
+j=1}{a_{ij}b_{ij}} \end{aligned}\] with \(A = [a_{ij}]\) and \(B =
+[b_{ij}]\)&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. Note that, letting \(B_c\) be the canonical basis of
+\(\mathbb M_{2\times 2}(\mathbb R)\)&lt;/p>
+&lt;p>\[\langle A, B \rangle_{\mathbb M_{2\times 2}(\mathbb R)} =
+\langle (A)_{B_c}, (B)_{B_c}\rangle_{\mathbb R^4}\]&lt;/p>
+&lt;p>Meaning that the inner product defined above respects the isomorphism \( A
+\mapsto (A)_{B_c}\) between \( \mathbb{M}_{2 \times 2}(\mathbb R) \) and
+\(\mathbb R^4\)&lt;/p>
+&lt;h3 id="proof-of-the-triangle-inequality">Proof of the triangle inequality&lt;/h3>
+&lt;p>\[ \begin{aligned} \lVert x + y\rVert^2 &amp;amp;= \langle x+y, x+y\rangle \\ &amp;amp;=
+\langle x, x\rangle + 2\langle x, y\rangle + \langle y, y\rangle \\ &amp;amp;= \lVert
+x\rVert^2 + 2\langle x, y\rangle + \lVert y\rVert^2 \qquad (\text{Inner product
+in terms of the norm})\\ &amp;amp;\leq \lVert x\rVert^2 + 2\lvert\langle x,
+y\rangle\rvert + \lVert y\rVert^2 \\ &amp;amp;\leq \lVert x\rVert^2 + 2\lVert
+x\rVert\lVert y\rVert + \lVert y\rVert^2 \qquad (\text{Cauchy-Schwartz
+inequality}) \\ &amp;amp;=(\lVert x\rVert + \lVert y\rVert)^2 \end{aligned}\]&lt;/p>
+&lt;p>Where \[ \lVert x + y\rVert \leq \lVert x\rVert + \lVert y\rVert
+\qquad_\blacksquare\]&lt;/p>
+&lt;hr>
+&lt;h2 id="gram-matrix">Gram Matrix&lt;/h2>
+&lt;p>Let \(V\) be a real euclidean space, and \(B = (b_1, b_2, \ldots, b_n)\) a
+basis of \(V\). With \(x, y \in V\) such that \(x_B = (\alpha_1, \alpha_2,
+\ldots, \alpha_n)\) and \(y_B = \beta_1, \beta_2, \ldots, \beta_n\), we have
+\[\begin{aligned} \langle x, y\rangle &amp;amp;=
+\langle\alpha_1 b_1 + \alpha_2 b_2 + \cdots + \alpha_n b_n,
+\beta_1 b_1 + \beta_2 b_2 + \cdots + \beta_n b_n\rangle
+\\ &amp;amp;= \begin{bmatrix}\beta_1 &amp;amp; \beta_2 &amp;amp; \ldots &amp;amp; \beta_n
+\end{bmatrix} \underbrace{\begin{bmatrix}\langle b_1, b_1\rangle &amp;amp;
+\langle b_2, b_1\rangle &amp;amp;\ldots &amp;amp; \langle b_n, b_1\rangle
+\\ \langle b_1, b_2\rangle &amp;amp; \langle b_2, b_2\rangle &amp;amp;\ldots &amp;amp;
+\langle b_n, b_2\rangle
+\\ \vdots
+\\ \langle b_1, b_n\rangle &amp;amp; \langle b_2, b_n\rangle &amp;amp;\ldots &amp;amp;
+\langle b_n, b_n\rangle
+\\ \end{bmatrix}}_G \begin{bmatrix}\alpha_1
+\\ \alpha_2
+\\ \vdots
+\\ \alpha_n\end{bmatrix} \end{aligned}\ \]&lt;/p>
+&lt;p>Therefore, given an inner product in \(V\) and a basis \(B\), it is possible
+to determine a matrix \(G\) such that \[\langle x,y\rangle = y_B^T Gx_B\]&lt;/p>
+&lt;p>This matrix \(G = [g_{ij}]\), where for all \(i, j = 1, \ldots, n\) we have
+\(g_{ij} = \langle b_j, b_i \rangle\) is called the &lt;strong>Gram matrix&lt;/strong> of the set
+of vectors \(\{b_1, b_2, \ldots, b_n\}\).&lt;/p>
+&lt;p>Note that:&lt;/p>
+&lt;ul>
+&lt;li>\(G\) is a symmetric (\(G = G^T\)) \(n\times n\) real matrix.&lt;/li>
+&lt;li>For all non-null vectors \(x\in V\) \[x_B^T Gx_b &amp;gt; 0\]&lt;/li>
+&lt;/ul>
+&lt;p>A square real matrix \(A\) of order \(k\) is said to be &lt;strong>positive
+definite&lt;/strong> if, for all non-null vectors \(x\in\mathbb R^n\), \(x^T Ax &amp;gt;
+0\)&lt;/p>
+&lt;p>&lt;strong>Proposition 1.&lt;/strong> &lt;em>A symmetric real matrix is positive definite iff all your
+proper values are positive.&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Theorem 2.&lt;/strong> &lt;em>Let \(A\) be a symmetric real matrix of order \(n\). The
+following statements are equivalent.&lt;/em>&lt;/p>
+&lt;ol>
+&lt;li>&lt;em>The expression \[\langle x, y\rangle = y^T Ax\] defines an inner product
+in \(\mathbb R^n\)&lt;/em>&lt;/li>
+&lt;li>&lt;em>\(A\) is positive definite.&lt;/em>&lt;/li>
+&lt;/ol>
+&lt;h3 id="exercise">Exercise&lt;/h3>
+&lt;p>Consider that \(\mathbb R^n\) is equipped with the canonical basis
+\(\mathcal{e}_n\). What is the Gram matrix \(G\) that corresponds to the usual
+inner product in \(\mathbb R^n\)? Also, which Gram matrix corresponds to the
+inner product in item (2) of the previous exercise?&lt;/p>
+&lt;hr>
+&lt;h2 id="complex-euclidean-spaces-and-orthogonal-vectors">Complex euclidean spaces and orthogonal vectors&lt;/h2>
+&lt;p>Example of complex euclidean space: usual inner product in \(\mathbb C^n\).&lt;/p>
+&lt;p>Let \(V\) be a complex vector space. A complex function or form
+\[ \begin{aligned}\langle\cdot,\cdot\rangle\colon V \times V &amp;amp;\to \mathbb C
+\\ (x, y) &amp;amp;\mapsto \langle x, y\rangle\end{aligned} \]
+is said to be an &lt;strong>inner product&lt;/strong> if, for all \(x, y, z \in V\) and all
+\(\alpha \in \mathbb C\)&lt;/p>
+&lt;ol>
+&lt;li>\(\langle x, y\rangle = \overline{\langle y, x\rangle}\)&lt;/li>
+&lt;li>\(\langle \alpha x, y\rangle = \alpha\langle x,y\rangle\)&lt;/li>
+&lt;li>\(\langle x + y, z\rangle = \langle x, z\rangle + \langle y, z\rangle\)&lt;/li>
+&lt;li>\(\langle x, x\rangle \geq 0 \wedge (\langle x, x\rangle = 0 \implies x =
+0)\)&lt;/li>
+&lt;/ol>
+&lt;p>A complex vector space \(V\) equipped with an inner product is called a (complex)
+&lt;strong>euclidean space&lt;/strong>.&lt;/p>
+&lt;p>Much like with real euclidean spaces, we define the &lt;strong>norm&lt;/strong> of a vector as
+\[\lVert x\rVert = \sqrt{\langle x, x\rangle}\] and the &lt;strong>distance from
+\(x\) to \(y\) as \[d(x, y) = \lVert x - y\rVert\]&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>Example.&lt;/strong> Usual inner product in \(\mathbb C^n\). Let \(x = (x_1, x_2,
+\ldots, x_n)\) and \(y_1, y_2, \ldots, y_n\) be vectors in \(\mathbb C^n\),
+we define \[\langle x, y\rangle = x_1\overline{y}_1 + x_2\overline{y}_2 +
+\cdots + x_n\overline{y}_n\] and therefore \[\langle x, y\rangle =
+\overline{y}^T x\] Regarding the norm we have \[\lvert x\rVert^2 =
+\langle x, x\rangle = x_1\overline{x}_1 + x_2\overline{x}_2 + \cdots +
+x_n\overline{x}_n\] or \[\lVert x\rVert = \sqrt{\lVert x, x\rVert} =
+\sqrt{\lvert x_1\rvert^2 + \lvert x_2\rvert^2 + \cdots + \lvert x_n\rvert^2}\]&lt;/p>
+&lt;p>All the remaining results that were presented regarding real euclidean spaces
+are also true for complex euclidean spaces (Cauchy-Schwartz, triangle
+inequality, parallelogram law, …).&lt;/p>
+&lt;h3 id="complex-gram-matrix">Complex Gram Matrix&lt;/h3>
+&lt;p>Let \(V\) be a complex euclidean space, and let \(B = (b_1, b_2, \ldots,
+b_n)\) be a basis of \(V\). With \(x, y \in V\) such that \(x_B=(\alpha_1,
+\alpha_2, \dots, \alpha_n)\) and \(y_B=(\beta_1, \beta_2, \dots, \beta_n)\),
+we have
+\[ \begin{aligned} \langle x, y\rangle &amp;amp;= \langle\alpha_1 b_1 +
+\alpha_2 b_2 + \cdots + \alpha_n b_n, \beta_1 b_1 + \beta_2 b_2 +
+\cdots + \beta_n b_n\rangle
+\\ &amp;amp;= \begin{bmatrix}\overline{\beta}_1 &amp;amp; \overline{\beta}_2 &amp;amp; \ldots &amp;amp;
+\overline{\beta}_n\end{bmatrix} \underbrace{\begin{bmatrix}\langle b_1,
+b_1\rangle &amp;amp; \langle b_2, b_1\rangle &amp;amp;\ldots &amp;amp; \langle b_n, b_1\rangle
+\\ \langle b_1, b_2\rangle &amp;amp; \langle b_2, b_2\rangle &amp;amp;\ldots &amp;amp; \langle
+b_n, b_2\rangle
+\\ \vdots
+\\ \langle b_1, b_n\rangle &amp;amp; \langle b_2, b_n\rangle &amp;amp;\ldots &amp;amp;
+\langle b_n, b_n\rangle
+\\ \end{bmatrix}}_G \begin{bmatrix}\alpha_1
+\\ \alpha_2
+\\ \vdots
+\\ \alpha_n\end{bmatrix} \end{aligned}\ \]&lt;/p>
+&lt;p>Therefore, given an inner product in \(V\) and a basis \(B\), it is possible
+to determine a matrix \(G\) such that
+\[\langle x,y\rangle = \overline{y}_B^T Gx_B\]&lt;/p>
+&lt;p>This matrix \(G = [g_{ij}]\), where for all \(i, j = 1, \ldots, n\) we have
+\(g_{ij} = \langle b_j, b_i \rangle\) is called the &lt;strong>Gram matrix&lt;/strong> of the
+set of vectors \(\{b_1, b_2, \ldots, b_n\}\).&lt;/p>
+&lt;p>Note that:&lt;/p>
+&lt;ul>
+&lt;li>\(G\) is an \(n\times n\) complex matrix such that (\(G =
+\overline{G}^T\)).&lt;/li>
+&lt;li>For all non-null vectors \(x\in V\) \[\overline{x}_B^T Gx_b &amp;gt; 0\]&lt;/li>
+&lt;/ul>
+&lt;p>A complex square matrix \(A\) of order \(k\) is said to be &lt;strong>hermitian&lt;/strong> if
+\(A = \overline{A}^T\). Note that the spectrum \(\sigma(A)\) of a hermitian
+is contained in \(\mathbb R\).&lt;/p>
+&lt;p>A hermitian matrix \(A\) of order \(k\) is said to be &lt;strong>positive definite&lt;/strong>
+if, for all non-null vectors \(x\in\mathbb C^n\), \(\overline{x}^T Ax &amp;gt; 0\).&lt;/p>
+&lt;p>&lt;strong>Proposition 2.&lt;/strong> &lt;em>A hermitian matrix is positive definite iff all of it&amp;rsquo;s
+proper values are positive.&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Theorem 3.&lt;/strong> &lt;em>Let \(A\) be a hermitian matrix of order \(n\). The
+following statements are equivalent.&lt;/em>&lt;/p>
+&lt;ol>
+&lt;li>&lt;em>The expression \[\langle x, y\rangle = \overline{y}^T Ax\] defines an
+inner product in \(\mathbb C^n\)&lt;/em>&lt;/li>
+&lt;li>&lt;em>A is positive definite.&lt;/em>&lt;/li>
+&lt;/ol>
+&lt;h3 id="angle-between-two-vectors">Angle between two vectors&lt;/h3>
+&lt;p>Let \(x\) and \(y\) be non-null vectors belonging to some &lt;strong>real&lt;/strong> euclidean
+space \(V\). We define the &lt;em>angle&lt;/em> between the vectors \(x\) and \(y\) as
+being the angle \(\theta\), with \(0\leq\theta\leq\pi\), such that
+\[\cos\theta = \frac{\langle x, y\rangle}{\lVert x\rVert \lVert y\rVert}\]
+With Cauchy-Schwartz we can see that \(\lvert\cos\theta\rvert\leq 1\).&lt;/p>
+&lt;p>Let \(x\) and \(y\) be (possibly null) vectors belonging to some &lt;strong>real or
+complex&lt;/strong> euclidean space \(V\). The vectors \(x\) and \(y\) are said to
+be &lt;strong>orthogonal&lt;/strong>, written \(x \perp y\), if
+\[\langle x, y\rangle = 0\]&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> What are the orthogonal vectors to \(v = (1, 1, 0)\) considering
+\(\mathbb R^3\) with the usual inner product?&lt;/p>
+&lt;p>&lt;strong>Theorem 4. (Pythagoras Theorem)&lt;/strong> Let \(x\) and \(y\) be orthogonal
+vectors of some euclidean space \(V\). Then
+\[\lVert x + y\rVert^2 = \lVert x\rVert^2 + \lVert y \rVert^2\]&lt;/p>
+&lt;p>&lt;em>Proof.&lt;/em> Exercise&lt;/p>
+&lt;hr>
+&lt;h2 id="orthogonal-complement">Orthogonal complement&lt;/h2>
+&lt;p>Let \(X\) be a subspace of an euclidean space \(V\). We say that \(u\) is
+&lt;strong>orthogonal to&lt;/strong> \(X\) if \(u\) is orthogonal to all elements of \(X\).
+We write this \(u \perp W\).&lt;/p>
+&lt;p>For example, \((1, 1, 0)\) is orthogonal to the plane \(S\) of the previous exercise.&lt;/p>
+&lt;p>Let \(W\) be a subspace of \(V\). The &lt;strong>orthogonal complement&lt;/strong> of \(W\),
+written \(W^\perp\), is defined as
+\[W^\perp = \{u\in V\colon u\perp W\}\]&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Determine the orthogonal complement of the line generated by the
+vector \((1, 1, 0)\).&lt;/p>
+&lt;p>&lt;strong>Proposition 3.&lt;/strong> \(W^\perp\) is a subspace of V.&lt;/p>
+&lt;p>&lt;strong>Proposition 4.&lt;/strong> &lt;em>Let \(W\) be a linear subspace of an euclidean space
+\(V\) and let \(\{u_1, u_2, \ldots, u_k\}\) be a generator set of
+\(W\). Then, \(e\in V\) is orthogonal to \(W\) iff it is orthogonal to
+\(\{u_1, u_2, \ldots, u_k\}\).&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Corollary 1.&lt;/strong> &lt;em>In the conditions of the previous proposition, \(u\in V\) is
+orthogonal to \(W\) iff it is orthogonal to a basis of \(W\).&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Determine the orthogonal complement of the plane \(W\in\mathbb
+R^3\) with the cartesian equation \(x=y\).&lt;/p>
+&lt;p>&lt;strong>Solution.&lt;/strong> \(W^\perp\) is the line described by the equations
+\[\begin{cases}x = -y \\ z = 0\end{cases}\qquad\qquad\textbf{cartesian equations}\]
+or
+\[(x, y, z) = t(-1, 1, 0)\qquad(t\in\mathbb R)\qquad\qquad\textbf{vector equation}\]
+or
+\[\begin{cases}x = -t \\ y = t \\ z = 0\end{cases}\qquad(t\in\mathbb
+R)\qquad\qquad\textbf{parametric equations}\]&lt;/p>
+&lt;p>&lt;strong>Proposition 5.&lt;/strong> &lt;em>Let \(W\) be a subspace of an euclidean space \(V\).&lt;/em>&lt;/p>
+&lt;ol>
+&lt;li>\(W\cap W^\perp = 0\)&lt;/li>
+&lt;li>\(W^{\perp\perp} = W\)&lt;/li>
+&lt;/ol>
+&lt;p>A subset \(X\) of an euclidean space \(V\) is said to be an &lt;strong>orthogonal
+set&lt;/strong> if, for all \(x, y\in X\) with \(x \neq y\) we have \(x \perp y\).&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> Let \(X\) be an orthogonal set not containing the null vector.&lt;/p>
+&lt;ul>
+&lt;li>If \(X\subseteq \mathbb R^2\), how many vectors does \(X\) have at most?&lt;/li>
+&lt;li>If \(X\subseteq \mathbb R^3\), how many vectors does \(X\) have at most?&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>Proposition 6.&lt;/strong> &lt;em>Let \(V\) be an euclidean space. Let \(X = \{v_1, v_2,
+\ldots, v_k\}\) be an orthogonal set such that \(v_j\neq 0\) for all
+\(j\in[1,\ldots,k]\). Then \(X\) is linearly independent.&lt;/em>&lt;/p>
+&lt;p>&lt;em>Proof.&lt;/em>
+\[\langle\alpha_1 v_1 + \alpha_2 v_2 + \cdots + \alpha_k v_k, v_j\rangle
+= \alpha_j^2 \lVert v_j \rVert^2 = 0 \implies \alpha_j = 0\]&lt;/p>
+&lt;p>&lt;strong>Corollary 2.&lt;/strong> &lt;em>Let \(V\) be an euclidean space of dimension \(n\), and
+let \(X = \{v_1, v_2, \ldots, v_k\}\) be an orthogonal set such that
+\(v_j \neq 0\) for all \(j\in[1, k]\). Then \(k \leq n\).&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Corollary 3.&lt;/strong> &lt;em>Let \(V\) be an euclidean space of dimension \(n\), and
+let \(X = \{v_1, v_2, \ldots, v_n\}\) be an orthogonal set such that
+\(v_j \neq 0\) for all \(j\in[1, n]\). Then \(X\) is a basis of \(V\).&lt;/em>&lt;/p>
+&lt;h3 id="orthogonal-complements-of-the-subspaces-of-a-real-matrix">Orthogonal complements of the subspaces of a real matrix&lt;/h3>
+&lt;p>&lt;strong>Proposition 7.&lt;/strong> &lt;em>Let \(A\) be a \(n \times k\) matrix with real elements.
+Then, considering in \(\mathbb R^n\) and \(\mathbb R^k\) the usual inner
+products we have:&lt;/em>&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>&lt;/p>
+&lt;ol>
+&lt;li>\(L(A)^\perp = N(A)\)&lt;/li>
+&lt;li>\(N(A)^\perp = L(A)\)&lt;/li>
+&lt;li>\(C(A)^\perp = N(A^T)\)&lt;/li>
+&lt;li>\(N( A^T )^\perp = C(A)\)&lt;/li>
+&lt;/ol>
+&lt;hr>
+&lt;h2 id="orthogonal-projections">Orthogonal Projections&lt;/h2>
+&lt;h3 id="orthogonal-bases-and-orthonormal-bases">Orthogonal bases and orthonormal bases&lt;/h3>
+&lt;p>A basis \(\mathcal{B}\) of an euclidean space \(V\) is said to be:&lt;/p>
+&lt;ul>
+&lt;li>An &lt;strong>orthogonal basis&lt;/strong> if it is an orthogonal set;&lt;/li>
+&lt;li>An &lt;strong>orthonormal basis&lt;/strong> if it is an orthogonal set, and all it&amp;rsquo;s elements
+have unitary norm.&lt;/li>
+&lt;/ul>
+&lt;p>Let \(x\in V\) some vector, and let
+\[(x)_\mathcal{B} = (\alpha_1, \alpha_2, \ldots, \alpha_n)\]
+be the coordinate vector of \(x\) in the basis \(\mathcal B\).&lt;/p>
+&lt;h3 id="coordinate-vector-in-an-orthogonal-basis-mathcal-b">Coordinate vector in an orthogonal basis \(\mathcal B\)&lt;/h3>
+&lt;p>\[\alpha_j = \frac{\langle x, b_j\rangle}{\lVert b_j\rVert^2}\]&lt;/p>
+&lt;h3 id="coordinate-vector-in-an-orthonormal-basis-mathcal-b">Coordinate vector in an orthonormal basis \(\mathcal B\)&lt;/h3>
+&lt;p>\[ \alpha_j = \langle x, b_j\rangle\]&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> Will there always be an orthogonal and/or an orthonormal basis?&lt;/p>
+&lt;p>&lt;strong>Answer.&lt;/strong> Yes -&amp;gt; Orthogonalization through Gram-Schmidt method.&lt;/p>
+&lt;h3 id="orthogonal-projections-1">Orthogonal projections&lt;/h3>
+&lt;p>We define the &lt;strong>orthogonal projection of \(x\) over \(b_j\)&lt;/strong> as the vector
+\[\begin{aligned}\text{proj}_{b_j} x &amp;amp;= \frac{\langle x, b_j \rangle}{\lVert
+b_j \rVert^2}b_j \\ &amp;amp;= \alpha_j b_j \end{aligned}\]&lt;/p>
+&lt;p>In a more general sense, given two vectors \(u\) and \(v\) from an euclidean
+space \(V\), with \(v\neq 0\) the &lt;strong>orthogonal projection of \(u\) over
+\(v\)&lt;/strong> is the vector
+\[\text{proj}_v u = \frac{\langle u, v \rangle}{\lVert v \rVert}^2 v\]&lt;/p>
+&lt;p>&lt;strong>Example.&lt;/strong> Considering that \(\mathbb R^2\) is equipped with the canonical
+basis \(\mathcal{E}_2 = (e_1, e_2)\), any vector \(u\in\mathbb R^2\) can
+be expressed as a sum
+\[\begin{aligned}u &amp;amp;= \text{proj}_{ e_1} u + \text{proj}_{ e_2} u \\ &amp;amp;=
+u_W + u_{W^\perp}\end{aligned}\]
+Where \(W\) is the \(x\) axis.&lt;/p>
+&lt;p>&lt;strong>Theorem 5.&lt;/strong> &lt;em>Let \(W\) be a linear subspace of some euclidean space
+\(V\). All vectors \(u\) of \(V\) can be decomposed &lt;strong>uniquely&lt;/strong> as&lt;/em>
+\[u = u_W + u_{W^\perp}\]
+&lt;em>where \(u\in W\) and \(u_{W^\perp}\in E^\perp\).&lt;/em>&lt;/p>
+&lt;p>In these conditions, we say that \(V\) is the &lt;strong>direct sum&lt;/strong> of \(W\) with
+\(W^\perp\) and write
+\[V = W \oplus W^\perp\]
+Which, by definition, is to say:&lt;/p>
+&lt;ul>
+&lt;li>\(V = W + W^\perp\)&lt;/li>
+&lt;li>\(W \cap W^\perp = \{0\}\)&lt;/li>
+&lt;/ul>
+&lt;p>We define the &lt;strong>orthogonal projection of \(u\) over \(W\)&lt;/strong> as being the
+vector \(u_W\).&lt;/p>
+&lt;p>If we consider that \(W\) is equipped with the ordered &lt;strong>orthogonal&lt;/strong> basis
+\(\mathcal{B} = (b_1, b_2, \ldots, b_k)\), we have
+\[\text{proj}_W u = \text{proj}_{b_1} u + \text{proj}_{b_2} u + \cdots +
+\text{proj}_{b_k} u\]&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> How can we compute the vector \(u_{W^\perp}\) or, in other
+words, \(\text{proj}_{W^\perp} u\)?&lt;/p>
+&lt;p>&lt;strong>Answer.&lt;/strong>
+\[\text{proj}_{W^\perp} u = u - u_W\]
+or, if we consider that \(W^\perp\) is equipped with the ordered orthogonal
+basis \(\mathcal{B}&amp;rsquo; = (b_1&amp;rsquo;, b_2&amp;rsquo;, \ldots, b_l&amp;rsquo;)\), we have
+\[\text{proj}_{W^\perp} u = \text{proj}_{b&amp;rsquo;_1} u + \text{proj}_{b&amp;rsquo;_2} u +
+\cdots + \text{proj}_{b&amp;rsquo;_l} u\]&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> What is the number \(l\) of vectors in the basis of \(\mathcal{B}&amp;rsquo;\)?&lt;/p>
+&lt;p>&lt;strong>Answer.&lt;/strong> Assuming that \(V\) has dimension \(n\), we have \(l = n - k\)
+since&lt;/p>
+&lt;ol>
+&lt;li>\(\mathcal{B} \cup \mathcal{B}&amp;rsquo;\) is linearly independent.&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>&lt;/li>
+&lt;li>Theorem 5 guarantees that \(\mathcal{B}\cup\mathcal{B}&amp;rsquo;\) generates \(V\).&lt;/li>
+&lt;/ol>
+&lt;p>Therefore \(\mathcal{B} \cup \mathcal{B}&amp;rsquo;\) is a basis of \(V\) and the
+solution becomes trivial.&lt;/p>
+&lt;hr>
+&lt;h2 id="distance-from-a-point-to-a-subspace--k-plane-cartesian-equations">Distance from a point to a subspace &amp;amp; \(k\)-plane cartesian equations&lt;/h2>
+&lt;h3 id="optimal-approximation">Optimal approximation&lt;/h3>
+&lt;p>Given \(u\in V\) and some subspace \(W\) of \(V\) we hope to answer the
+following question:&lt;/p>
+&lt;blockquote>
+&lt;p>Which element \(x\) of \(W\) is closest to \(u\)?&lt;/p>
+&lt;/blockquote>
+&lt;p>\[\begin{aligned}d(u, x)^2 = \lVert u - x\rVert^2 &amp;amp;= \lVert(u - \text{proj}_W
+u) + (\text{proj}_W u - x)\rVert^2 \\ &amp;amp;= \lVert u - \text{proj}_W u\rVert^2 +
+\lVert \text{proj}_W u - x\rVert^2 \qquad \text{(Pythagoras)}\\ &amp;amp;= \lVert
+\text{proj}_{W^\perp} u\rVert^2 + \lVert\text{proj}_W u -
+x\rVert^2\end{aligned}\]&lt;/p>
+&lt;p>Whereby we conclude that&lt;/p>
+&lt;blockquote>
+&lt;p>The optimal approximation coincides with \(\text{proj}_W u\) &lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>&lt;/p>
+&lt;/blockquote>
+&lt;p>With that, we define the &lt;strong>distance from \(u\) to a subspace \(W\)&lt;/strong> as&lt;/p>
+&lt;p>\[d(u, W) = \lVert proj_{W^\perp} u \rVert\]&lt;/p>
+&lt;h3 id="k-plane-cartesian-equations">\(k\)-plane cartesian equations&lt;/h3>
+&lt;p>A &lt;strong>\(k\)-plane&lt;/strong> of \(\mathbb R^n\) is any subset \(S\) of \(\mathbb
+R^n\) which can be expressed as&lt;/p>
+&lt;p>\[S = W + p\]&lt;/p>
+&lt;p>Where \(W\) is a subspace of \(\mathbb R^n\) with dimension \(k\) and
+\(p\) is an element of \(\mathbb R^n\). Depending on the dimension of
+\(W\), we have the following nomenclature:&lt;/p>
+&lt;ul>
+&lt;li>If \(k = 0\), \(S\) is said to be a &lt;strong>point&lt;/strong>.&lt;/li>
+&lt;li>If \(k = 1\), \(S\) is said to be a &lt;strong>line&lt;/strong>.&lt;/li>
+&lt;li>If \(k = 2\), \(S\) is said to be a &lt;strong>plane&lt;/strong>.&lt;/li>
+&lt;li>If \(k = n - 1\), \(S\) is said to be a &lt;strong>hyperplane&lt;/strong>.&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup>&lt;/li>
+&lt;/ul>
+&lt;p>Let \(x = (x_1, x_2, \ldots, x_n)\) be an elements of \(S\), there exists
+\(y\) in \(W\) such that&lt;/p>
+&lt;p>\[x = y + p\]&lt;/p>
+&lt;p>Or equivalently&lt;/p>
+&lt;p>\[y = x - p\]&lt;/p>
+&lt;p>The last equation show that, using vector, cartesian, or parametric equations of
+\(W\) we can easily obtain (substituting \(y\) for \(x-p\)) vector,
+cartesian, or parametric equations of \(S\), respectively.&lt;/p>
+&lt;p>Analogously, using the subspace \(W^\perp\) we can also obtain equations of
+\(S\). If \(B_{W^\perp} = (v_1, v_2, \ldots, v_{n-k})\) is a basis for
+the orthogonal complement of \(W\), with \(\text{dim} W = k\), we have
+\(x - p \in W\) or, equivalently&lt;/p>
+&lt;p>\[\underbrace{\begin{bmatrix} v^T_1 \\ v^T_2 \\ \vdots
+\\ v^T_{n-k} \end{bmatrix}}_{(n-k)\times n}
+\underbrace{\begin{bmatrix} x_1 - p_1
+\\ x_2 - p_2
+\\ \vdots
+\\ x_n - p_n \end{bmatrix}}_{n\times 1} = \underbrace{\begin{bmatrix} 0
+\\ 0
+\\ \vdots
+\\ 0
+\end{bmatrix}}_{(n-k)\times 1}\]&lt;/p>
+&lt;p>Defining the matrix \(A\) as&lt;/p>
+&lt;p>\[A = \begin{bmatrix}v^T_1 \\ v^T_2 \\ \vdots \\ v^T_{n-k} \end{bmatrix}\]&lt;/p>
+&lt;p>We obtain the homogeneous linear equation system \(A(x -p) = 0\).
+Consequently, from a vector equation of \(N(A)\), or cartesian equations of
+\(N(A)\), or parametric equations of \(N(A)\), we can obtain the
+corresponding equations of \(S\).&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Determine a vector equation, the cartesian equations, and the
+parametric equations of the plane passing the point \(p = (1, 2, 0)\) which is
+perpendicular to the line passing this same point with direction \(n=(5, 1, -2)\)&lt;/p>
+&lt;h3 id="distance-from-a-point-to-a-k-plane">Distance from a point to a \(k\)-plane&lt;/h3>
+&lt;p>Let \(S=W+p\) and consider a point \(q\in\mathbb R^n\). Given \(x\) in
+\(S\),&lt;/p>
+&lt;p>\[\begin{aligned}d(q, x) &amp;amp;= \lVert q - x \rVert \\ &amp;amp;= \lVert (q - p) + (p -
+x) \\ &amp;amp;= \lVert (q - p) - y \rVert \\ &amp;amp;= d(q-p, y) \\ \end{aligned}\]&lt;/p>
+&lt;p>The minimal value for this distance can be obtained for \(y =
+\text{proj}_{W}(q - p)\), as previously described. We then define the
+&lt;strong>distance from point \(q\) to the plane \(S\)&lt;/strong> as&lt;/p>
+&lt;p>\[\begin{aligned}d(q, S) &amp;amp;= d(q - p, W)
+\\ &amp;amp;= \lVert \text{proj}_{W^\perp}(q - p )\rVert\end{aligned}\]&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Compute the distance from \((3, 2, -1)\) to the plane \(S\)
+from the previous exercise.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>Note that \(tr(B^T A) = tr(A^T B)\), which allows us to define
+\[\langle A, B\rangle = tr(A^T B) \]&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>I don&amp;rsquo;t know whether these function names are right in English. IIRC, from
+my Portuguese notes, L(A) is the space of the lines of a matrix, C(A) is the
+space of the columns, and N(A) is the kernel.&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>Because it is orthogonal.&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4">
+&lt;p>The closest point to \(u\) in \(W\) is \(\text{proj}_W u\).&amp;#160;&lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5">
+&lt;p>If \(k = n\), \(S = \mathbb R^n\).&amp;#160;&lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item></channel></rss>

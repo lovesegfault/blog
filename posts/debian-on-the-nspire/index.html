@@ -1,0 +1,70 @@
+<!doctype html><html lang=en><head><title>Running Debian on the TI Nspire CX Calculator :: null pointer</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="I&amp;rsquo;ve been taking a look at running Linux on ARM microprocessors, cross-compiling the Kernel from an x64 architecture and kernel tinkerings of the kind. After a bit of research I came across the information that my calculator, a Texas Instruments Nspire CX CAS, happens to use an ARM processor. With a clock of 150MHz on it&amp;rsquo;s CPU, 64MB of RAM and merely 100MB of flash memory I wasn&amp;rsquo;t sure Linux would run on this, but it turns out it&amp;rsquo;s possible ."><meta name=keywords content><meta name=robots content="noodp"><link rel=canonical href=/posts/debian-on-the-nspire/><link rel=stylesheet href=/assets/style.css><link rel=stylesheet href=/assets/green.css><link rel=apple-touch-icon href=/img/apple-touch-icon-192x192.png><link rel="shortcut icon" href=/images/favicon.png><meta name=twitter:card content="summary"><meta name=twitter:creator content><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="og:title" content="Running Debian on the TI Nspire CX Calculator"><meta property="og:description" content="I&amp;rsquo;ve been taking a look at running Linux on ARM microprocessors, cross-compiling the Kernel from an x64 architecture and kernel tinkerings of the kind. After a bit of research I came across the information that my calculator, a Texas Instruments Nspire CX CAS, happens to use an ARM processor. With a clock of 150MHz on it&amp;rsquo;s CPU, 64MB of RAM and merely 100MB of flash memory I wasn&amp;rsquo;t sure Linux would run on this, but it turns out it&amp;rsquo;s possible ."><meta property="og:url" content="/posts/debian-on-the-nspire/"><meta property="og:site_name" content="null pointer"><meta property="og:image" content="/images/favicon.png"><meta property="og:image:width" content="2048"><meta property="og:image:height" content="1024"><meta property="article:section" content="tutorial"><meta property="article:published_time" content="2016-05-30 00:00:00 +0000 UTC"></head><body class=green><div class="container center headings--one-size"><header class=header><div class=header__inner><div class=header__logo><a href=/><div class=logo>null pointer</div></a></div><div class=menu-trigger>menu</div></div><nav class=menu><ul class="menu__inner menu__inner--desktop"><li><a href=/about>About</a></li><li><a href=/categories>Categories</a></li><li><a href=/tags>Tags</a></li></ul><ul class="menu__inner menu__inner--mobile"><li><a href=/about>About</a></li><li><a href=/categories>Categories</a></li><li><a href=/tags>Tags</a></li></ul></nav></header><div class=content><div class=post><h1 class=post-title><a href=/posts/debian-on-the-nspire/>Running Debian on the TI Nspire CX Calculator</a></h1><div class=post-meta><span class=post-date>2016-05-30</span></div><span class=post-tags>#<a href=/tags/linux/>linux</a>&nbsp;
+#<a href=/tags/ti/>ti</a>&nbsp;
+#<a href=/tags/arm/>arm</a>&nbsp;
+#<a href=/tags/calculator/>calculator</a>&nbsp;</span><div class=post-content><div><p>I&rsquo;ve been taking a look at running Linux on ARM microprocessors,
+cross-compiling the Kernel from an x64 architecture and kernel tinkerings of
+the kind. After a bit of research I came across the information that my
+calculator, a <a href=https://education.ti.com/en/us/products/calculators/graphing-calculators/ti-nspire-cx-cas-handheld>Texas Instruments Nspire CX CAS</a>, happens to use an ARM
+processor. With a clock of 150MHz on it&rsquo;s CPU, 64MB of RAM and merely 100MB of
+flash memory I wasn&rsquo;t sure Linux would run on this, but it turns out it&rsquo;s
+possible
+.</p><h2 id=hadware-requirements>Hadware Requirements<a href=#hadware-requirements class=hanchor arialabel=Anchor>&#8983;</a></h2><figure class=left><img src=./images/io.jpg></figure><p>The IO of the Nspire is poor. As you can see in the image above, the TI has one
+mini USB port (left) and one non-standard connector (right) used for their
+Wi-Fi add-on. Since the calculator&rsquo;s keyboard is painful to type on, I
+recommend you get a <a href="http://www.amazon.com/s?ie=UTF8&field-keywords=usb%20hub">USB hub</a> to connect a keyboard and the USB drive.
+Since the calculator solely has mini B, you will need a <a href="http://www.amazon.com/s?ie=UTF8&field-keywords=mini%20usb%20otg">Mini-B OTG USB
+cable</a> to connect your hub to the calculator. You&rsquo;ll also need a USB
+drive, since the internal 100MB isn&rsquo;t enough to store Debian&rsquo;s filesystem.</p><h2 id=setting-up-the-drive>Setting up the drive<a href=#setting-up-the-drive class=hanchor arialabel=Anchor>&#8983;</a></h2><p>Firstly it&rsquo;s important to note that you should be using <a href=https://www.debian.org/>Debian</a> to
+perform this. I happen to run <a href=https://www.archlinux.org/>Arch Linux</a>, and after long and insistent
+attempts at performing this on it I yielded to using Debian atop of a VM.</p><p>With that said, begin by formatting your USB drive to EXT4. You can do this by:</p><ol><li><p>Identify the address of your drive by running <code>lsblk</code>. It should be of form
+<code>/dev/sdxY</code>, mine is <code>/dev/sdc1</code> for example.</p></li><li><p>Make sure the drive is <strong>unmounted</strong> by running <code>sudo umount /dev/sdxY</code>.</p></li><li><p>Run <code>sudo mkfs.ext4 /dev/sdxY</code> .</p></li></ol><p>With this done we now must install our dependencies by executing
+<code>sudo apt-get install qemu-user-static binfmt-support debootstrap</code>. These
+packages are for:</p><ul><li><p><a href=https://packages.debian.org/sid/qemu-user-static><code>qemu-user-static</code></a> - Running our ARM compiled system on our x86/x64
+machine.</p></li><li><p><a href=http://www.nongnu.org/binfmt-support/><code>binfmt-support</code></a> - <em>&ldquo;A more flexible version of the #! executable
+interpreter mechanism&rdquo;</em></p></li><li><p><a href=https://wiki.debian.org/Debootstrap><code>debootstrap</code></a> - Installs a Debian base system into a
+directory</p></li></ul><p>Proceed by mounting the flash drive, create a folder for the mouting to take
+place, <code>mkdir foo</code> for example, and mount the drive with
+<code>sudo mount /dev/sdxY foo</code>. We must now bootstrap Linux on the drive, which is
+what <code>debootstrap</code> is for. Run
+<code>sudo debootstrap --arch=armel --foreign stable foo/</code>. This will take a while,
+be patient. Once that has finished we must copy the ARM emulator (qemu)
+to our new rootfs, which we can do with
+<code>sudo cp /usr/bin/qemu-arm-static foo/usr/bin</code>. We must also copy the APT list
+with <code>sudo cp /etc/apt/sources.list foo/etc/apt/sources.list</code>. We can now finish
+bootstrapping by rooting into the rootfs with <code>sudo chroot foo/</code> and running
+<code>/debootstrap/debootstrap --second-stage</code>.</p><p>Now we can set up some quirks of the OS, begin by setting a root password with
+<code>passwd</code>. After this I recommend you exit the system by running <code>exit</code> and
+then using chroot to get into the rootfs once more. Also remember to update
+your repositories with <code>apt-get update</code>. Now it&rsquo;s possible to download any
+desired packages with <code>apt-get install -d PACKAGE</code>, the <code>-d</code> flag is crucial
+here since we must install them once running on the ARM CPU and binaries.
+I recommend installing <code>sudo</code> at least, and then setting up a user
+using with akin of <code>useradd -m -G sudo -s /bin/bash USERNAME</code>. Also remember to
+set a password for your newly created user with <code>passwd USERNAME</code>. Make sure to
+keep track of what you download so you can install it later on.</p><h2 id=setting-up-the-calculator>Setting up the calculator<a href=#setting-up-the-calculator class=hanchor arialabel=Anchor>&#8983;</a></h2><p>By default the Nspire firmware doesn&rsquo;t allow you to run more complex code, so in
+order to do that we&rsquo;ll need to break out of the firmware&rsquo;s limitations. The
+jailbreak for the CX is the <a href=http://ndless.me/>Ndless</a>. There are good online tutorials
+on how to do the jailbreak, I recommend the one from <a href=https://tiplanet.org/forum/ndl3ss.php>TIPlanet</a> as a
+great reference, make sure you pick the correct one for your firmware version.
+The process is simple and painless, this shouldn&rsquo;t be much of a setback.
+Once you have completed your jailbreak I recommend you take a look at all the
+<a href=https://ndless-apps.org/>cool apps</a> you can install. <a href="https://tiplanet.org/forum/archives_voir.php?id=89439">Micro Python</a>, which is an
+almost fully functional Python interpreter, and <a href="https://tiplanet.org/forum/archives_voir.php?id=6631">nDoom</a> which, you
+guessed it, is a port of Doom, are specially interesting.</p><p>Once you have the jailbreak out of the way it&rsquo;s time to set up the files on the
+calculator&rsquo;s own file system (ROM). This part will require Windows or OSX,
+my attempts at running TI&rsquo;s connectivity software on Wine haven&rsquo;t been
+successful. Begin by download the <a href=https://tiplanet.org/nspire-linux-builds/>required files</a>, which are:</p><ul><li><a href=https://tiplanet.org/nspire-linux-builds/devicetree/zImage_expanded_latest.tns>Kernel</a></li><li><a href=https://tiplanet.org/nspire-linux-builds/devicetree/nspire-cx.dtb>DTB file</a></li><li><a href=https://tiplanet.org/nspire-linux-builds/linuxloader2.tns>Loader binary</a></li><li><a href=./files/start_usb.ll2.tns>Startup script</a></li></ul><p>We must now edit the <code>ndless.cfg.tns</code> file and add <code>ext.ll2 linuxloader2</code> to the
+end of it, this will associate our script to the linux loader. Rename the DTB
+file to <code>nspire-cx.dtb.tns</code> and create a folder on your calculator named <code>Linux</code>,
+and inside it place all the required files you downloaded.</p><h2 id=booting-up>Booting up<a href=#booting-up class=hanchor arialabel=Anchor>&#8983;</a></h2><p>With these steps having been successful your system is ready for using. Make
+sure Ndless is functional, go into the <code>Linux</code> folder and run the
+<code>start_usb.ll2.tns</code> script. Booting takes a while, given that you followed
+this guide with no mistakes, after a couple of minutes Debian should be up and
+running. You can now install any packages you downloaded beforehand by running
+<code>apt-get install PACKAGES</code> as root. In case you&rsquo;re looking to try out a desktop
+environment I&rsquo;ve tested Xorg which worked fine, as well as OpenBox which was
+slow (as expected) but was usable to my surprise. After that you&rsquo;re done, your
+calculator now runs a fully functional Linux distro.</p></div></div><div class=pagination><div class=pagination__title><span class=pagination__title-h>Read other posts</span><hr></div><div class=pagination__buttons><span class="button previous"><a href=/posts/arch-on-the-nspire/><span class=button__icon>←</span>
+<span class=button__text>Running Arch on the TI Nspire CX Calculator</span></a></span></div></div><script src=https://utteranc.es/client.js repo=lovesegfault/blog issue-term=title theme=github-dark crossorigin=anonymous async></script></div></div><footer class=footer><div class=footer__inner><div class="copyright copyright--user"><span>Copyright &copy; 2021 - Bernardo Meurer</span>
+<span>:: Theme made by <a href=https://twitter.com/panr>panr</a></span></div></div></footer><script src=/assets/main.js></script>
+<script>window.WebFontConfig={custom:{families:["KaTeX_AMS","KaTeX_Caligraphic:n4,n7","KaTeX_Fraktur:n4,n7","KaTeX_Main:n4,n7,i4,i7","KaTeX_Math:i4,i7","KaTeX_Script","KaTeX_SansSerif:n4,n7,i4","KaTeX_Size1","KaTeX_Size2","KaTeX_Size3","KaTeX_Size4","KaTeX_Typewriter"]}}</script><script defer src=https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.js integrity="sha256-4O4pS1SH31ZqrSO2A/2QJTVjTPqVe+jnYgOWUVr7EEc=" crossorigin=anonymous></script><link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css integrity=sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc crossorigin=anonymous as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css integrity=sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc crossorigin=anonymous></noscript><script defer src=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js integrity=sha384-YNHdsYkH6gMx9y3mRkmcJ2mFUjTd0qNQQvY9VYZgQd7DcN7env35GzlmFaZ23JGp crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js integrity=sha384-vZTG03m+2yp6N6BNi5iM4rW4oIwk5DfcNdFfxkk9ZWpDriOkXX8voJBFrAO7MpVl crossorigin=anonymous onload=renderMathInElement(document.body)></script></div></body></html>

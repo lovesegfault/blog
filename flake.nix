@@ -1,6 +1,4 @@
 {
-  description = "lovesegfault's CV";
-
   inputs = {
     utils.url = "github:numtide/flake-utils";
     gitignore = {

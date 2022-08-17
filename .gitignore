@@ -6,5 +6,8 @@ result
 result-*
 *.drv
 
+# Hugo
+.hugo_build.lock
+
 # Zola
 public

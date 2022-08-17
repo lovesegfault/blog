@@ -1,10 +1,9 @@
-name: CI/CD
+name: CI
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
-  workflow_dispatch:
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -30,10 +29,8 @@ jobs:
             experimental-features = nix-command flakes
       - name: nix-build
         run: nix build -L
-  publish:
+  check:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
-    needs: [ lint, build ]
     steps:
       - uses: actions/checkout@v3.0.2
         with:
@@ -44,11 +41,4 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
             experimental-features = nix-command flakes
       - name: nix-build
-        run: nix build -L
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          force_orphan: true
-          publish_branch: public
-          publish_dir: ./result
+        run: nix flake check

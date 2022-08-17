@@ -155,5 +155,5 @@ composition of the subject-concept, for otherwise we violate the Law of
 Identity. In other words,
 
 \\[
-\qquad\qquad\mathcal S + \phi \text{ is true }\iff \phi\in\mathcal C(\mathcal S)\qquad\qquad_\blacksquare
+\qquad\qquad\mathcal S + \phi \text{ is true }\iff \phi\in\mathcal C(\mathcal S)\qquad\qquad\blacksquare
 \\]

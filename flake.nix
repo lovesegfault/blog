@@ -14,11 +14,13 @@
         pkgs = import nixpkgs { inherit system; overlays = [ gitignore.overlay ]; };
       in
       {
-        packages.default = with pkgs; stdenv.mkDerivation {
+        packages.default = with pkgs; stdenvNoCC.mkDerivation {
           name = "blog";
           src = gitignoreSource ./.;
 
           nativeBuildInputs = [ hugo ];
+
+          dontConfigure = true;
 
           buildPhase = ''
             runHook preBuild

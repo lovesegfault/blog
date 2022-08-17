@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>C on null pointer</title><link>/tags/c/</link><description>Recent content in C on null pointer</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Copyright &amp;copy; 2021 - Bernardo Meurer</copyright><lastBuildDate>Thu, 01 Apr 2021 22:04:19 -0700</lastBuildDate><atom:link href="/tags/c/index.xml" rel="self" type="application/rss+xml"/><item><title>C Arrays Are Not Pointers</title><link>/posts/c-arrays-are-not-pointers/</link><pubDate>Thu, 01 Apr 2021 22:04:19 -0700</pubDate><guid>/posts/c-arrays-are-not-pointers/</guid><description>One of the biggest traps C lays for beginners is its idiosyncratic and confusing treatment of arrays. I often times see people learn, or conclude themselves, that arrays in C are just pointers, which is not the case. In C, arrays are not pointers, and in this post I want to go over the main reasons why that is the case.1
+1. sizeof() This is the first situation that caused me to see how arrays and pointers are really distinct.</description><content>&lt;p>One of the biggest traps C lays for beginners is its idiosyncratic and confusing
+treatment of arrays. I often times see people learn, or conclude themselves,
+that arrays in C are just pointers, which is not the case. In C, arrays &lt;em>are
+not&lt;/em> pointers, and in this post I want to go over the main reasons why that is
+the case.&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>&lt;/p>
+&lt;h2 id="1-sizeof">1. &lt;code>sizeof()&lt;/code>&lt;/h2>
+&lt;p>This is the first situation that caused me to see how arrays and pointers are
+really distinct. Consider the following code:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-C" data-lang="C">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdio.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdlib.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>(&lt;span style="color:#66d9ef">void&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#f92672">*&lt;/span>ptr &lt;span style="color:#f92672">=&lt;/span> calloc(&lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">int&lt;/span> arr[&lt;span style="color:#ae81ff">5&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> {&lt;span style="color:#ae81ff">0&lt;/span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(ptr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(ptr));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(arr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>First, let&amp;rsquo;s understand what &lt;code>sizeof()&lt;/code> is &lt;em>supposed&lt;/em> to do, from the &lt;a href="http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1548.pdf">ISO C
+Standard&lt;/a>:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.5.3.4, item 2&lt;/strong>&lt;/p>
+&lt;p>The &lt;code>sizeof&lt;/code> operator yields the size (in bytes) of its operand,
+which may be an expression or the parenthesized name of a type.&lt;/p>
+&lt;/blockquote>
+&lt;p>So, given that I&amp;rsquo;m on a 64-bit system, we&amp;rsquo;d expect to see the following output,
+were arrays and pointers to be the same:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof(ptr) = 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof(arr) = 8
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The output is the number of &lt;em>bytes&lt;/em>, so it&amp;rsquo;d be indicating they are both 64-bit
+addresses, all golden, right? Well, no, this is what you actually see:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof(ptr) = 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof(arr) = 20
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>wat?&lt;/p>
+&lt;p>Alright, let&amp;rsquo;s go take a gander at the standard again&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.2.5, item 20&lt;/strong>&lt;/p>
+&lt;p>An array type describes a contiguously allocated nonempty set of objects with
+a particular member object type, called the element type. Array types are
+characterized by their element type &lt;strong>and by the number of elements in the
+array&lt;/strong>. An array type is said to be derived from its element type, and if its
+element type is T, the array type is sometimes called &amp;ldquo;array of T&amp;rdquo;. The
+construction of an array type from an element type is called &amp;ldquo;array type
+derivation&amp;rdquo;. &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>The first clue lies here, where we already learn that arrays are decidedly
+&lt;strong>not&lt;/strong> pointers! Pointers have no relationship, from the compiler&amp;rsquo;s point of
+view, to the length of the data they point to. It&amp;rsquo;s up to you, the programmer,
+to keep track of how large the object you are pointing to is. Arrays, on the
+other hand, are &lt;em>characterized&lt;/em> by their length. The type of a given &amp;ldquo;array of
+T&amp;rdquo; is really &amp;ldquo;array of T with length N.&amp;rdquo;&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup> There can be no array without a known
+length&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>, in stark contrast to pointers, where the compiler never knows their
+length.&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.5.3.4, item 4&lt;/strong>&lt;/p>
+&lt;p>When &lt;code>sizeof&lt;/code> is applied to an operand that has type &lt;code>char&lt;/code>, &lt;code>unsigned char&lt;/code>, or
+&lt;code>signed char&lt;/code>, (or a qualified version thereof) the result is 1. &lt;strong>When applied to
+an operand that has array type, the result is the total number of bytes in the
+array&lt;/strong>. When applied to an operand that has structure or union type, the result
+is the total number of bytes in such an object, including internal and trailing
+padding. &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>And there&amp;rsquo;s the final clue, &lt;code>sizeof()&lt;/code> has special behavior for arrays&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>! For
+an array it will look at the &lt;code>sizeof()&lt;/code> the object type, the length of the
+array, and compute the total length. For example, if I have &lt;code>int foo[5];&lt;/code> and I
+do &lt;code>sizeof(foo)&lt;/code> I will hit this special behavior, and get the size as being
+&lt;code>sizeof(int) * 5 = 4 * 5 = 20&lt;/code>.&lt;/p>
+&lt;p>With this in mind our initial example starts making more sense, let&amp;rsquo;s look at it
+again:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-C" data-lang="C">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#f92672">*&lt;/span>ptr &lt;span style="color:#f92672">=&lt;/span> calloc(&lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> arr[&lt;span style="color:#ae81ff">5&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> {&lt;span style="color:#ae81ff">0&lt;/span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(ptr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(ptr));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(arr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr));
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>And we got&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof(ptr) = 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof(arr) = 20
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The first &lt;code>sizeof()&lt;/code> hits the normal behavior and evaluates to the size of the
+pointer itself (not the data it points to), which in x86_64 is 8 bytes. The
+second &lt;code>sizeof()&lt;/code> hits the special behavior for arrays, and computes the total
+length of &lt;code>arr&lt;/code> in bytes, which is &lt;code>20&lt;/code>.&lt;/p>
+&lt;h2 id="2-function-arguments">2. Function Arguments&lt;/h2>
+&lt;p>Consider the following example:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-C" data-lang="C">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdio.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdlib.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Prints an array
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">print_arr&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#f92672">*&lt;/span>arr, size_t len) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;arr[ &amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span>(size_t i &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>; i &lt;span style="color:#f92672">&amp;lt;&lt;/span> len; &lt;span style="color:#f92672">++&lt;/span>i) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;%d &amp;#34;&lt;/span>, arr[i]);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;]&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Fills an array with random ints
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">randomize&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span> arr[]) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// First find the length of the array
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> size_t len &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr) &lt;span style="color:#f92672">/&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// For clarity&amp;#39;s sake
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> printf(&lt;span style="color:#e6db74">&amp;#34;(randomize) len = %zu&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, len);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Now let&amp;#39;s fill the array with random values
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">for&lt;/span>(size_t i &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>; i &lt;span style="color:#f92672">&amp;lt;&lt;/span> len; &lt;span style="color:#f92672">++&lt;/span>i) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> arr[i] &lt;span style="color:#f92672">=&lt;/span> rand();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>(&lt;span style="color:#66d9ef">void&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Initialize the seed.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> sranddev();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 0-initialize it.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span> arr[&lt;span style="color:#ae81ff">10&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> {&lt;span style="color:#ae81ff">0&lt;/span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Let&amp;#39;s randomize it!
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> size_t len &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr) &lt;span style="color:#f92672">/&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;(main) len = %zu&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, len);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> randomize(arr);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// And now let&amp;#39;s see what happened.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> print_arr(arr, &lt;span style="color:#ae81ff">10&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>We have two simple functions, &lt;code>print_arr()&lt;/code> and &lt;code>randomize()&lt;/code>, we initialize an
+array of length 10 with zeroes, compute and print it&amp;rsquo;s length, call
+&lt;code>randomize()&lt;/code> on it, and finally print it.&lt;/p>
+&lt;p>We&amp;rsquo;d hope to see output that looks like this:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>(main) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>(randomize) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>arr[ 2834979 0827650 48721364 8723 73 427360 4 0297346 72 9273 ]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>We never modify the length of our data, so we see length as the same in
+&lt;code>main()&lt;/code> and &lt;code>randomize()&lt;/code>, and we successfully fill our array with random data
+and print it. Great!&lt;/p>
+&lt;p>Or it would be, if that code worked at all. If you were to actually run that
+snippet this is what you&amp;rsquo;d get:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>(main) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>(randomize) len = 2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>arr[ 987922591 1583865774 0 0 0 0 0 0 0 0 ]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>What? How did the length change? And why is only the beginning of the array
+getting filled up with data? What the hell is going on here! Let&amp;rsquo;s go back to
+the standard for a moment:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.7.5.3, item 7&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>A declaration of a parameter as &amp;ldquo;array of type&amp;rdquo; shall be adjusted to
+&amp;ldquo;qualified pointer to type&amp;rdquo;&lt;/strong>, where the type qualifiers (if any) are those
+specified within the &lt;code>[&lt;/code> and &lt;code>]&lt;/code> of the array type derivation. If the keyword
+static also appears within the &lt;code>[&lt;/code> and &lt;code>]&lt;/code> of the array type derivation, then
+for each call to the function, the value of the corresponding actual argument
+shall provide access to the first element of an array with at least as many
+elements as specified by the size expression. &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>As if things weren&amp;rsquo;t confusing enough, the standard defines that whenever you
+declare a parameter to a function as an array, such as &lt;code>void randomize(int arr[])&lt;/code>, it is automatically &amp;ldquo;adjusted&amp;rdquo; to a pointer such that you end up with,
+for example, &lt;code>void randomize(int *arr)&lt;/code>. So even though arrays are not pointers,
+when you put an array in argument position, you are actually writing a pointer
+as argument! Sometimes you&amp;rsquo;ll hear people refer to this as the array being
+&amp;ldquo;demoted&amp;rdquo; to a pointer.&lt;/p>
+&lt;p>This means that whenever you have a function taking in an array as argument, you
+fall into the &lt;code>sizeof()&lt;/code> issue we saw in the previous section. In the caller
+scope, &lt;code>sizeof(arr)&lt;/code> will evaluate to the total length in bytes of the array,
+whereas in the function scope &lt;code>sizeof(arr)&lt;/code> will evaluate to the length in bytes
+of a pointer.&lt;/p>
+&lt;p>With this in mind, let&amp;rsquo;s revisit the output we got:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>(main) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>(randomize) len = 2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>arr[ 987922591 1583865774 0 0 0 0 0 0 0 0 ]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Recall that we had &lt;code>size_t len = sizeof(arr) / sizeof(int)&lt;/code>, and &lt;code>sizeof(int) == 4&lt;/code>.&lt;/p>
+&lt;p>So, the length in the caller scope is &lt;code>10&lt;/code> because &lt;code>sizeof(arr)&lt;/code> computes the
+total length of our array, which is &lt;code>40&lt;/code>, and &lt;code>40 / 4 == 10&lt;/code>. On the scope of
+the &lt;code>randomize()&lt;/code> function though, &lt;code>arr&lt;/code> is not an array, despite looking like
+it in the function signature, but a &lt;em>pointer&lt;/em>. Due to this we get &lt;code>sizeof(arr) == 8&lt;/code> and &lt;code>8 / 4 == 2&lt;/code>. Finally, because this caused us to compute &lt;code>len&lt;/code>
+incorrectly, we only actually randomize the first two elements of the array,
+which is what we see in the output.&lt;/p>
+&lt;p>To reiterate, whenever you have &lt;code>someType my_function(myType my_arg[])&lt;/code> it may look like
+you have an argument &lt;code>my_arg&lt;/code> of type &amp;ldquo;array of &lt;code>myType&lt;/code>&amp;rdquo;, but that is an
+illusion, you will actually end up with a pointer to &lt;code>myType&lt;/code>. Personally, I
+find the usage of &lt;code>[]&lt;/code> in function arguments misleading, and that you&amp;rsquo;re always
+better off by just making it clear that the input is a pointer.&lt;/p>
+&lt;p>Luckily, nowadays we have smart compilers that will yield warnings in case you
+try to do something like this, as I was building this example locally I got the
+following warning&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof.c:14:24: warning: sizeof on array function parameter will return size of &amp;#39;int *&amp;#39; instead of &amp;#39;int []&amp;#39; [-Wsizeof-array-argument]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> size_t len = sizeof(arr)/sizeof(int);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ^
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof.c:12:20: note: declared here
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>void randomize(int arr[]) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ^
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This is trying to tell us &amp;ldquo;Hey, this &lt;code>sizeof(arr)&lt;/code> call that you think is
+returning the size of an array, will actually return the type of a pointer, and
+you should wise up.&amp;rdquo; Despite these warnings, this issue with automatic demotion
+of arrays to pointers when crossing scopes is something I see beginners trip on
+often.&lt;/p>
+&lt;p>Not incidentally, the &lt;code>print_arr()&lt;/code> function shows the correct way to pass an
+array to a function; you have to pass the array&amp;rsquo;s length alongside a pointer to
+the first element of the array.&lt;/p>
+&lt;h2 id="3-provenance">3. Provenance&lt;/h2>
+&lt;p>If you&amp;rsquo;ve ever learned that pointers in C are just numeric values, maybe
+representing an address in memory, then you may want to sit down. In response to
+&lt;a href="http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_260.htm">Defect Report 260&lt;/a> (DR-260), the Committee says:&lt;/p>
+&lt;blockquote>
+&lt;p>If two objects have identical bit-pattern representations and their types are
+the same they may still compare as unequal (for example if one object has an
+indeterminate value) and if one is an indeterminate value attempting to read
+such an object invokes undefined behavior. Implementations are permitted to
+track the origins of a bit-pattern and treat those representing an
+indeterminate value as distinct from those representing a determined value.
+&lt;strong>They may also treat pointers based on different origins as distinct even
+though they are bitwise identical.&lt;/strong> &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>This answer brings forth the idea of &lt;strong>pointer provenance&lt;/strong>, that pointers are
+characterized not only by their value, but also by their origin. Pointers with
+identical numerical values, but distinct origins, can still be different.&lt;/p>
+&lt;p>It is no surprise, then, that pointers created by passing an array to a
+function, like we saw in the previous section, and pointers created by, for
+example, &lt;code>malloc()&lt;/code> have different provenances. The standard touches on this
+indirectly when they talk about library functions that take an array as
+argument:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>7.1.4, item 1&lt;/strong>&lt;/p>
+&lt;p>If a function argument is described as being an array, the pointer actually
+passed to the function shall have a value such that all address computations
+and accesses to objects (that would be valid if the pointer did point to the
+first element of such an array) are in fact valid.&lt;/p>
+&lt;/blockquote>
+&lt;p>Now, this isn&amp;rsquo;t &lt;em>precisely&lt;/em> the same issue that motivates DR-260, but
+nonetheless it alludes to the fact that there is a semantic difference between a
+function that takes a pointer as argument and one that takes an array. There are
+different expectations in place.&lt;/p>
+&lt;p>There is a lot more to be said about provenance beyond the shallow point I&amp;rsquo;m
+making here, I recommend anyone interest take a look at &lt;a href="http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2263.htm">&amp;ldquo;n2263: Clarifying
+Pointer Provenance v4&amp;rdquo;&lt;/a> for an in-depth analysis of the issues that
+arise from pointer provenance and the proposed changes to the standard.&lt;/p>
+&lt;h2 id="conclusion">Conclusion&lt;/h2>
+&lt;p>So there you have it folks, arrays are definitely not pointers and now you know
+way too much about why!&lt;/p>
+&lt;p>If you believe I missed something in this post, please feel free to mention it
+in the comments bellow, or reach me at
+&lt;a href="mail">bernardo@arraysarenotpointers.dev&lt;/a>.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>This post is aimed at beginners and, to a lesser degree, intermediate
+users of C. If you are an expert you are unlikely to be surprised by what I
+show here but, hey, maybe you realize I missed something and help me improve
+the list :)&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>You&amp;rsquo;ll commonly see this type of data structure, a pointer to the first
+element together with the length of the data, be referred to as a &lt;em>fat
+pointer&lt;/em>. It&amp;rsquo;s called that because it&amp;rsquo;s larger than a normal pointer, since
+it needs to contain the length information too.&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>Okay, I&amp;rsquo;m lying! There are these things called variable length arrays,
+VLAs, that don&amp;rsquo;t have a length known at compile time. The standard lays out
+some special behavior for them, for example, while &lt;code>sizeof(x)&lt;/code> is usually
+guaranteed to not evaluate &lt;code>x&lt;/code> and be done at compile time, that isn&amp;rsquo;t the
+case with VLAs. If &lt;code>x&lt;/code> is a VLA then it&amp;rsquo;s evaluated at runtime and the
+length computed. See &lt;strong>6.5.3.4, item 2&lt;/strong>.&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4">
+&lt;p>For VLAs (Variable Length Arrays) the standard specifies similar behavior
+to arrays, with the additional complications coming from their
+runtime-determined sizes.&amp;#160;&lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5">
+&lt;p>That we now have warnings that are this easy to read and grasp in C is
+absolutely amazing, and a crucial effort that often goes overlooked.&amp;#160;&lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item></channel></rss>

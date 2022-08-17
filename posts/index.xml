@@ -1,0 +1,2075 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on null pointer</title><link>/posts/</link><description>Recent content in Posts on null pointer</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Copyright &amp;copy; 2021 - Bernardo Meurer</copyright><lastBuildDate>Thu, 01 Apr 2021 22:04:19 -0700</lastBuildDate><atom:link href="/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>C Arrays Are Not Pointers</title><link>/posts/c-arrays-are-not-pointers/</link><pubDate>Thu, 01 Apr 2021 22:04:19 -0700</pubDate><guid>/posts/c-arrays-are-not-pointers/</guid><description>One of the biggest traps C lays for beginners is its idiosyncratic and confusing treatment of arrays. I often times see people learn, or conclude themselves, that arrays in C are just pointers, which is not the case. In C, arrays are not pointers, and in this post I want to go over the main reasons why that is the case.1
+1. sizeof() This is the first situation that caused me to see how arrays and pointers are really distinct.</description><content>&lt;p>One of the biggest traps C lays for beginners is its idiosyncratic and confusing
+treatment of arrays. I often times see people learn, or conclude themselves,
+that arrays in C are just pointers, which is not the case. In C, arrays &lt;em>are
+not&lt;/em> pointers, and in this post I want to go over the main reasons why that is
+the case.&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>&lt;/p>
+&lt;h2 id="1-sizeof">1. &lt;code>sizeof()&lt;/code>&lt;/h2>
+&lt;p>This is the first situation that caused me to see how arrays and pointers are
+really distinct. Consider the following code:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-C" data-lang="C">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdio.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdlib.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>(&lt;span style="color:#66d9ef">void&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#f92672">*&lt;/span>ptr &lt;span style="color:#f92672">=&lt;/span> calloc(&lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">int&lt;/span> arr[&lt;span style="color:#ae81ff">5&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> {&lt;span style="color:#ae81ff">0&lt;/span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(ptr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(ptr));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(arr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>First, let&amp;rsquo;s understand what &lt;code>sizeof()&lt;/code> is &lt;em>supposed&lt;/em> to do, from the &lt;a href="http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1548.pdf">ISO C
+Standard&lt;/a>:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.5.3.4, item 2&lt;/strong>&lt;/p>
+&lt;p>The &lt;code>sizeof&lt;/code> operator yields the size (in bytes) of its operand,
+which may be an expression or the parenthesized name of a type.&lt;/p>
+&lt;/blockquote>
+&lt;p>So, given that I&amp;rsquo;m on a 64-bit system, we&amp;rsquo;d expect to see the following output,
+were arrays and pointers to be the same:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof(ptr) = 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof(arr) = 8
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The output is the number of &lt;em>bytes&lt;/em>, so it&amp;rsquo;d be indicating they are both 64-bit
+addresses, all golden, right? Well, no, this is what you actually see:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof(ptr) = 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof(arr) = 20
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>wat?&lt;/p>
+&lt;p>Alright, let&amp;rsquo;s go take a gander at the standard again&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.2.5, item 20&lt;/strong>&lt;/p>
+&lt;p>An array type describes a contiguously allocated nonempty set of objects with
+a particular member object type, called the element type. Array types are
+characterized by their element type &lt;strong>and by the number of elements in the
+array&lt;/strong>. An array type is said to be derived from its element type, and if its
+element type is T, the array type is sometimes called &amp;ldquo;array of T&amp;rdquo;. The
+construction of an array type from an element type is called &amp;ldquo;array type
+derivation&amp;rdquo;. &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>The first clue lies here, where we already learn that arrays are decidedly
+&lt;strong>not&lt;/strong> pointers! Pointers have no relationship, from the compiler&amp;rsquo;s point of
+view, to the length of the data they point to. It&amp;rsquo;s up to you, the programmer,
+to keep track of how large the object you are pointing to is. Arrays, on the
+other hand, are &lt;em>characterized&lt;/em> by their length. The type of a given &amp;ldquo;array of
+T&amp;rdquo; is really &amp;ldquo;array of T with length N.&amp;rdquo;&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup> There can be no array without a known
+length&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>, in stark contrast to pointers, where the compiler never knows their
+length.&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.5.3.4, item 4&lt;/strong>&lt;/p>
+&lt;p>When &lt;code>sizeof&lt;/code> is applied to an operand that has type &lt;code>char&lt;/code>, &lt;code>unsigned char&lt;/code>, or
+&lt;code>signed char&lt;/code>, (or a qualified version thereof) the result is 1. &lt;strong>When applied to
+an operand that has array type, the result is the total number of bytes in the
+array&lt;/strong>. When applied to an operand that has structure or union type, the result
+is the total number of bytes in such an object, including internal and trailing
+padding. &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>And there&amp;rsquo;s the final clue, &lt;code>sizeof()&lt;/code> has special behavior for arrays&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>! For
+an array it will look at the &lt;code>sizeof()&lt;/code> the object type, the length of the
+array, and compute the total length. For example, if I have &lt;code>int foo[5];&lt;/code> and I
+do &lt;code>sizeof(foo)&lt;/code> I will hit this special behavior, and get the size as being
+&lt;code>sizeof(int) * 5 = 4 * 5 = 20&lt;/code>.&lt;/p>
+&lt;p>With this in mind our initial example starts making more sense, let&amp;rsquo;s look at it
+again:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-C" data-lang="C">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#f92672">*&lt;/span>ptr &lt;span style="color:#f92672">=&lt;/span> calloc(&lt;span style="color:#ae81ff">5&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> arr[&lt;span style="color:#ae81ff">5&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> {&lt;span style="color:#ae81ff">0&lt;/span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(ptr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(ptr));
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>printf(&lt;span style="color:#e6db74">&amp;#34;sizeof(arr) = %ld&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr));
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>And we got&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof(ptr) = 8
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof(arr) = 20
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The first &lt;code>sizeof()&lt;/code> hits the normal behavior and evaluates to the size of the
+pointer itself (not the data it points to), which in x86_64 is 8 bytes. The
+second &lt;code>sizeof()&lt;/code> hits the special behavior for arrays, and computes the total
+length of &lt;code>arr&lt;/code> in bytes, which is &lt;code>20&lt;/code>.&lt;/p>
+&lt;h2 id="2-function-arguments">2. Function Arguments&lt;/h2>
+&lt;p>Consider the following example:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-C" data-lang="C">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdio.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">#include&lt;/span>&lt;span style="color:#75715e">&amp;lt;stdlib.h&amp;gt;&lt;/span>&lt;span style="color:#75715e">
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Prints an array
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">print_arr&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#f92672">*&lt;/span>arr, size_t len) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;arr[ &amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">for&lt;/span>(size_t i &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>; i &lt;span style="color:#f92672">&amp;lt;&lt;/span> len; &lt;span style="color:#f92672">++&lt;/span>i) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;%d &amp;#34;&lt;/span>, arr[i]);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;]&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Fills an array with random ints
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">void&lt;/span> &lt;span style="color:#a6e22e">randomize&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span> arr[]) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// First find the length of the array
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> size_t len &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr) &lt;span style="color:#f92672">/&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// For clarity&amp;#39;s sake
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> printf(&lt;span style="color:#e6db74">&amp;#34;(randomize) len = %zu&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, len);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Now let&amp;#39;s fill the array with random values
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">for&lt;/span>(size_t i &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>; i &lt;span style="color:#f92672">&amp;lt;&lt;/span> len; &lt;span style="color:#f92672">++&lt;/span>i) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> arr[i] &lt;span style="color:#f92672">=&lt;/span> rand();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">int&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>(&lt;span style="color:#66d9ef">void&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Initialize the seed.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> sranddev();
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// 0-initialize it.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">int&lt;/span> arr[&lt;span style="color:#ae81ff">10&lt;/span>] &lt;span style="color:#f92672">=&lt;/span> {&lt;span style="color:#ae81ff">0&lt;/span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Let&amp;#39;s randomize it!
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> size_t len &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(arr) &lt;span style="color:#f92672">/&lt;/span> &lt;span style="color:#66d9ef">sizeof&lt;/span>(&lt;span style="color:#66d9ef">int&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> printf(&lt;span style="color:#e6db74">&amp;#34;(main) len = %zu&lt;/span>&lt;span style="color:#ae81ff">\n&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>, len);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> randomize(arr);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// And now let&amp;#39;s see what happened.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> print_arr(arr, &lt;span style="color:#ae81ff">10&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>We have two simple functions, &lt;code>print_arr()&lt;/code> and &lt;code>randomize()&lt;/code>, we initialize an
+array of length 10 with zeroes, compute and print it&amp;rsquo;s length, call
+&lt;code>randomize()&lt;/code> on it, and finally print it.&lt;/p>
+&lt;p>We&amp;rsquo;d hope to see output that looks like this:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>(main) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>(randomize) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>arr[ 2834979 0827650 48721364 8723 73 427360 4 0297346 72 9273 ]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>We never modify the length of our data, so we see length as the same in
+&lt;code>main()&lt;/code> and &lt;code>randomize()&lt;/code>, and we successfully fill our array with random data
+and print it. Great!&lt;/p>
+&lt;p>Or it would be, if that code worked at all. If you were to actually run that
+snippet this is what you&amp;rsquo;d get:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>(main) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>(randomize) len = 2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>arr[ 987922591 1583865774 0 0 0 0 0 0 0 0 ]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>What? How did the length change? And why is only the beginning of the array
+getting filled up with data? What the hell is going on here! Let&amp;rsquo;s go back to
+the standard for a moment:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>6.7.5.3, item 7&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>A declaration of a parameter as &amp;ldquo;array of type&amp;rdquo; shall be adjusted to
+&amp;ldquo;qualified pointer to type&amp;rdquo;&lt;/strong>, where the type qualifiers (if any) are those
+specified within the &lt;code>[&lt;/code> and &lt;code>]&lt;/code> of the array type derivation. If the keyword
+static also appears within the &lt;code>[&lt;/code> and &lt;code>]&lt;/code> of the array type derivation, then
+for each call to the function, the value of the corresponding actual argument
+shall provide access to the first element of an array with at least as many
+elements as specified by the size expression. &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>As if things weren&amp;rsquo;t confusing enough, the standard defines that whenever you
+declare a parameter to a function as an array, such as &lt;code>void randomize(int arr[])&lt;/code>, it is automatically &amp;ldquo;adjusted&amp;rdquo; to a pointer such that you end up with,
+for example, &lt;code>void randomize(int *arr)&lt;/code>. So even though arrays are not pointers,
+when you put an array in argument position, you are actually writing a pointer
+as argument! Sometimes you&amp;rsquo;ll hear people refer to this as the array being
+&amp;ldquo;demoted&amp;rdquo; to a pointer.&lt;/p>
+&lt;p>This means that whenever you have a function taking in an array as argument, you
+fall into the &lt;code>sizeof()&lt;/code> issue we saw in the previous section. In the caller
+scope, &lt;code>sizeof(arr)&lt;/code> will evaluate to the total length in bytes of the array,
+whereas in the function scope &lt;code>sizeof(arr)&lt;/code> will evaluate to the length in bytes
+of a pointer.&lt;/p>
+&lt;p>With this in mind, let&amp;rsquo;s revisit the output we got:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>(main) len = 10
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>(randomize) len = 2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>arr[ 987922591 1583865774 0 0 0 0 0 0 0 0 ]
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Recall that we had &lt;code>size_t len = sizeof(arr) / sizeof(int)&lt;/code>, and &lt;code>sizeof(int) == 4&lt;/code>.&lt;/p>
+&lt;p>So, the length in the caller scope is &lt;code>10&lt;/code> because &lt;code>sizeof(arr)&lt;/code> computes the
+total length of our array, which is &lt;code>40&lt;/code>, and &lt;code>40 / 4 == 10&lt;/code>. On the scope of
+the &lt;code>randomize()&lt;/code> function though, &lt;code>arr&lt;/code> is not an array, despite looking like
+it in the function signature, but a &lt;em>pointer&lt;/em>. Due to this we get &lt;code>sizeof(arr) == 8&lt;/code> and &lt;code>8 / 4 == 2&lt;/code>. Finally, because this caused us to compute &lt;code>len&lt;/code>
+incorrectly, we only actually randomize the first two elements of the array,
+which is what we see in the output.&lt;/p>
+&lt;p>To reiterate, whenever you have &lt;code>someType my_function(myType my_arg[])&lt;/code> it may look like
+you have an argument &lt;code>my_arg&lt;/code> of type &amp;ldquo;array of &lt;code>myType&lt;/code>&amp;rdquo;, but that is an
+illusion, you will actually end up with a pointer to &lt;code>myType&lt;/code>. Personally, I
+find the usage of &lt;code>[]&lt;/code> in function arguments misleading, and that you&amp;rsquo;re always
+better off by just making it clear that the input is a pointer.&lt;/p>
+&lt;p>Luckily, nowadays we have smart compilers that will yield warnings in case you
+try to do something like this, as I was building this example locally I got the
+following warning&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>sizeof.c:14:24: warning: sizeof on array function parameter will return size of &amp;#39;int *&amp;#39; instead of &amp;#39;int []&amp;#39; [-Wsizeof-array-argument]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> size_t len = sizeof(arr)/sizeof(int);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ^
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sizeof.c:12:20: note: declared here
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>void randomize(int arr[]) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ^
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This is trying to tell us &amp;ldquo;Hey, this &lt;code>sizeof(arr)&lt;/code> call that you think is
+returning the size of an array, will actually return the type of a pointer, and
+you should wise up.&amp;rdquo; Despite these warnings, this issue with automatic demotion
+of arrays to pointers when crossing scopes is something I see beginners trip on
+often.&lt;/p>
+&lt;p>Not incidentally, the &lt;code>print_arr()&lt;/code> function shows the correct way to pass an
+array to a function; you have to pass the array&amp;rsquo;s length alongside a pointer to
+the first element of the array.&lt;/p>
+&lt;h2 id="3-provenance">3. Provenance&lt;/h2>
+&lt;p>If you&amp;rsquo;ve ever learned that pointers in C are just numeric values, maybe
+representing an address in memory, then you may want to sit down. In response to
+&lt;a href="http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_260.htm">Defect Report 260&lt;/a> (DR-260), the Committee says:&lt;/p>
+&lt;blockquote>
+&lt;p>If two objects have identical bit-pattern representations and their types are
+the same they may still compare as unequal (for example if one object has an
+indeterminate value) and if one is an indeterminate value attempting to read
+such an object invokes undefined behavior. Implementations are permitted to
+track the origins of a bit-pattern and treat those representing an
+indeterminate value as distinct from those representing a determined value.
+&lt;strong>They may also treat pointers based on different origins as distinct even
+though they are bitwise identical.&lt;/strong> &lt;em>[Emphasis mine]&lt;/em>&lt;/p>
+&lt;/blockquote>
+&lt;p>This answer brings forth the idea of &lt;strong>pointer provenance&lt;/strong>, that pointers are
+characterized not only by their value, but also by their origin. Pointers with
+identical numerical values, but distinct origins, can still be different.&lt;/p>
+&lt;p>It is no surprise, then, that pointers created by passing an array to a
+function, like we saw in the previous section, and pointers created by, for
+example, &lt;code>malloc()&lt;/code> have different provenances. The standard touches on this
+indirectly when they talk about library functions that take an array as
+argument:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>7.1.4, item 1&lt;/strong>&lt;/p>
+&lt;p>If a function argument is described as being an array, the pointer actually
+passed to the function shall have a value such that all address computations
+and accesses to objects (that would be valid if the pointer did point to the
+first element of such an array) are in fact valid.&lt;/p>
+&lt;/blockquote>
+&lt;p>Now, this isn&amp;rsquo;t &lt;em>precisely&lt;/em> the same issue that motivates DR-260, but
+nonetheless it alludes to the fact that there is a semantic difference between a
+function that takes a pointer as argument and one that takes an array. There are
+different expectations in place.&lt;/p>
+&lt;p>There is a lot more to be said about provenance beyond the shallow point I&amp;rsquo;m
+making here, I recommend anyone interest take a look at &lt;a href="http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2263.htm">&amp;ldquo;n2263: Clarifying
+Pointer Provenance v4&amp;rdquo;&lt;/a> for an in-depth analysis of the issues that
+arise from pointer provenance and the proposed changes to the standard.&lt;/p>
+&lt;h2 id="conclusion">Conclusion&lt;/h2>
+&lt;p>So there you have it folks, arrays are definitely not pointers and now you know
+way too much about why!&lt;/p>
+&lt;p>If you believe I missed something in this post, please feel free to mention it
+in the comments bellow, or reach me at
+&lt;a href="mail">bernardo@arraysarenotpointers.dev&lt;/a>.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>This post is aimed at beginners and, to a lesser degree, intermediate
+users of C. If you are an expert you are unlikely to be surprised by what I
+show here but, hey, maybe you realize I missed something and help me improve
+the list :)&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>You&amp;rsquo;ll commonly see this type of data structure, a pointer to the first
+element together with the length of the data, be referred to as a &lt;em>fat
+pointer&lt;/em>. It&amp;rsquo;s called that because it&amp;rsquo;s larger than a normal pointer, since
+it needs to contain the length information too.&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>Okay, I&amp;rsquo;m lying! There are these things called variable length arrays,
+VLAs, that don&amp;rsquo;t have a length known at compile time. The standard lays out
+some special behavior for them, for example, while &lt;code>sizeof(x)&lt;/code> is usually
+guaranteed to not evaluate &lt;code>x&lt;/code> and be done at compile time, that isn&amp;rsquo;t the
+case with VLAs. If &lt;code>x&lt;/code> is a VLA then it&amp;rsquo;s evaluated at runtime and the
+length computed. See &lt;strong>6.5.3.4, item 2&lt;/strong>.&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4">
+&lt;p>For VLAs (Variable Length Arrays) the standard specifies similar behavior
+to arrays, with the additional complications coming from their
+runtime-determined sizes.&amp;#160;&lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5">
+&lt;p>That we now have warnings that are this easy to read and grasp in C is
+absolutely amazing, and a crucial effort that often goes overlooked.&amp;#160;&lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>Rust 2020 🦀</title><link>/posts/rust-2020/</link><pubDate>Sun, 24 Nov 2019 20:38:15 +0000</pubDate><guid>/posts/rust-2020/</guid><description>Every year I think of writing a &amp;ldquo;Rust 20xx&amp;rdquo;1 post, and I never do, but this year I&amp;rsquo;ve decided to power through the procrastination, I&amp;rsquo;m also on a 5 hour flight with no Wi-Fi, so this will at least provide me with some form of entertainment!
+Since I&amp;rsquo;m blessed enough to work full-time using Rust I end up having two separate sets of goals for Rust, one from the point of view of Standard Cognition (Sc) as a company that is committed to Rust, and another as someone who likes to work on projects in Rust in his free time.</description><content>&lt;p>Every year I think of writing a &amp;ldquo;Rust 20xx&amp;rdquo;&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup> post, and I never do, but this
+year I&amp;rsquo;ve decided to power through the procrastination, I&amp;rsquo;m also on a 5 hour
+flight with no Wi-Fi, so this will at least provide me with some form of
+entertainment!&lt;/p>
+&lt;p>Since I&amp;rsquo;m blessed enough to work full-time using Rust I end up having two
+separate sets of goals for Rust, one from the point of view of &lt;a href="https://standard.ai">Standard
+Cognition&lt;/a> (Sc) as a company that is committed to Rust, and another as
+someone who likes to work on projects in Rust in his free time. I&amp;rsquo;ll separate
+both, and try to not jumble my wishes for Standard and my personal ones.&lt;/p>
+&lt;h2 id="standard-cognition--rust-in-2020">Standard Cognition &amp;amp; Rust in 2020&lt;/h2>
+&lt;p>One of our main annoyances at Sc is the fact that we are still on the nightly
+compiler, mostly due to a number of features that we couldn&amp;rsquo;t build our
+product without, but that still haven&amp;rsquo;t seen their way through to
+stabilization. Namely, these are:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Bash" data-lang="Bash">&lt;span style="display:flex;">&lt;span>rg --no-filename &lt;span style="color:#e6db74">&amp;#39;^#!\[feature(.+)]&amp;#39;&lt;/span> | sort -u
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Rust" data-lang="Rust">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/52662
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(associated_type_bounds)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/62290
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(async_closure)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/61356
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(bound_cloned)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// We use this for printing the type name in generic errors,
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// an alternative has been recently stabilized, IIRC
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(core_intrinsics)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/43244
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(drain_filter)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/44732
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(external_doc)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/29625
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(fn_traits)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/56167
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(hash_raw_entry)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/53485
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(is_sorted)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/35121
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(never_type)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/13231
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(optin_builtin_traits)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/60258
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(option_flattening)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/53268
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(result_map_or_else)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/31844
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(specialization)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/42168
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(step_trait)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/41517
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(trait_alias)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/42327
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(try_trait)]&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// https://github.com/rust-lang/rust/issues/29625
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#75715e">#![feature(unboxed_closures)]&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>I&amp;rsquo;m fairly sure a couple of these have only recently been stabilized, but we
+only bump the compiler once in a blue moon since it&amp;rsquo;s usually a bit of a
+chore. Most notably, the &lt;code>never_type&lt;/code> was just stabilized!&lt;/p>
+&lt;p>There are some other features that we don&amp;rsquo;t use, but only because the path for
+them to be stabilized is so unclear and we didn&amp;rsquo;t want to further commit to
+using unstable features. The big ones here, where stabilization would be a
+revolution in our codebase are const generics and GATs. My understanding is
+that for the former we would ideally achieve lazy normalization inside the
+compiler, and that there&amp;rsquo;s still quite a bit of work ahead of us for that. For
+GATs I&amp;rsquo;m not quite sure which yaks will need to be shaven.&lt;/p>
+&lt;p>Another thing we&amp;rsquo;d like to see at Sc is a number of improvements to Cargo,
+some things that come to mind are:&lt;/p>
+&lt;ol>
+&lt;li>Constraining &lt;code>build.rs&lt;/code>
+&lt;ul>
+&lt;li>We&amp;rsquo;d like for it to &lt;em>not&lt;/em> have network access, and possibly only
+limited filesystem access. Right now the build script has unlimited
+power, which is really no good.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better dependency handling
+&lt;ul>
+&lt;li>There are a number of annoyances in Cargo relating to
+dependencies. The primary one being that if a crate exposes both a
+binary and a library (c.f. &lt;code>clap&lt;/code> + &lt;code>bindgen&lt;/code>, etc) but you only use
+the library portion you must still download and build all the
+binary-only dependencies. Another issue is that
+&lt;code>build-dependencies&lt;/code> share the same resolution graph with
+&lt;code>dev-dependencies&lt;/code> and &lt;code>dependencies&lt;/code> which causes issues in
+settings where the target doesn&amp;rsquo;t support a build dependency even
+though only the host needs it (for building.)&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better integration with other build systems
+&lt;ul>
+&lt;li>Cargo is pretty great as a standalone build tool for Rust, but it&amp;rsquo;s
+pretty bad at integrating with anything else. At Sc we use Nix
+everywhere, and the intgration with Rust has been painful, though
+there are promising projects like crate2nix.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;p>The last big thing we&amp;rsquo;re excited about is async/await, here are some of the
+things we&amp;rsquo;re still missing from it:&lt;/p>
+&lt;ol>
+&lt;li>Streams
+&lt;ul>
+&lt;li>Ideally we&amp;rsquo;d model a lot of our workloads with streams, so we&amp;rsquo;d love to
+see them stabilized and well-supported.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Stable ecosystem
+&lt;ul>
+&lt;li>It feels like Tokio has been around since forever without reaching 1.0
+status, we&amp;rsquo;d like to see more proactiveness around stabilization;
+async-std has been a positive force in this space.&lt;/li>
+&lt;li>On a separate note, the Rust ecosystem as a whole has started abusing
+semver in weird ways, such as versioning crates to the liking of
+&lt;code>0.1.0alpha7&lt;/code> as opposed to just bumping the revision. Let&amp;rsquo;s bump
+revisions in the 0.x range quickly and aim for stabilization; having to
+tag a &lt;code>2.0&lt;/code> some day isn&amp;rsquo;t the end of the world.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Clear performance metrics
+&lt;ul>
+&lt;li>As the ecosystem becomes increasingly diverse it&amp;rsquo;ll become necessary
+for there to be a &amp;ldquo;unified measuring stick&amp;rdquo; so that performance can be
+reasonably compared.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;p>As a final note on Sc, I think it&amp;rsquo;s easy for us who are heavily invested and
+deeply embedded into Rust to miss the forest for the trees and think that the
+lack of this or that feature, or that the existence of one or another wart in
+the ecosystem is a much bigger deal than it really is. Asking my coworkers who
+learned Rust on the job and transitioned from C++ and Java the feedback is
+overwhelmingly positive, even about the &amp;lsquo;wartiest&amp;rsquo; parts of the ecosystem. I
+think Rust has achieved a lot more than we give ourselves credit for.&lt;/p>
+&lt;h2 id="bernardo--rust-in-2020">Bernardo &amp;amp; Rust in 2020&lt;/h2>
+&lt;p>While most of my desires for Rust align with Sc&amp;rsquo;s there are a few things that
+are strictly personal wishes, namely:&lt;/p>
+&lt;ol>
+&lt;li>Rust 2021
+&lt;ul>
+&lt;li>I think we should have an edition in 2021, and if the 2018 edition
+taught us anything it&amp;rsquo;s that we should take more time in the edition
+process, I think two years instead of one will be a huge win.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better embedded support
+&lt;ul>
+&lt;li>It&amp;rsquo;s a bit silly that we still need to use cargo-xbuild (fka. xargo)
+it&amp;rsquo;s about time Cargo has first-class support for these use-cases.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Stable ABI&lt;/li>
+&lt;li>Lazy normalization&lt;/li>
+&lt;li>Simple ways to unify CLI options and config
+&lt;ul>
+&lt;li>Right now it&amp;rsquo;s simple to create a CLI app with rust using
+structopt, and it&amp;rsquo;s also trivial to define and source a TOML config
+file, but combining both is not nearly as easy as it could be.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Better IDE support
+&lt;ul>
+&lt;li>RLS is alright, but still has ways to go, and the 2.0 efforts are
+promising, but we have to see these things through.&lt;/li>
+&lt;li>Parsing Rust is not easy, the vim syntax highlighter struggles with
+large Rust files.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Further work on unsafe guidelines.&lt;/li>
+&lt;/ol>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>If you&amp;rsquo;re reading this after 2099, sorry for the inconsistency.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>The Lost Ark</title><link>/posts/the-lost-ark/</link><pubDate>Mon, 22 Apr 2019 00:54:01 +0000</pubDate><guid>/posts/the-lost-ark/</guid><description>I was 18 when I moved to Lisbon. I wasn&amp;rsquo;t really sure who I wanted to be, and I mean that quite literally. I was aware that, having just left my home country, I had a chance to choose who I wanted to be, in a sense. Of course I couldn&amp;rsquo;t just throw away all my baggage and persona, a lot of it was going to be part of who I was no matter what, but somehow it felt like a chance to pick new hobbies, new habits, things like that.</description><content>&lt;p>I was 18 when I moved to Lisbon. I wasn&amp;rsquo;t really sure who I wanted to be, and I
+mean that quite literally. I was aware that, having just left my home country, I
+had a chance to choose who I wanted to be, in a sense. Of course I couldn&amp;rsquo;t just
+throw away all my baggage and persona, a lot of it was going to be part of who I
+was no matter what, but somehow it felt like a chance to pick new hobbies, new
+habits, things like that. I&amp;rsquo;m not entirely sure how I chose to collect vinyl
+records and make audio a hobby, in hindsight it was the union of a lot of things
+that I loved deeply: music, analog circuitry, DIY&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>, woodworking, collecting,
+and on it goes.&lt;/p>
+&lt;p>I quickly fell in love with the hobby, I&amp;rsquo;d spend my weekends going to record
+stores in Lisbon looking for whatever record I was obsessed with that week&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>,
+and most of my free time during the week went into reading about amplifier
+design and things like that. Being a software developer I quickly turned those
+projects into increasingly large amounts of analog-digital Frankenstein madness.
+It was a whole lot of fun, and I look back at that time with a deep sense of
+nostalgia.&lt;/p>
+&lt;figure class="left" >
+&lt;img src="./images/turntable.jpg" />
+&lt;figcaption class="center" >My initial setup&lt;/figcaption>
+&lt;/figure>
+&lt;p>Sadly all good things must end, and that was definitely true for my time in
+Lisbon. I had grown increasingly frustrated with the university I was attending,
+and I had slowly become completely intolerant to the racism I had directed
+towards me by many Portuguese&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>. I was depressed, because school was deeply
+unfulfilling, and because I felt that I had to work hard at hiding my
+nationality and culture in order to be respected or liked by a large portion of
+my peers. I was done with all that, and it was time to go somewhere else, so I
+did.&lt;/p>
+&lt;figure class="left" >
+&lt;img src="./images/packing-up.jpg" />
+&lt;figcaption class="center" >Packing up&lt;/figcaption>
+&lt;/figure>
+&lt;p>I decided to move to the US, to Santa Barbara in particular, and with the help
+of many friends I had set up my move fairly quickly. One question, however,
+remained: How to get all this fragile and expensive audio across the Atlantic
+and to my new house in California. Luckily my girlfriend at the time worked in
+the art business and had some experience shipping things like that to the US;
+she hooked me up with a great freight company and problem solved. I sent
+everything with the company, except my record crate, which I was too scared and
+too attached to send on a long, shaky, trip like that. Those would need another
+solution.&lt;/p>
+&lt;p>Right about the time that I was beginning to lose hope, and when I thought that
+I was going to have to leave them behind, my mother offered a solution. A good
+friend of hers had recently moved to Lisbon, and had offered to take my records
+back to Brazil with her on her next trip back home in a couple weeks. I packaged
+my records and went to her house, showed her how to lock/unlock the case, and
+asked her not to lay the carrying case on it&amp;rsquo;s side, records should be stored
+upright. She cooked us lunch, we chatted, and then I was on my way, happy that I
+had found a trustworthy warden to herd my collection across the ocean.&lt;/p>
+&lt;p>When I got back to Brazil I immediately contacted her to get my records back,
+but got no answer. She eventually blocked me on WhatsApp and told my mother she
+couldn&amp;rsquo;t bring them because the case was too heavy. The case had stayed in
+Lisbon, I had broken up with my girlfriend who lived there, the few friends I
+had in the city had moved away. They were lost, I had placed my trust in the
+wrong person. I was heartbroken, that case represented so much effort and love,
+and it was simply gone, I would have to start over.&lt;/p>
+&lt;p>Moving into my house in Santa Barbara was a stark change of scenery. I went from
+living in a spacious studio in Lisbon, with a view I had grown to enjoy and a
+balcony I had grown to love, to the smallest room I had ever seen, in a house so
+close to the highway it shakes when a truck passed by. In addition to that I
+quickly discovered that being under 21 in America means it&amp;rsquo;s illegal for you to
+engage in any of the social activities you&amp;rsquo;re used to as a foreigner, you cannot
+go to bars, you cannot enjoy a beer at the end of a long day. It wasn&amp;rsquo;t a great
+start, I missed the freedom I had had all my life; being 20 in America feels
+like being 13 in Brazil, and I swiftly discovered that the maturity of my peers
+mirrored that, for the most part.&lt;/p>
+&lt;figure class="left" >
+&lt;img src="./images/balcony.jpg" />
+&lt;figcaption class="center" >My beloved balcony view&lt;/figcaption>
+&lt;/figure>
+&lt;p>I tried setting up my turntable in my room, even though I only had one record
+in my new collection&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>, but it wasn&amp;rsquo;t possible. The vibrations from the
+highway were so pronounced that it caused the needle to move around, it would
+skip grooves, or just sounds like garbage whenever a truck or the train passed
+by. I was so frustrated I packaged everything back in their respective boxes and
+placed it in a remote corner of the house where I would positively forget about
+their existence. That never quite happen, the amplifier box that I hid under the
+sofa created a pronounced bump on the cushion, a mildly annoying reminder of the
+passion I had left behind. Much like my equipment, the sofa quickly felt into
+disuse.&lt;/p>
+&lt;p>This was all about two years ago, and now I find myself in a similar situation
+that I did in Lisbon. I&amp;rsquo;ve been utterly unable to form meaningful relationships
+here in the US&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup>, and I&amp;rsquo;m convinced my concept of a friend is somehow
+incompatible with its American counterpart. I am, again, disappointed in my
+studies as well. I thought Computer Science was the right major for me, given
+that&amp;rsquo;s what I do in my day job and I love it, but I couldn&amp;rsquo;t have been more
+wrong about that, it&amp;rsquo;s a remarkably boring major. I can&amp;rsquo;t help but wonder where
+exactly did I go wrong to end up back where I started, and I do not know the
+answer.&lt;/p>
+&lt;p>Amid all this, my mother and her husband took a trip to Europe, they were going
+to Spain, Morocco, and finally Portugal. I had been so frustrated in my attempts
+to communicate with my mother&amp;rsquo;s friend who held the records that it took me a
+while to realize what an opportunity this was. Luckily my mother is always at
+least two steps ahead of me, and had somehow arranged with her rogue friend to
+retrieve my records. She succeeded, and brought them back with her to Brazil,
+where they now wait safely for me.&lt;/p>
+&lt;p>I&amp;rsquo;m not entirely sure through what mechanisms this happened, but somehow this
+gave me a tremendously clear goal at a time where I felt like life had turned
+into a Maelstrom that was slowly engulfing me, like a lion desperately confused
+chasing after zebras in the savannah. Suddenly I knew which direction to swim
+in, I had zeroed in on my prey and I was ready to conquer it. It was the first
+time in months I had felt centered, with a clear goal. I had to get them back,
+sit down, and listen to my favorite record&lt;sup id="fnref:6">&lt;a href="#fn:6" class="footnote-ref" role="doc-noteref">6&lt;/a>&lt;/sup>.&lt;/p>
+&lt;p>I haven&amp;rsquo;t achieved that goal yet, but somehow just having this mundane victory
+to look forward to helped me climb out of the hole that I had dug myself into. I
+can&amp;rsquo;t help but feel that the records rescued me more than I rescued them.
+Somehow this entity of what I thought was my past has come back to help me cope
+with the present, and I can&amp;rsquo;t wait until I have them back; until I have my hobby
+back.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>This might be surprising to the uninitiated, but there is a lot of DIY
+projects around audio amplifiers and speakers.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>I once went to every single record store within 100 miles looking for a
+Stockhausen record, eventually surrendering to getting it on Discogs.&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>I am Brazilian, and a portion of the Portuguese population holds a deep
+grudge against us that I have a hard time comprehending. It&amp;rsquo;s a weird form of
+xenophobia.&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4">
+&lt;p>I bought Yusef Lateef&amp;rsquo;s &amp;ldquo;Eastern Sounds&amp;rdquo; at Amoeba in LA.&amp;#160;&lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5">
+&lt;p>With the exception of my girlfriend. I find that it is not uncommon for
+expatriates in the US to feel like Americans do not have friends, there is
+something really peculiar about how Americans deal with friendship.&amp;#160;&lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:6">
+&lt;p>If you are wondering, it&amp;rsquo;s Quarteto Novo&amp;rsquo;s self titled album.&amp;#160;&lt;a href="#fnref:6" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>Home</title><link>/posts/home/</link><pubDate>Wed, 13 Feb 2019 23:41:15 +0000</pubDate><guid>/posts/home/</guid><description>I grew up in a farm, a farm in the middle of nowhere. Well, of course it is somewhere, 22° 02′ 46.2″ S 43° 02′ 38.2″ W to be exact, it&amp;rsquo;s just that &amp;ldquo;where&amp;rdquo; isn&amp;rsquo;t the question to be asked, because it doesn&amp;rsquo;t matter. It doesn&amp;rsquo;t matter because it could&amp;rsquo;ve been anywhere; I could&amp;rsquo;ve grown in a farm in China, Alabama, or France, it wouldn&amp;rsquo;t make much of a difference because those are just names; home is home.</description><content>&lt;p>I grew up in a farm, a farm in the middle of nowhere. Well, of course it is
+somewhere, &lt;em>22° 02′ 46.2″ S 43° 02′ 38.2″ W&lt;/em> to be exact, it&amp;rsquo;s just that &amp;ldquo;where&amp;rdquo;
+isn&amp;rsquo;t the question to be asked, because it doesn&amp;rsquo;t matter. It doesn&amp;rsquo;t matter
+because it could&amp;rsquo;ve been anywhere; I could&amp;rsquo;ve grown in a farm in China, Alabama,
+or France, it wouldn&amp;rsquo;t make much of a difference because those are just names;
+home is home. Now, if you go on Google Earth and input the coordinates to my
+home you&amp;rsquo;ll find a lake, and a somewhat desolate patch of land. Someone, you
+see, decided my home was better suited as a lake for a dam; they gave us some
+money, demolished it, and flooded it into oblivion. This also doesn&amp;rsquo;t matter
+though, it&amp;rsquo;s not as if you had looked before it was gone you would have seen my
+home; you would have seen a farm. Home isn&amp;rsquo;t a place on earth, it&amp;rsquo;s made of, and
+lives in, memories; it&amp;rsquo;s eternally yours to visit.&lt;/p>
+&lt;p>I visit home often. Not through the advent of technology, perhaps unfortunately
+for they are clean and unopinionated, but through &lt;em>saudade&lt;/em>. It&amp;rsquo;s uncontrollable
+and fierce, it stabs you in the heart with its invisible warn blade, and you
+drift off into the known. I am laying down on the floor next to my girlfriend, a
+deep breath, I am laying in the grassland behind the &lt;em>Jabuticaba&lt;/em> trees, a deep
+breath, I am in a slowly rocking hammock, a deep breath, where am I? I&amp;rsquo;m in my
+my girlfriend&amp;rsquo;s house, of course; she asks me what&amp;rsquo;s wrong; nothing&amp;rsquo;s wrong, I
+was just visiting.&lt;/p>
+&lt;p>I mentioned my teleportation device earlier, &lt;em>saudade&lt;/em>, but I tend to forget not
+everyone knows it&amp;rsquo; name. The Portuguese, for all their failures, did succeed at
+being the only ones to discover teleportation, or at least the only ones to name
+it. Saudade is a notoriously untranslatable word; it is &amp;ldquo;longing, melancholy,
+nostalgia, &amp;hellip; a vague and constant desire for something that does not, and
+probably cannot exist, not an active discontent or poignant sadness, but an
+indolent, dreaming wistfulness.&amp;rsquo;&amp;rsquo;&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup> Saudade is everything taking so long to be
+so miserable, it fills the soul with lacking. As Drummond wrote, we also have
+saudade of what hasn&amp;rsquo;t been, and it hurts a lot&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Saudade is raw power in
+word-form; it is impossible for me to say it without getting goosebumps.&lt;/p>
+&lt;p>The more I live and the more I accomplish, the more I realize that I am lost. I
+am lost because I cannot find home; it no longer exists for me to find it. I can
+point to it on the map, I can go to its exact location and wander around, I can
+even stand at the exact location where my room used to be, and yet I am not
+home. I may have found it on the map, but the truth is it remains lost. Home,
+and to varying degrees this true for everyone, is an eternal entity of the past.
+Being at &lt;em>22° 02′ 46.2″ S 43° 02′ 38.2″ W&lt;/em> had little bearing on the cathartic
+entity that is home. When I visited the farm after the flooding, and I walked on
+the few remaining pieces of land, I didn&amp;rsquo;t feel much at all. I was mildly sad,
+if anything, but it wasn&amp;rsquo;t a meaningful experience, I think. When I see my whole
+family together, now in Rio de Janeiro, bickering and gossiping and talking
+loudly; that&amp;rsquo;s when I miss home, that&amp;rsquo;s when the void of saudade feels like my
+chest will collapse and I will disappear.&lt;/p>
+&lt;p>This past-tense aspect of home, it&amp;rsquo;s existence being only virtual, is what makes
+it so strong. In some ways, home is a common denominator between us all,
+everyone has a home, somewhere in their memory. Home can disappear, and yet
+remain within us for as long as we are alive. I oscillate between seeing this as
+a curse or a blessing, because saudade of what can no longer exist hurts so
+much. Thinking about this reminded me of David Byrne&amp;rsquo;s track [&amp;ldquo;Home,][home]&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>
+where he sings:&lt;/p>
+&lt;blockquote>
+&lt;p>You can fly - from the stuff that still surrounds you&lt;/p>
+&lt;p>We&amp;rsquo;re home - and the band keeps marching on&lt;/p>
+&lt;p>Connecting - to every living soul&lt;/p>
+&lt;p>Compassion - for things I&amp;rsquo;ll never know&lt;/p>
+&lt;/blockquote>
+&lt;p>The whole song, in one way or another, deals deeply with the idea of home, but I
+think that passage, the ending of the track, speaks precisely of how home
+permeates the human condition. Maybe what makes home so special is that it&amp;rsquo;s
+existence is just sown in with our humanity. Maybe to be human is to have a home
+and to long for it once it lives solely in memory. Perhaps the real wisdom to be
+had is that we should all cherish home, while it lasts and once it&amp;rsquo;s gone, for
+it&amp;rsquo;s part of what makes us human, for it&amp;rsquo;s part of who we are, always.&lt;/p>
+&lt;h2 id="memories-in-past-tense">Memories in Past Tense&lt;/h2>
+&lt;figure class="left" >
+&lt;img src="./images/flowers.jpg" />
+&lt;/figure>
+&lt;hr>
+&lt;figure class="left" >
+&lt;img src="./images/hall.jpg" />
+&lt;/figure>
+&lt;hr>
+&lt;figure class="left" >
+&lt;img src="./images/horse.jpg" />
+&lt;/figure>
+&lt;hr>
+&lt;figure class="left" >
+&lt;img src="./images/chickens.jpg" />
+&lt;/figure>
+&lt;hr>
+&lt;figure class="left" >
+&lt;img src="./images/entrance.jpg" />
+&lt;/figure>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>Emmons, Shirlee and Lewis, Wilbur Watkins; &amp;ldquo;Researching the Song: A Lexicon&amp;rdquo;&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>Drummond, Carlos de Andrade; &amp;ldquo;O Avesso Das Coisas&amp;rdquo;&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>Byrne, David; &amp;ldquo;Everything That Happens Will Happen Today&amp;rdquo;
+[home]: &lt;a href="https://www.youtube.com/watch?v=dC8Gxqhcjhk">https://www.youtube.com/watch?v=dC8Gxqhcjhk&lt;/a>&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>Thinkpad Nightmare</title><link>/posts/thinkpad-nightmare/</link><pubDate>Thu, 24 Jan 2019 23:38:15 +0000</pubDate><guid>/posts/thinkpad-nightmare/</guid><description>A few weeks ago I finally got my new work computer. I had been using an underpowered MacBook Pro that I had grown to hate for months, and so I asked for a Linux laptop, and another systems engineer followed along. When they asked me which laptop I would like, I recommended a Thinkpad. I had heard nothing but good things about them and their Linux support, and so I felt confident they would prove to be a good choice.</description><content>&lt;p>A few weeks ago I finally got my new work computer. I had been using an
+underpowered MacBook Pro that I had grown to hate for months, and so I asked for
+a Linux laptop, and another systems engineer followed along. When they asked me
+which laptop I would like, I recommended a Thinkpad. I had heard nothing but
+good things about them and their Linux support, and so I felt confident they
+would prove to be a good choice. I ended up going for the Xeon variant of the
+Lenovo P1, a laptop costing roughly $3000.&lt;/p>
+&lt;p>The day I got the machine I was beaming with excitement, &amp;ldquo;Finally I will be able
+to use a tiling window manager again!&amp;rdquo; I booted it up, allowed Windows to
+perform its updates and rebooted. After that I allowed Lenovo Vantage, their
+update/management software to search for updates, and sure enough it found some
+updates and drivers. I let it run, and in the end it prompted me to update my
+BIOS. I had read online about multiple issues regarding the 1.15 version that my
+machine had shipped with, such as bricking when certain options were enabled, so
+I allowed it to run. Some shell command executed, and then the machine promptly
+rebooted. The BIOS update utility showed up, and started doing its thing, until
+the progress bar stopped. One hour passed, and then another, and then five, and
+the bar did not move. I searched around online and it did not seem like anyone
+was experiencing this, so I called Lenovo support.&lt;/p>
+&lt;p>Here I really want to stop for a moment to emphasize just how remarkably
+terrible Lenovo support is. Firstly, going through the menus is an advanced game
+of 4-D chess against the robotic voices that guide you through the maze of
+options. In fact, in one of my attempts I even managed to reach an infinite loop
+where it was impossible to go back, and all the options were invalid. When,
+after completing the dungeon and passing through IBM and then back to Lenovo,
+you finally speak to a human, you are welcomed by the Lenovo technical support
+center in Atlanta, Georgia&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. Now, I am not a native speaker of English, but
+my (spoken) English is almost undetectable, most people think I&amp;rsquo;m from Ohio and
+I&amp;rsquo;ve had a hard time convincing some otherwise, and yet every single person I
+spoke to at the support center was almost unintelligible. I really could not
+understand what they were saying, which made it all the more frustrating. To cut
+this short, I eventually managed to communicate, at which point they told me to
+unplug the computer and allow it to power off eventually and see what happened.
+My computer was bricked.&lt;/p>
+&lt;p>With an expensive piece of metal sitting on my desk, I called Lenovo support
+again, and was informed that it would take up to a month for it to be repaired.
+I chose to go for a replacement. The replacement eventually came in, and I did
+the same update process, except this time it worked fine, yippie!&lt;/p>
+&lt;p>The machine mostly worked fine with Linux, except for the fact that I had some
+weird issue where it would shut down randomly, it was rare enough it didn&amp;rsquo;t
+bother me all that much. Sure enough, I went to check and there was another BIOS
+update fixing the shutdown issue. I took a Xanax&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>, prepared for the worst,
+and performed the update. Surprisingly, it worked perfectly fine. Or so I
+though, somehow in the update Power on AC seemed to have been activated, which I
+found rather annoying, so I went ahead and disabled that in the BIOS. After that
+my machine never booted again. So here I am, again, with an expensive piece of
+metal.&lt;/p>
+&lt;p>I didn&amp;rsquo;t dare call Lenovo support this time, I value my sanity too much, instead
+I just contacted our vendor CDW&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> and asked for a replacement, which I should get
+some time soon. In the mean time I am stuck with the MacBook that I hate and
+with unfinished, valuable, work inside of the Thinkpad that failed me again.&lt;/p>
+&lt;p>I wish I could recommend Lenovo and this Thinkpad, but if they can&amp;rsquo;t get
+something as basic and as essential as their BIOS right they might as well give
+up on making computers. I just hope I get my replacement soon, before Chinese
+New Years so it doesn&amp;rsquo;t take even longer so that I can go back to work soon.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>I only know this because an annoying voice, almost mocking you after the
+journey it took to reach the support center, announces it proudly.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>Not really.&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>The unsung hero here is our CDW representative, Shane, who is the most
+timely, professional, and helpful person I have ever dealt with in this area.
+I could not recommend CDW more.&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>Notes on Euclidean Spaces</title><link>/posts/notes-on-euclidean-spaces/</link><pubDate>Thu, 30 Aug 2018 00:00:00 +0000</pubDate><guid>/posts/notes-on-euclidean-spaces/</guid><description>Real euclidean spaces Real euclidean spaces have definitions of inner product and norm. Examples in \(\mathbb R^n\):
+The usual inner product The unit-radius circumference when considering an unusual inner product Cauchy-Schwarz inequality Let \(V\) be a real vector space. A form or real function \[ \begin{aligned} \langle\cdot,\cdot\rangle\colon V\times V &amp;amp;\rightarrow \mathbb R \\ (x, y) &amp;amp;\mapsto \langle x,y\rangle \end{aligned}\ \] is said to be an inner product if, for all \(x, y, z \in V\) and all \(\alpha \in \mathbb R\),</description><content>&lt;h2 id="real-euclidean-spaces">Real euclidean spaces&lt;/h2>
+&lt;p>Real euclidean spaces have definitions of inner product and norm. Examples in
+\(\mathbb R^n\):&lt;/p>
+&lt;ul>
+&lt;li>The usual inner product&lt;/li>
+&lt;li>The unit-radius circumference when considering an unusual inner product&lt;/li>
+&lt;li>Cauchy-Schwarz inequality&lt;/li>
+&lt;/ul>
+&lt;p>Let \(V\) be a real vector space. A form or real function \[
+\begin{aligned} \langle\cdot,\cdot\rangle\colon V\times V &amp;amp;\rightarrow \mathbb R
+\\ (x, y) &amp;amp;\mapsto \langle x,y\rangle \end{aligned}\ \] is said to be an
+&lt;em>inner product&lt;/em> if, for all \(x, y, z \in V\) and all \(\alpha \in \mathbb
+R\),&lt;/p>
+&lt;ol>
+&lt;li>\(\langle x,y \rangle = \langle y, x \rangle\)&lt;/li>
+&lt;li>\(\langle \alpha x, y\rangle = \alpha\langle x, y\rangle\)&lt;/li>
+&lt;li>\(\langle x+y, z\rangle = \langle x, z\rangle + \langle y, z\rangle\)&lt;/li>
+&lt;li>\(\langle x, x\rangle \geq 0 \wedge (\langle x, x\rangle = 0 \implies x =
+0)\)&lt;/li>
+&lt;/ol>
+&lt;p>A real linear space \(V\) equipped with an inner product is called an (real)
+&lt;strong>Euclidean Space&lt;/strong>.&lt;/p>
+&lt;h3 id="examples">Examples&lt;/h3>
+&lt;ol>
+&lt;li>Usual inner product in \(\mathbb R^n\)
+&lt;ul>
+&lt;li>\(\mathbb R^2\) \[ \begin{aligned} \langle x, y\rangle &amp;amp;= \lVert
+x\rVert\lVert y\rVert \cos\theta \\ &amp;amp;= x_1 y_1 + x_2 y_2 \quad\text{in
+}\mathbb R^2 \end{aligned}\ \] where \(\theta\in[0, \pi]\) is the
+angle between the vectors \(x\) and \(y\). Note that the norm of the
+vector \(x\) satisfies \[ \lVert x\rVert^2 = \langle x, x\rangle \]&lt;/li>
+&lt;li>\(\mathbb R^n\) \[ \begin{aligned} \langle x, y\rangle &amp;amp;= x_1 y_1 + x_2
+y_2 + \cdots + x_n y_n \\ \langle x, y\rangle &amp;amp;= y^Tx = x^Ty
+\end{aligned}\ \]&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Another inner product in \(\mathbb R^2\)
+&lt;ul>
+&lt;li>&lt;strong>Exercise.&lt;/strong> Determine the circumference \(C\) of radius \(1\) and
+centered at \((0, 0)\) \[ C = {(x_1, x_2)\in\mathbb R^2\colon
+\lVert(x_1, x_2)\rVert = 1} \] considering
+&lt;ul>
+&lt;li>The usual inner product&lt;/li>
+&lt;li>The inner product \[\langle (x_1, x_2), (y_1, y_2) \rangle =
+\frac{1}{9} x_1y_1 + \frac{1}{4} x_2y_2 \]&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="norm-and-the-triangle-inequality">Norm and the triangle inequality&lt;/h3>
+&lt;p>For all vectors \(x\in V\), we define the &lt;strong>norm&lt;/strong> of \(x\) as \[ \lVert
+x\rVert = \sqrt{\langle x, x\rangle} \] such that, for all \(x\in V\) and all
+\(\alpha\in\mathbb R\) we have&lt;/p>
+&lt;ol>
+&lt;li>\(\lvert x\rVert\geq 0\qquad \text{and}\qquad \lVert x\rVert \iff x = 0\)&lt;/li>
+&lt;li>\(\lVert \alpha x\rVert = \lvert\alpha\rvert\lVert x\rVert\)&lt;/li>
+&lt;li>\(\lVert x + y\rVert\leq\lVert x\rVert + \lVert y\rVert \qquad\qquad
+\text{(triangle inequality)} \)&lt;/li>
+&lt;/ol>
+&lt;p>A function \(V \to \mathbb R\) that satisfies the above conditions is said to
+be a &lt;strong>norm&lt;/strong> defined in \(V\).&lt;/p>
+&lt;p>The proof that the function we defined earlier and called &amp;ldquo;inner product&amp;rdquo;
+satisfies the triangle inequality will be done at a later point, since it relies
+on the Cauchy-Schwarz inequality.&lt;/p>
+&lt;h3 id="cauchy-schwarz-inequality">Cauchy-Schwarz Inequality&lt;/h3>
+&lt;p>&lt;strong>Theorem 1.&lt;/strong> &lt;em>Let \(V\) be an euclidean space. For all \(x, y \in V\) we
+have&lt;/em> \[ \lvert\langle x, y\rangle\rvert \leq \lVert x\rVert \lVert y\rVert \]
+Note that in \(\mathbb R^2\) and \(\mathbb R^3\) we have: \[ \langle x,
+y\rangle = \lVert x\rVert\lVert y\rVert\cos\theta \] where \[ \lvert\langle x,
+y\rangle\rvert = \lVert x\rVert\lVert y\rVert\lvert \cos\theta\rvert \leq \lVert
+x\rVert \lVert y\rVert \]&lt;/p>
+&lt;h3 id="distance">Distance&lt;/h3>
+&lt;p>For all \(x, y \in V\), we define the &lt;strong>distance from \(x\) to \(y\)&lt;/strong> as
+\[ d(x, y) = \lVert x - y\rVert \]&lt;/p>
+&lt;h3 id="parallelogram-law">Parallelogram Law&lt;/h3>
+&lt;p>For all vectors \(x, y \in V\), we have \[ \lVert x + y\rVert^2 + \lVert x -
+y\rVert^2 = 2(\lVert x\rVert^2 + \lVert y\rVert^2) \]&lt;/p>
+&lt;h3 id="example">Example&lt;/h3>
+&lt;p>An inner product in \(\mathbb M_{2\times 2}(\mathbb R)\).&lt;/p>
+&lt;p>For all matrices \(A, B \in \mathbb M_{2\times 2}(\mathbb R)\) we define \[
+\begin{aligned} \langle A, B\rangle &amp;amp;= tr(B^T A) \\ &amp;amp;= \sum^2_{i,
+j=1}{a_{ij}b_{ij}} \end{aligned}\] with \(A = [a_{ij}]\) and \(B =
+[b_{ij}]\)&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. Note that, letting \(B_c\) be the canonical basis of
+\(\mathbb M_{2\times 2}(\mathbb R)\)&lt;/p>
+&lt;p>\[\langle A, B \rangle_{\mathbb M_{2\times 2}(\mathbb R)} =
+\langle (A)_{B_c}, (B)_{B_c}\rangle_{\mathbb R^4}\]&lt;/p>
+&lt;p>Meaning that the inner product defined above respects the isomorphism \( A
+\mapsto (A)_{B_c}\) between \( \mathbb{M}_{2 \times 2}(\mathbb R) \) and
+\(\mathbb R^4\)&lt;/p>
+&lt;h3 id="proof-of-the-triangle-inequality">Proof of the triangle inequality&lt;/h3>
+&lt;p>\[ \begin{aligned} \lVert x + y\rVert^2 &amp;amp;= \langle x+y, x+y\rangle \\ &amp;amp;=
+\langle x, x\rangle + 2\langle x, y\rangle + \langle y, y\rangle \\ &amp;amp;= \lVert
+x\rVert^2 + 2\langle x, y\rangle + \lVert y\rVert^2 \qquad (\text{Inner product
+in terms of the norm})\\ &amp;amp;\leq \lVert x\rVert^2 + 2\lvert\langle x,
+y\rangle\rvert + \lVert y\rVert^2 \\ &amp;amp;\leq \lVert x\rVert^2 + 2\lVert
+x\rVert\lVert y\rVert + \lVert y\rVert^2 \qquad (\text{Cauchy-Schwartz
+inequality}) \\ &amp;amp;=(\lVert x\rVert + \lVert y\rVert)^2 \end{aligned}\]&lt;/p>
+&lt;p>Where \[ \lVert x + y\rVert \leq \lVert x\rVert + \lVert y\rVert
+\qquad_\blacksquare\]&lt;/p>
+&lt;hr>
+&lt;h2 id="gram-matrix">Gram Matrix&lt;/h2>
+&lt;p>Let \(V\) be a real euclidean space, and \(B = (b_1, b_2, \ldots, b_n)\) a
+basis of \(V\). With \(x, y \in V\) such that \(x_B = (\alpha_1, \alpha_2,
+\ldots, \alpha_n)\) and \(y_B = \beta_1, \beta_2, \ldots, \beta_n\), we have
+\[\begin{aligned} \langle x, y\rangle &amp;amp;=
+\langle\alpha_1 b_1 + \alpha_2 b_2 + \cdots + \alpha_n b_n,
+\beta_1 b_1 + \beta_2 b_2 + \cdots + \beta_n b_n\rangle
+\\ &amp;amp;= \begin{bmatrix}\beta_1 &amp;amp; \beta_2 &amp;amp; \ldots &amp;amp; \beta_n
+\end{bmatrix} \underbrace{\begin{bmatrix}\langle b_1, b_1\rangle &amp;amp;
+\langle b_2, b_1\rangle &amp;amp;\ldots &amp;amp; \langle b_n, b_1\rangle
+\\ \langle b_1, b_2\rangle &amp;amp; \langle b_2, b_2\rangle &amp;amp;\ldots &amp;amp;
+\langle b_n, b_2\rangle
+\\ \vdots
+\\ \langle b_1, b_n\rangle &amp;amp; \langle b_2, b_n\rangle &amp;amp;\ldots &amp;amp;
+\langle b_n, b_n\rangle
+\\ \end{bmatrix}}_G \begin{bmatrix}\alpha_1
+\\ \alpha_2
+\\ \vdots
+\\ \alpha_n\end{bmatrix} \end{aligned}\ \]&lt;/p>
+&lt;p>Therefore, given an inner product in \(V\) and a basis \(B\), it is possible
+to determine a matrix \(G\) such that \[\langle x,y\rangle = y_B^T Gx_B\]&lt;/p>
+&lt;p>This matrix \(G = [g_{ij}]\), where for all \(i, j = 1, \ldots, n\) we have
+\(g_{ij} = \langle b_j, b_i \rangle\) is called the &lt;strong>Gram matrix&lt;/strong> of the set
+of vectors \(\{b_1, b_2, \ldots, b_n\}\).&lt;/p>
+&lt;p>Note that:&lt;/p>
+&lt;ul>
+&lt;li>\(G\) is a symmetric (\(G = G^T\)) \(n\times n\) real matrix.&lt;/li>
+&lt;li>For all non-null vectors \(x\in V\) \[x_B^T Gx_b &amp;gt; 0\]&lt;/li>
+&lt;/ul>
+&lt;p>A square real matrix \(A\) of order \(k\) is said to be &lt;strong>positive
+definite&lt;/strong> if, for all non-null vectors \(x\in\mathbb R^n\), \(x^T Ax &amp;gt;
+0\)&lt;/p>
+&lt;p>&lt;strong>Proposition 1.&lt;/strong> &lt;em>A symmetric real matrix is positive definite iff all your
+proper values are positive.&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Theorem 2.&lt;/strong> &lt;em>Let \(A\) be a symmetric real matrix of order \(n\). The
+following statements are equivalent.&lt;/em>&lt;/p>
+&lt;ol>
+&lt;li>&lt;em>The expression \[\langle x, y\rangle = y^T Ax\] defines an inner product
+in \(\mathbb R^n\)&lt;/em>&lt;/li>
+&lt;li>&lt;em>\(A\) is positive definite.&lt;/em>&lt;/li>
+&lt;/ol>
+&lt;h3 id="exercise">Exercise&lt;/h3>
+&lt;p>Consider that \(\mathbb R^n\) is equipped with the canonical basis
+\(\mathcal{e}_n\). What is the Gram matrix \(G\) that corresponds to the usual
+inner product in \(\mathbb R^n\)? Also, which Gram matrix corresponds to the
+inner product in item (2) of the previous exercise?&lt;/p>
+&lt;hr>
+&lt;h2 id="complex-euclidean-spaces-and-orthogonal-vectors">Complex euclidean spaces and orthogonal vectors&lt;/h2>
+&lt;p>Example of complex euclidean space: usual inner product in \(\mathbb C^n\).&lt;/p>
+&lt;p>Let \(V\) be a complex vector space. A complex function or form
+\[ \begin{aligned}\langle\cdot,\cdot\rangle\colon V \times V &amp;amp;\to \mathbb C
+\\ (x, y) &amp;amp;\mapsto \langle x, y\rangle\end{aligned} \]
+is said to be an &lt;strong>inner product&lt;/strong> if, for all \(x, y, z \in V\) and all
+\(\alpha \in \mathbb C\)&lt;/p>
+&lt;ol>
+&lt;li>\(\langle x, y\rangle = \overline{\langle y, x\rangle}\)&lt;/li>
+&lt;li>\(\langle \alpha x, y\rangle = \alpha\langle x,y\rangle\)&lt;/li>
+&lt;li>\(\langle x + y, z\rangle = \langle x, z\rangle + \langle y, z\rangle\)&lt;/li>
+&lt;li>\(\langle x, x\rangle \geq 0 \wedge (\langle x, x\rangle = 0 \implies x =
+0)\)&lt;/li>
+&lt;/ol>
+&lt;p>A complex vector space \(V\) equipped with an inner product is called a (complex)
+&lt;strong>euclidean space&lt;/strong>.&lt;/p>
+&lt;p>Much like with real euclidean spaces, we define the &lt;strong>norm&lt;/strong> of a vector as
+\[\lVert x\rVert = \sqrt{\langle x, x\rangle}\] and the &lt;strong>distance from
+\(x\) to \(y\) as \[d(x, y) = \lVert x - y\rVert\]&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>Example.&lt;/strong> Usual inner product in \(\mathbb C^n\). Let \(x = (x_1, x_2,
+\ldots, x_n)\) and \(y_1, y_2, \ldots, y_n\) be vectors in \(\mathbb C^n\),
+we define \[\langle x, y\rangle = x_1\overline{y}_1 + x_2\overline{y}_2 +
+\cdots + x_n\overline{y}_n\] and therefore \[\langle x, y\rangle =
+\overline{y}^T x\] Regarding the norm we have \[\lvert x\rVert^2 =
+\langle x, x\rangle = x_1\overline{x}_1 + x_2\overline{x}_2 + \cdots +
+x_n\overline{x}_n\] or \[\lVert x\rVert = \sqrt{\lVert x, x\rVert} =
+\sqrt{\lvert x_1\rvert^2 + \lvert x_2\rvert^2 + \cdots + \lvert x_n\rvert^2}\]&lt;/p>
+&lt;p>All the remaining results that were presented regarding real euclidean spaces
+are also true for complex euclidean spaces (Cauchy-Schwartz, triangle
+inequality, parallelogram law, …).&lt;/p>
+&lt;h3 id="complex-gram-matrix">Complex Gram Matrix&lt;/h3>
+&lt;p>Let \(V\) be a complex euclidean space, and let \(B = (b_1, b_2, \ldots,
+b_n)\) be a basis of \(V\). With \(x, y \in V\) such that \(x_B=(\alpha_1,
+\alpha_2, \dots, \alpha_n)\) and \(y_B=(\beta_1, \beta_2, \dots, \beta_n)\),
+we have
+\[ \begin{aligned} \langle x, y\rangle &amp;amp;= \langle\alpha_1 b_1 +
+\alpha_2 b_2 + \cdots + \alpha_n b_n, \beta_1 b_1 + \beta_2 b_2 +
+\cdots + \beta_n b_n\rangle
+\\ &amp;amp;= \begin{bmatrix}\overline{\beta}_1 &amp;amp; \overline{\beta}_2 &amp;amp; \ldots &amp;amp;
+\overline{\beta}_n\end{bmatrix} \underbrace{\begin{bmatrix}\langle b_1,
+b_1\rangle &amp;amp; \langle b_2, b_1\rangle &amp;amp;\ldots &amp;amp; \langle b_n, b_1\rangle
+\\ \langle b_1, b_2\rangle &amp;amp; \langle b_2, b_2\rangle &amp;amp;\ldots &amp;amp; \langle
+b_n, b_2\rangle
+\\ \vdots
+\\ \langle b_1, b_n\rangle &amp;amp; \langle b_2, b_n\rangle &amp;amp;\ldots &amp;amp;
+\langle b_n, b_n\rangle
+\\ \end{bmatrix}}_G \begin{bmatrix}\alpha_1
+\\ \alpha_2
+\\ \vdots
+\\ \alpha_n\end{bmatrix} \end{aligned}\ \]&lt;/p>
+&lt;p>Therefore, given an inner product in \(V\) and a basis \(B\), it is possible
+to determine a matrix \(G\) such that
+\[\langle x,y\rangle = \overline{y}_B^T Gx_B\]&lt;/p>
+&lt;p>This matrix \(G = [g_{ij}]\), where for all \(i, j = 1, \ldots, n\) we have
+\(g_{ij} = \langle b_j, b_i \rangle\) is called the &lt;strong>Gram matrix&lt;/strong> of the
+set of vectors \(\{b_1, b_2, \ldots, b_n\}\).&lt;/p>
+&lt;p>Note that:&lt;/p>
+&lt;ul>
+&lt;li>\(G\) is an \(n\times n\) complex matrix such that (\(G =
+\overline{G}^T\)).&lt;/li>
+&lt;li>For all non-null vectors \(x\in V\) \[\overline{x}_B^T Gx_b &amp;gt; 0\]&lt;/li>
+&lt;/ul>
+&lt;p>A complex square matrix \(A\) of order \(k\) is said to be &lt;strong>hermitian&lt;/strong> if
+\(A = \overline{A}^T\). Note that the spectrum \(\sigma(A)\) of a hermitian
+is contained in \(\mathbb R\).&lt;/p>
+&lt;p>A hermitian matrix \(A\) of order \(k\) is said to be &lt;strong>positive definite&lt;/strong>
+if, for all non-null vectors \(x\in\mathbb C^n\), \(\overline{x}^T Ax &amp;gt; 0\).&lt;/p>
+&lt;p>&lt;strong>Proposition 2.&lt;/strong> &lt;em>A hermitian matrix is positive definite iff all of it&amp;rsquo;s
+proper values are positive.&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Theorem 3.&lt;/strong> &lt;em>Let \(A\) be a hermitian matrix of order \(n\). The
+following statements are equivalent.&lt;/em>&lt;/p>
+&lt;ol>
+&lt;li>&lt;em>The expression \[\langle x, y\rangle = \overline{y}^T Ax\] defines an
+inner product in \(\mathbb C^n\)&lt;/em>&lt;/li>
+&lt;li>&lt;em>A is positive definite.&lt;/em>&lt;/li>
+&lt;/ol>
+&lt;h3 id="angle-between-two-vectors">Angle between two vectors&lt;/h3>
+&lt;p>Let \(x\) and \(y\) be non-null vectors belonging to some &lt;strong>real&lt;/strong> euclidean
+space \(V\). We define the &lt;em>angle&lt;/em> between the vectors \(x\) and \(y\) as
+being the angle \(\theta\), with \(0\leq\theta\leq\pi\), such that
+\[\cos\theta = \frac{\langle x, y\rangle}{\lVert x\rVert \lVert y\rVert}\]
+With Cauchy-Schwartz we can see that \(\lvert\cos\theta\rvert\leq 1\).&lt;/p>
+&lt;p>Let \(x\) and \(y\) be (possibly null) vectors belonging to some &lt;strong>real or
+complex&lt;/strong> euclidean space \(V\). The vectors \(x\) and \(y\) are said to
+be &lt;strong>orthogonal&lt;/strong>, written \(x \perp y\), if
+\[\langle x, y\rangle = 0\]&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> What are the orthogonal vectors to \(v = (1, 1, 0)\) considering
+\(\mathbb R^3\) with the usual inner product?&lt;/p>
+&lt;p>&lt;strong>Theorem 4. (Pythagoras Theorem)&lt;/strong> Let \(x\) and \(y\) be orthogonal
+vectors of some euclidean space \(V\). Then
+\[\lVert x + y\rVert^2 = \lVert x\rVert^2 + \lVert y \rVert^2\]&lt;/p>
+&lt;p>&lt;em>Proof.&lt;/em> Exercise&lt;/p>
+&lt;hr>
+&lt;h2 id="orthogonal-complement">Orthogonal complement&lt;/h2>
+&lt;p>Let \(X\) be a subspace of an euclidean space \(V\). We say that \(u\) is
+&lt;strong>orthogonal to&lt;/strong> \(X\) if \(u\) is orthogonal to all elements of \(X\).
+We write this \(u \perp W\).&lt;/p>
+&lt;p>For example, \((1, 1, 0)\) is orthogonal to the plane \(S\) of the previous exercise.&lt;/p>
+&lt;p>Let \(W\) be a subspace of \(V\). The &lt;strong>orthogonal complement&lt;/strong> of \(W\),
+written \(W^\perp\), is defined as
+\[W^\perp = \{u\in V\colon u\perp W\}\]&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Determine the orthogonal complement of the line generated by the
+vector \((1, 1, 0)\).&lt;/p>
+&lt;p>&lt;strong>Proposition 3.&lt;/strong> \(W^\perp\) is a subspace of V.&lt;/p>
+&lt;p>&lt;strong>Proposition 4.&lt;/strong> &lt;em>Let \(W\) be a linear subspace of an euclidean space
+\(V\) and let \(\{u_1, u_2, \ldots, u_k\}\) be a generator set of
+\(W\). Then, \(e\in V\) is orthogonal to \(W\) iff it is orthogonal to
+\(\{u_1, u_2, \ldots, u_k\}\).&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Corollary 1.&lt;/strong> &lt;em>In the conditions of the previous proposition, \(u\in V\) is
+orthogonal to \(W\) iff it is orthogonal to a basis of \(W\).&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Determine the orthogonal complement of the plane \(W\in\mathbb
+R^3\) with the cartesian equation \(x=y\).&lt;/p>
+&lt;p>&lt;strong>Solution.&lt;/strong> \(W^\perp\) is the line described by the equations
+\[\begin{cases}x = -y \\ z = 0\end{cases}\qquad\qquad\textbf{cartesian equations}\]
+or
+\[(x, y, z) = t(-1, 1, 0)\qquad(t\in\mathbb R)\qquad\qquad\textbf{vector equation}\]
+or
+\[\begin{cases}x = -t \\ y = t \\ z = 0\end{cases}\qquad(t\in\mathbb
+R)\qquad\qquad\textbf{parametric equations}\]&lt;/p>
+&lt;p>&lt;strong>Proposition 5.&lt;/strong> &lt;em>Let \(W\) be a subspace of an euclidean space \(V\).&lt;/em>&lt;/p>
+&lt;ol>
+&lt;li>\(W\cap W^\perp = 0\)&lt;/li>
+&lt;li>\(W^{\perp\perp} = W\)&lt;/li>
+&lt;/ol>
+&lt;p>A subset \(X\) of an euclidean space \(V\) is said to be an &lt;strong>orthogonal
+set&lt;/strong> if, for all \(x, y\in X\) with \(x \neq y\) we have \(x \perp y\).&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> Let \(X\) be an orthogonal set not containing the null vector.&lt;/p>
+&lt;ul>
+&lt;li>If \(X\subseteq \mathbb R^2\), how many vectors does \(X\) have at most?&lt;/li>
+&lt;li>If \(X\subseteq \mathbb R^3\), how many vectors does \(X\) have at most?&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>Proposition 6.&lt;/strong> &lt;em>Let \(V\) be an euclidean space. Let \(X = \{v_1, v_2,
+\ldots, v_k\}\) be an orthogonal set such that \(v_j\neq 0\) for all
+\(j\in[1,\ldots,k]\). Then \(X\) is linearly independent.&lt;/em>&lt;/p>
+&lt;p>&lt;em>Proof.&lt;/em>
+\[\langle\alpha_1 v_1 + \alpha_2 v_2 + \cdots + \alpha_k v_k, v_j\rangle
+= \alpha_j^2 \lVert v_j \rVert^2 = 0 \implies \alpha_j = 0\]&lt;/p>
+&lt;p>&lt;strong>Corollary 2.&lt;/strong> &lt;em>Let \(V\) be an euclidean space of dimension \(n\), and
+let \(X = \{v_1, v_2, \ldots, v_k\}\) be an orthogonal set such that
+\(v_j \neq 0\) for all \(j\in[1, k]\). Then \(k \leq n\).&lt;/em>&lt;/p>
+&lt;p>&lt;strong>Corollary 3.&lt;/strong> &lt;em>Let \(V\) be an euclidean space of dimension \(n\), and
+let \(X = \{v_1, v_2, \ldots, v_n\}\) be an orthogonal set such that
+\(v_j \neq 0\) for all \(j\in[1, n]\). Then \(X\) is a basis of \(V\).&lt;/em>&lt;/p>
+&lt;h3 id="orthogonal-complements-of-the-subspaces-of-a-real-matrix">Orthogonal complements of the subspaces of a real matrix&lt;/h3>
+&lt;p>&lt;strong>Proposition 7.&lt;/strong> &lt;em>Let \(A\) be a \(n \times k\) matrix with real elements.
+Then, considering in \(\mathbb R^n\) and \(\mathbb R^k\) the usual inner
+products we have:&lt;/em>&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>&lt;/p>
+&lt;ol>
+&lt;li>\(L(A)^\perp = N(A)\)&lt;/li>
+&lt;li>\(N(A)^\perp = L(A)\)&lt;/li>
+&lt;li>\(C(A)^\perp = N(A^T)\)&lt;/li>
+&lt;li>\(N( A^T )^\perp = C(A)\)&lt;/li>
+&lt;/ol>
+&lt;hr>
+&lt;h2 id="orthogonal-projections">Orthogonal Projections&lt;/h2>
+&lt;h3 id="orthogonal-bases-and-orthonormal-bases">Orthogonal bases and orthonormal bases&lt;/h3>
+&lt;p>A basis \(\mathcal{B}\) of an euclidean space \(V\) is said to be:&lt;/p>
+&lt;ul>
+&lt;li>An &lt;strong>orthogonal basis&lt;/strong> if it is an orthogonal set;&lt;/li>
+&lt;li>An &lt;strong>orthonormal basis&lt;/strong> if it is an orthogonal set, and all it&amp;rsquo;s elements
+have unitary norm.&lt;/li>
+&lt;/ul>
+&lt;p>Let \(x\in V\) some vector, and let
+\[(x)_\mathcal{B} = (\alpha_1, \alpha_2, \ldots, \alpha_n)\]
+be the coordinate vector of \(x\) in the basis \(\mathcal B\).&lt;/p>
+&lt;h3 id="coordinate-vector-in-an-orthogonal-basis-mathcal-b">Coordinate vector in an orthogonal basis \(\mathcal B\)&lt;/h3>
+&lt;p>\[\alpha_j = \frac{\langle x, b_j\rangle}{\lVert b_j\rVert^2}\]&lt;/p>
+&lt;h3 id="coordinate-vector-in-an-orthonormal-basis-mathcal-b">Coordinate vector in an orthonormal basis \(\mathcal B\)&lt;/h3>
+&lt;p>\[ \alpha_j = \langle x, b_j\rangle\]&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> Will there always be an orthogonal and/or an orthonormal basis?&lt;/p>
+&lt;p>&lt;strong>Answer.&lt;/strong> Yes -&amp;gt; Orthogonalization through Gram-Schmidt method.&lt;/p>
+&lt;h3 id="orthogonal-projections-1">Orthogonal projections&lt;/h3>
+&lt;p>We define the &lt;strong>orthogonal projection of \(x\) over \(b_j\)&lt;/strong> as the vector
+\[\begin{aligned}\text{proj}_{b_j} x &amp;amp;= \frac{\langle x, b_j \rangle}{\lVert
+b_j \rVert^2}b_j \\ &amp;amp;= \alpha_j b_j \end{aligned}\]&lt;/p>
+&lt;p>In a more general sense, given two vectors \(u\) and \(v\) from an euclidean
+space \(V\), with \(v\neq 0\) the &lt;strong>orthogonal projection of \(u\) over
+\(v\)&lt;/strong> is the vector
+\[\text{proj}_v u = \frac{\langle u, v \rangle}{\lVert v \rVert}^2 v\]&lt;/p>
+&lt;p>&lt;strong>Example.&lt;/strong> Considering that \(\mathbb R^2\) is equipped with the canonical
+basis \(\mathcal{E}_2 = (e_1, e_2)\), any vector \(u\in\mathbb R^2\) can
+be expressed as a sum
+\[\begin{aligned}u &amp;amp;= \text{proj}_{ e_1} u + \text{proj}_{ e_2} u \\ &amp;amp;=
+u_W + u_{W^\perp}\end{aligned}\]
+Where \(W\) is the \(x\) axis.&lt;/p>
+&lt;p>&lt;strong>Theorem 5.&lt;/strong> &lt;em>Let \(W\) be a linear subspace of some euclidean space
+\(V\). All vectors \(u\) of \(V\) can be decomposed &lt;strong>uniquely&lt;/strong> as&lt;/em>
+\[u = u_W + u_{W^\perp}\]
+&lt;em>where \(u\in W\) and \(u_{W^\perp}\in E^\perp\).&lt;/em>&lt;/p>
+&lt;p>In these conditions, we say that \(V\) is the &lt;strong>direct sum&lt;/strong> of \(W\) with
+\(W^\perp\) and write
+\[V = W \oplus W^\perp\]
+Which, by definition, is to say:&lt;/p>
+&lt;ul>
+&lt;li>\(V = W + W^\perp\)&lt;/li>
+&lt;li>\(W \cap W^\perp = \{0\}\)&lt;/li>
+&lt;/ul>
+&lt;p>We define the &lt;strong>orthogonal projection of \(u\) over \(W\)&lt;/strong> as being the
+vector \(u_W\).&lt;/p>
+&lt;p>If we consider that \(W\) is equipped with the ordered &lt;strong>orthogonal&lt;/strong> basis
+\(\mathcal{B} = (b_1, b_2, \ldots, b_k)\), we have
+\[\text{proj}_W u = \text{proj}_{b_1} u + \text{proj}_{b_2} u + \cdots +
+\text{proj}_{b_k} u\]&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> How can we compute the vector \(u_{W^\perp}\) or, in other
+words, \(\text{proj}_{W^\perp} u\)?&lt;/p>
+&lt;p>&lt;strong>Answer.&lt;/strong>
+\[\text{proj}_{W^\perp} u = u - u_W\]
+or, if we consider that \(W^\perp\) is equipped with the ordered orthogonal
+basis \(\mathcal{B}&amp;rsquo; = (b_1&amp;rsquo;, b_2&amp;rsquo;, \ldots, b_l&amp;rsquo;)\), we have
+\[\text{proj}_{W^\perp} u = \text{proj}_{b&amp;rsquo;_1} u + \text{proj}_{b&amp;rsquo;_2} u +
+\cdots + \text{proj}_{b&amp;rsquo;_l} u\]&lt;/p>
+&lt;p>&lt;strong>Question.&lt;/strong> What is the number \(l\) of vectors in the basis of \(\mathcal{B}&amp;rsquo;\)?&lt;/p>
+&lt;p>&lt;strong>Answer.&lt;/strong> Assuming that \(V\) has dimension \(n\), we have \(l = n - k\)
+since&lt;/p>
+&lt;ol>
+&lt;li>\(\mathcal{B} \cup \mathcal{B}&amp;rsquo;\) is linearly independent.&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>&lt;/li>
+&lt;li>Theorem 5 guarantees that \(\mathcal{B}\cup\mathcal{B}&amp;rsquo;\) generates \(V\).&lt;/li>
+&lt;/ol>
+&lt;p>Therefore \(\mathcal{B} \cup \mathcal{B}&amp;rsquo;\) is a basis of \(V\) and the
+solution becomes trivial.&lt;/p>
+&lt;hr>
+&lt;h2 id="distance-from-a-point-to-a-subspace--k-plane-cartesian-equations">Distance from a point to a subspace &amp;amp; \(k\)-plane cartesian equations&lt;/h2>
+&lt;h3 id="optimal-approximation">Optimal approximation&lt;/h3>
+&lt;p>Given \(u\in V\) and some subspace \(W\) of \(V\) we hope to answer the
+following question:&lt;/p>
+&lt;blockquote>
+&lt;p>Which element \(x\) of \(W\) is closest to \(u\)?&lt;/p>
+&lt;/blockquote>
+&lt;p>\[\begin{aligned}d(u, x)^2 = \lVert u - x\rVert^2 &amp;amp;= \lVert(u - \text{proj}_W
+u) + (\text{proj}_W u - x)\rVert^2 \\ &amp;amp;= \lVert u - \text{proj}_W u\rVert^2 +
+\lVert \text{proj}_W u - x\rVert^2 \qquad \text{(Pythagoras)}\\ &amp;amp;= \lVert
+\text{proj}_{W^\perp} u\rVert^2 + \lVert\text{proj}_W u -
+x\rVert^2\end{aligned}\]&lt;/p>
+&lt;p>Whereby we conclude that&lt;/p>
+&lt;blockquote>
+&lt;p>The optimal approximation coincides with \(\text{proj}_W u\) &lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>&lt;/p>
+&lt;/blockquote>
+&lt;p>With that, we define the &lt;strong>distance from \(u\) to a subspace \(W\)&lt;/strong> as&lt;/p>
+&lt;p>\[d(u, W) = \lVert proj_{W^\perp} u \rVert\]&lt;/p>
+&lt;h3 id="k-plane-cartesian-equations">\(k\)-plane cartesian equations&lt;/h3>
+&lt;p>A &lt;strong>\(k\)-plane&lt;/strong> of \(\mathbb R^n\) is any subset \(S\) of \(\mathbb
+R^n\) which can be expressed as&lt;/p>
+&lt;p>\[S = W + p\]&lt;/p>
+&lt;p>Where \(W\) is a subspace of \(\mathbb R^n\) with dimension \(k\) and
+\(p\) is an element of \(\mathbb R^n\). Depending on the dimension of
+\(W\), we have the following nomenclature:&lt;/p>
+&lt;ul>
+&lt;li>If \(k = 0\), \(S\) is said to be a &lt;strong>point&lt;/strong>.&lt;/li>
+&lt;li>If \(k = 1\), \(S\) is said to be a &lt;strong>line&lt;/strong>.&lt;/li>
+&lt;li>If \(k = 2\), \(S\) is said to be a &lt;strong>plane&lt;/strong>.&lt;/li>
+&lt;li>If \(k = n - 1\), \(S\) is said to be a &lt;strong>hyperplane&lt;/strong>.&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup>&lt;/li>
+&lt;/ul>
+&lt;p>Let \(x = (x_1, x_2, \ldots, x_n)\) be an elements of \(S\), there exists
+\(y\) in \(W\) such that&lt;/p>
+&lt;p>\[x = y + p\]&lt;/p>
+&lt;p>Or equivalently&lt;/p>
+&lt;p>\[y = x - p\]&lt;/p>
+&lt;p>The last equation show that, using vector, cartesian, or parametric equations of
+\(W\) we can easily obtain (substituting \(y\) for \(x-p\)) vector,
+cartesian, or parametric equations of \(S\), respectively.&lt;/p>
+&lt;p>Analogously, using the subspace \(W^\perp\) we can also obtain equations of
+\(S\). If \(B_{W^\perp} = (v_1, v_2, \ldots, v_{n-k})\) is a basis for
+the orthogonal complement of \(W\), with \(\text{dim} W = k\), we have
+\(x - p \in W\) or, equivalently&lt;/p>
+&lt;p>\[\underbrace{\begin{bmatrix} v^T_1 \\ v^T_2 \\ \vdots
+\\ v^T_{n-k} \end{bmatrix}}_{(n-k)\times n}
+\underbrace{\begin{bmatrix} x_1 - p_1
+\\ x_2 - p_2
+\\ \vdots
+\\ x_n - p_n \end{bmatrix}}_{n\times 1} = \underbrace{\begin{bmatrix} 0
+\\ 0
+\\ \vdots
+\\ 0
+\end{bmatrix}}_{(n-k)\times 1}\]&lt;/p>
+&lt;p>Defining the matrix \(A\) as&lt;/p>
+&lt;p>\[A = \begin{bmatrix}v^T_1 \\ v^T_2 \\ \vdots \\ v^T_{n-k} \end{bmatrix}\]&lt;/p>
+&lt;p>We obtain the homogeneous linear equation system \(A(x -p) = 0\).
+Consequently, from a vector equation of \(N(A)\), or cartesian equations of
+\(N(A)\), or parametric equations of \(N(A)\), we can obtain the
+corresponding equations of \(S\).&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Determine a vector equation, the cartesian equations, and the
+parametric equations of the plane passing the point \(p = (1, 2, 0)\) which is
+perpendicular to the line passing this same point with direction \(n=(5, 1, -2)\)&lt;/p>
+&lt;h3 id="distance-from-a-point-to-a-k-plane">Distance from a point to a \(k\)-plane&lt;/h3>
+&lt;p>Let \(S=W+p\) and consider a point \(q\in\mathbb R^n\). Given \(x\) in
+\(S\),&lt;/p>
+&lt;p>\[\begin{aligned}d(q, x) &amp;amp;= \lVert q - x \rVert \\ &amp;amp;= \lVert (q - p) + (p -
+x) \\ &amp;amp;= \lVert (q - p) - y \rVert \\ &amp;amp;= d(q-p, y) \\ \end{aligned}\]&lt;/p>
+&lt;p>The minimal value for this distance can be obtained for \(y =
+\text{proj}_{W}(q - p)\), as previously described. We then define the
+&lt;strong>distance from point \(q\) to the plane \(S\)&lt;/strong> as&lt;/p>
+&lt;p>\[\begin{aligned}d(q, S) &amp;amp;= d(q - p, W)
+\\ &amp;amp;= \lVert \text{proj}_{W^\perp}(q - p )\rVert\end{aligned}\]&lt;/p>
+&lt;p>&lt;strong>Exercise.&lt;/strong> Compute the distance from \((3, 2, -1)\) to the plane \(S\)
+from the previous exercise.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>Note that \(tr(B^T A) = tr(A^T B)\), which allows us to define
+\[\langle A, B\rangle = tr(A^T B) \]&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>I don&amp;rsquo;t know whether these function names are right in English. IIRC, from
+my Portuguese notes, L(A) is the space of the lines of a matrix, C(A) is the
+space of the columns, and N(A) is the kernel.&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>Because it is orthogonal.&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4">
+&lt;p>The closest point to \(u\) in \(W\) is \(\text{proj}_W u\).&amp;#160;&lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5">
+&lt;p>If \(k = n\), \(S = \mathbb R^n\).&amp;#160;&lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>DRM Is Anti-Copyright</title><link>/posts/drm-is-anti-copyright/</link><pubDate>Fri, 22 Dec 2017 13:34:17 +0000</pubDate><guid>/posts/drm-is-anti-copyright/</guid><description>In the Digital Era, copyright has become harder to enforce than ever before. Digital works are subject to copying without any quality degradation, which encourages piracy and can lead to market failure [1, p.118]. While some optimists [2, p.236] claim that digital rights management (DRM) is a successful technology, protecting copyrights in the digital world, and safeguarding markets and creators alike, the truth is quite the opposite. Since current implementations of DRM unjustly and broadly harden access to copyrighted works, they represent a disconnect with the fundamental concepts of copyright, breaking with the Lockean principles for appropriation which are the bedrock for property rights.</description><content>&lt;p>In the Digital Era, copyright has become harder to enforce than ever before.
+Digital works are subject to copying without any quality degradation, which
+encourages piracy and can lead to market failure &lt;a href="#favale">[1, p.118]&lt;/a>. While
+some optimists &lt;a href="#goldstein">[2, p.236]&lt;/a> claim that digital rights management
+(DRM) is a successful technology, protecting copyrights in the digital world,
+and safeguarding markets and creators alike, the truth is quite the opposite.
+Since current implementations of DRM unjustly and broadly harden access to
+copyrighted works, they represent a disconnect with the fundamental concepts of
+copyright, breaking with the Lockean principles for appropriation which are the
+bedrock for property rights. DRM should be an instrument to defend copyright,
+not hinder it, and therefore it should either be implemented such that it
+respects the rights of users and owners, or not at all.&lt;/p>
+&lt;p>Intellectual works have always been bound to a physical medium. The Digital Era
+began when this changed, and copyrighted works transitioned into the virtual,
+making it possible for them to be copied freely and without degradation, which
+represents a grave threat to the rights of creators and to market stability &lt;a href="#favale">[1,
+p.117]&lt;/a>. In response to this threat, and in an attempt to halt
+unwarranted copying of copyrighted material, copyright holders created DRM.
+Digital Rights Management aims to guarantee that certain digital content can
+only be used by someone insofar as the copyright owner allows them to.
+Practically, this means that DRM attempts to guarantee that the video being
+streamed from Netflix goes into your screen and subsequently to your eyes, and
+not to some form of recording device. Another practical example of DRM is the
+Content Scrambling System (CSS) found in DVDs, which stops users from copying
+the content of the disc into their computers. Here an issue already becomes
+evident due to the fact that, despite one having purchased and by all means
+owning the DVD, one cannot do with it as they please.&lt;/p>
+&lt;p>Enforcing DRM, however, has been shown to be fundamentally infeasible, since
+there is no way for software alone to determine whether or not a camera is being
+pointed at the screen in order to copy the media on display. Furthermore, even
+the more feasible attempts, such as ensuring the output device is a bona-fide
+screen and not a capture device, have failed. Several companies and standards'
+bodies have proposed and implemented a plethora of DRM schemes, none of which
+stood the test of time, usually getting cracked within a year of release. DRM&amp;rsquo;s
+ultimate failure manifests itself in the fact that not one single movie, song,
+or video game released in the past decade that reached a minimal degree of
+success is unavailable on the web free of charge. It is safe to say that if the
+entertainment industry, with all its resources and manpower, could not come up
+with a reliable implementation of DRM after over 20 years of constant
+development, then DRM, at least as intended by them, is not achievable.&lt;/p>
+&lt;p>According to John Locke, &amp;ldquo;The Labor of one&amp;rsquo;s Body and the Work of his Hands, we
+may say, are properly his&amp;rdquo; &lt;a href="#locke">[3, p.287]&lt;/a>. From this notion, that one
+appropriates something from the common by applying labor onto it, common law
+established the concept of property and the rights that come with it. Lockean
+property rights, however, don&amp;rsquo;t protect just the laborer, be it an author or a
+hunter, but also the remaining public. While Locke grants the owner, and him
+alone, the rights of use, transfer, and exclusion of his property, it also gives
+the public rights to the remaining common so that the community can thrive &lt;a href="#favale">[1,
+p.119]&lt;/a>. This falls from the idea that, according to Locke,
+appropriation is only valid insofar as it leaves &amp;ldquo;enough, and as good&amp;rdquo; &lt;a href="#locke">[3,
+p.291]&lt;/a> of the common to the community. As an example of this principle,
+we can imagine a gatherer who is nourished by the apples he picked in the woods.
+Nobody can deny that the apples are his, and yet when did they become his?
+According to Locke, if the first gathering did not make them the man&amp;rsquo;s property,
+then nothing could; labor put a distinction between them (the apples) and the
+common &lt;a href="#locke">[3, p.288]&lt;/a>.&lt;/p>
+&lt;p>Intellectual property has a peculiar characteristic, unlike material property;
+it lacks extension (it is physically inexhaustible). Because of this, in order
+to apply Lockean principles to intellectual property, and show copying as being
+analogue to stealing, we must appeal to Hegel. In his work &amp;ldquo;Elements of the
+Philosophy of Right,&amp;rdquo; Hegel will argue that property is fundamentally more than
+the result of one&amp;rsquo;s labor; it is rather the expression of Man&amp;rsquo;s personality &lt;a href="#hegel">[4,
+p.84-88]&lt;/a>. It is unquestionable that when one composes a song or writes
+a book, he is expressing his personality; not only in the will to do the work
+(as would be the case of the gatherer) but also in the resulting work itself.
+This is to say that when Shakespeare writes a piece, his personality is
+expressed not only in the exercise of his will while writing, but also in the
+piece itself. With this, and drawing a parallel between Lockean and Hegelian
+philosophy, one can firmly state that intellectual property is just another form
+of property, since it&amp;rsquo;s an expression of its author&amp;rsquo;s personality through and
+through.&lt;/p>
+&lt;p>As Wendy Gordon shows, copying, even though it doesn&amp;rsquo;t deprive the owner of his
+creation, can harm him. Take, for example, a musician who composes not only for
+the sake of her own listening and pleasure, but also with the purpose of feeding
+herself by means of the royalties to her work. A bootleg copyist will
+undoubtedly harm her just as severely as if he had taken the physical sheet
+music from her, or stole the food she had bought &lt;a href="#gordon">[5, p.1548]&lt;/a>.
+Therefore, in the same way, one could not eat of the gatherer&amp;rsquo;s apples, for they
+were his property, one also cannot copy from others&amp;rsquo; intellectual creations, for
+they are also solely theirs. From this follows that there must be some form of
+anti-copying protection applied to intellectual property in order to safeguard
+the author&amp;rsquo;s rights. Said protection is what modern law calls copyright, and it
+is that which DRM attempts to enforce on the digital realm.&lt;/p>
+&lt;p>Western society is fundamentally based on strong property rights; the concept of
+appropriation and the enforcement of said rights are the basis of modern
+capitalism. Property rights grant the holder a range of privileges (transfer,
+use, and so on), but it also grants the public a set of complementary rights,
+namely some protection from a malicious party, as a rights holder can only
+constrain others from using his property insofar as that does not impair a
+community&amp;rsquo;s ability to thrive &lt;a href="#gordon">[5, p.1555-1560]&lt;/a>. Hence an individual&amp;rsquo;s
+property should not harm the publics access to the common. Moreover, in Lockean
+theory the interests of the community must prevail over those of the individual
+when they clash &lt;a href="#favale">[1, p.120]&lt;/a>, this reveals something fundamental, and
+often overlooked, about copyright, as Neil Netanel points out, &amp;ldquo;while copyright
+may operate in the market, copyright&amp;rsquo;s fundamental goals are not of the market&amp;rdquo;
+&lt;a href="#netanel">[6, p.341]&lt;/a>. Copyright, therefore, has goals which go beyond the
+market itself; in other words, it hopes to achieve things other than market
+safety and profit protection. Natanel goes on to claim that copyright is a
+vehicle of democracy, pointing once more towards interpreting copyright as
+protecting the public first, and the author second. Furthermore, the first
+copyright legislation, the Copyright Act 1710, had as its subtitle &amp;ldquo;An Act for
+the Encouragement of Learning &amp;hellip;&amp;rdquo; &lt;a href="#wortley">[7]&lt;/a>, meaning that since its
+beginning copyright had the publics interest in mind above all else. With this
+it becomes clear that copyright goes far beyond both markets and authors,
+enlightening the fundamental flaw of DRM, which is its ignorance towards the
+rights of the remaining public.&lt;/p>
+&lt;p>As previously outlined, Lockean philosophy constrains one&amp;rsquo;s property to leave
+&amp;ldquo;enough and as good&amp;rdquo; &lt;a href="#locke">[3, p.291]&lt;/a> to the public. While here, &amp;ldquo;enough and
+as good&amp;rdquo; is referring to the common, by which Locke meant that which Nature
+provides us, this concept can easily be generalized to apply to the immaterial
+as well. Fundamentally, this means that in the same way there is a common of
+things, given to us by Nature, there is also a common of intangibles, ideas,
+that every individual must be able to use freely. As Gordon points out, &amp;ldquo;Our
+common encompasses not only our physical country but our culture as well&amp;rdquo; &lt;a href="#gordon">[5,
+p.1555]&lt;/a>. An example of a non-physical common of ideas is public
+domain, which is composed of works that never were, or that no longer are,
+protected by copyright. It follows from this that no appropriation can be made
+of that which is in the common of ideas, and therefore no copyright can be
+claimed. Consider, for example, the happy birthday song. It is absurd to imagine
+that someone today could rightfully claim ownership of the melody and proceed to
+receive royalties from its use; the song is an integral part of American culture
+after all. The reason why no royalties are applied to it, or to any number of
+older works, is because they belong to the public domain (the common of ideas),
+since they either were never copyrighted, or have had their rights expire.&lt;/p>
+&lt;p>Since the fundamental goal of copyright law lies beyond the market, being that
+it should encourage learning and democratic discourse, it must always protect
+the common, of resources and of ideas, from wrongful appropriation. It is here,
+in the publics entitlement to the common, that DRM falls short. Being that the
+protection schemes have no expiration date, the material can&amp;rsquo;t be accessible to
+the public even after the copyright has expired, unless the author re-releases
+it stripped of DRM. Moreover, given that DRM acts on the display of content, it
+blocks even legitimate uses of the material. Take the fair use doctrine, for
+example, a practice of the legislature to allow use of copyrighted works,
+despite the lack of permission from the owner, insofar as the usage satisfies
+some criteria, namely being transformative in nature, and not being a direct
+market competitor to the original. It is clear that in order for fair use to
+happen the user must have access to the work. If, however, said work is
+protected by DRM, then no access to the content can happen without authorization
+from the owner; hence no fair use can happen on the content, breaking with the
+doctrine. In practice, this means that copyright holders are effectively
+ignoring the legislature&amp;rsquo;s interpretation of Copyright, and shaping the system
+in detriment of the public. It is thus clear that DRM infringes on the public
+common, and that therefore it infringes on copyright itself, even if its
+intention was to safeguard it.&lt;/p>
+&lt;p>The solution to the problem of copyright enforcement in the digital realm is,
+much like the problem itself, multifaceted. Firstly, public policy should
+encourage competition among a variety of DRM schemes, while also enforcing
+interoperability between them. It is a well know fact that competition between
+products is beneficial to the consumer, and the same will be true of DRM,
+competition among standards will benefit the public with schemes that serve the
+common interest. Secondly, the government must actively police and monitor the
+use and implementation of DRM on the part of companies, changing policies as
+necessary to protect the publics entitlements. DRM systems should be a tool to
+reinforce the limitations imposed by copyright, not create new ones. Moreover,
+DRM should never interfere with legitimate research or any matters of public
+concern. Simply put, laws such as the Digital Millennium Copyright Act (DMCA),
+who include anti-circumvention clauses, must be kept from damaging research and
+public discourse, and this protection must be guaranteed by law. Finally, and
+perhaps most importantly, any policy with the intent of reinforcing copyright
+should be limited to use cases where copyright interests are actually at stake
+&lt;a href="#felten">[8]&lt;/a>.&lt;/p>
+&lt;p>The dawn of the Digital Era did not change the fundament of copyright law. As
+shown, both Lockean and Hegelian philosophies agree that copyright has first and
+foremost a social function, a duty towards the public, outweighing the rights it
+gives the author. The immaterial attribute of intellectual property has caused
+an increase in free-riding behavior, a reaping by who has not sown, in its
+attempt to solve this issue, DRM trumps public entitlements and shifts
+protection in favor of the rights holder. DRM in its current state is
+fundamentally anti-copyright, despite its intent, since its interest and value
+are contained in the market, for it aims only to protect the owner&amp;rsquo;s profits,
+unlike the copyrights which it claims to enforce. DRM should not exist legally,
+for it infringes on the fundamental property rights our society is based on, and
+takes away from the publics access to the common of intangibles. As said by
+Salman Rushdie, &amp;ldquo;those who do not have power over the story that dominates
+their lives, power to retell it, rethink it, deconstruct it, joke about it,
+and change it as times change, truly are powerless, because they cannot
+think new thoughts,&amp;rdquo; and no technology, no matter how lucrative, should take
+this power away from us, the people.&lt;/p>
+&lt;hr>
+&lt;p>&lt;a name="favale">&lt;/a> 1. Favale, Marcella. &amp;ldquo;Death and Resurrection of copyright
+between Law and Technology.&amp;rdquo; &lt;em>Information &amp;amp; Communications Technology Law&lt;/em>, vol.
+23, no. 2, Apr. 2014, pp. 117–135., doi:10.1080/13600834.2014.925631.&lt;/p>
+&lt;p>&lt;a name="goldstein">&lt;/a>2. Goldstein, Paul. ``The Future of Copyright in a
+Digital Environment: Summary of Discussion,&amp;rsquo;&amp;rsquo; in &lt;em>The Future of Copyright in a
+Digital Environment: Proceedings of the Royal Academy Colloquium&lt;/em> (Amsterdam,
+6-7 July 1995), Kluwer Law International, 1996.&lt;/p>
+&lt;p>&lt;a name="locke">&lt;/a>3. Locke, John. &amp;ldquo;Second Treatise.&amp;rdquo; &lt;em>Locke: Two Treatises of
+Government&lt;/em>, edited by Peter Laslett, Cambridge University Press, Cambridge,
+1988, pp. 265–428. Cambridge Texts in the History of Political Thought.&lt;/p>
+&lt;p>&lt;a name="hegel">&lt;/a>4. Hegel, Georg Wilhelm Friedrich. &amp;ldquo;Elements of the
+Philosophy of Right.&amp;rdquo; Edited by Allen W. Wood. Translated by Hugh Barr Nisbet,
+Cambridge University Press, 2012.&lt;/p>
+&lt;p>&lt;a name="gordon">&lt;/a>5. Gordon, Wendy J. &amp;ldquo;A Property Right in Self-Expression:
+Equality and Individualism in the Natural Law of Intellectual Property.&amp;rdquo; &lt;em>The
+Yale Law Journal&lt;/em>, vol. 102, no. 7, 1993, pp. 1533–1609. JSTOR,
+&lt;a href="http://www.jstor.org/stable/796826">www.jstor.org/stable/796826&lt;/a>.&lt;/p>
+&lt;p>&lt;a name="netanel">&lt;/a>6. Netanel, Neil Weinstock, &amp;ldquo;Locating Copyright Within the
+First Amendment&amp;rdquo; Skein. &lt;em>Stanford Law Review&lt;/em>, Vol. 54, October 2001. Available
+at SSRN: &lt;a href="http://www.ssrn.com/abstract=267848">www.ssrn.com/abstract=267848&lt;/a> or
+&lt;a href="http://www.dx.doi.org/10.2139/ssrn.267848">www.dx.doi.org/10.2139/ssrn.267848&lt;/a>&lt;/p>
+&lt;p>&lt;a name="wortley">&lt;/a>7. Wortley, Edward. &amp;ldquo;Statute of Anne.&amp;rdquo; &lt;em>The Avalon
+Project: The Statute of Anne&lt;/em>; April 10, 1710,
+&lt;a href="http://avalon.law.yale.edu/18th_century/anne_1710.asp">avalon.law.yale.edu/18th_century/anne_1710.asp&lt;/a>.&lt;/p>
+&lt;p>&lt;a name="felten">&lt;/a>8. Felten, Edward W. &amp;ldquo;DRM and Public Policy.&amp;rdquo;
+&lt;em>Communications of the ACM&lt;/em>, vol. 48, no. 7, July 2005, p. 112. EBSCOhost,
+doi:10.1145/1070838.1070871.&lt;/p>
+&lt;p>&lt;a name="rushdie">&lt;/a>9. Rushdie, Salman. &amp;ldquo;Excerpts From Rushdie&amp;rsquo;s Address:
+1,000 Days `Trapped Inside a Metaphor&amp;rsquo;.&amp;rdquo; &lt;em>The New York Times&lt;/em>, 12 Dec. 1991,
+&lt;a href="http://www.nytimes.com/books/99/04/18/specials/rushdie-address.html">www.nytimes.com/books/99/04/18/specials/rushdie-address.html&lt;/a>.&lt;/p></content></item><item><title>My New iPhone Sucks</title><link>/posts/my-new-iphone-sucks/</link><pubDate>Wed, 20 Dec 2017 11:12:17 +0000</pubDate><guid>/posts/my-new-iphone-sucks/</guid><description>I have always been a proud and happy iPhone user. My first smartphone was an iPhone 3G and, although I had owned a couple Motorola flip-phones before that, I consider it to be the first phone I really used. I had no complaints; from when I first got it circa 2008 to when I decommissioned it in favor of the iPhone 5, some 4 years later, it worked fairly well.</description><content>
+&lt;figure class="left" >
+&lt;img src="./images/rotten-apple.jpg" />
+&lt;/figure>
+&lt;p>I have always been a proud and happy iPhone user. My first smartphone was an
+iPhone 3G and, although I had owned a couple Motorola flip-phones before that, I
+consider it to be the first phone I &lt;em>really&lt;/em> used. I had no complaints; from
+when I first got it circa 2008 to when I decommissioned it in favor of the
+iPhone 5, some 4 years later, it worked fairly well. Sure, towards the end of
+its term the battery life sucked, I couldn&amp;rsquo;t run some of the newer apps, and the
+camera looked like a disabled potato; but it worked. The apps that I &lt;em>could&lt;/em>
+run, a combination of Skype, Google Maps (back than a built-in), Music, and
+believe it or not, Phone, ran fairly well despite the age of the device. The
+point is, I had, at a point, a 3-4 year old phone that &lt;em>worked&lt;/em>, I only ever
+replaced it when it fatefully died after being mistaken for a shoyu tray in a
+dimly lit Japanese restaurant.&lt;/p>
+&lt;p>In 2012, following the death of my previous companion, I bought the iPhone 5. I
+had no reason not to, my previous iPhone has lasted me a long time, and had
+worked great in that period, it was well built and I enjoyed using it. Although
+I never really owned other Apple products if not the iPhone, I had grown a
+passive admiration for them. Their products were inarguably more expensive than
+most competitors&amp;rsquo; (as is still the case), but they looked, both in software and
+hardware, great and they &lt;em>lasted&lt;/em>. Also, in 2012, and dramatically more so in
+2008, the Android contenders were, in my opinion &lt;em>absolutely hideous&lt;/em>. I hated
+the Android UI/UX and I hated the looks of the phones even more. This all made
+the choice of the iPhone 5 a nobrainer, specially since I had the money (not a
+factor to be overlooked).&lt;/p>
+&lt;p>I wasn&amp;rsquo;t disappointed. The iPhone 5 was absolutely great, specially when
+juxtaposed to the ancient iPhone 3. The battery life was alright, it was thin
+and light, the camera was great, and all my apps still worked! It was also
+extremely resilient. Unlike with my iPhone 3, I did not use a case for my new
+device, I liked how it looked too much and I find cases ugly, and yet it lasted
+5 long years. Of course, by the end of its life it was full of dings and dents
+on the aluminum casing and the screen had a scratch or two. I had a broken
+screen I replaced, but that was my fault since I got hit by a car and got thrown
+to the ground phone-first. The only functionality the phone lost, about 3 and a
+half years in, was the camera. Somehow dirt had gotten inside the lens which
+made the picture quality simply horrible. The battery life absolutely sucked
+about 3-4 years in, and around that time too the lightning connector became
+really finicky.&lt;/p>
+&lt;figure class="left" >
+&lt;img src="./images/bad-image.jpg" />
+&lt;figcaption class="center" >Look at that dirt!&lt;/figcaption>
+&lt;/figure>
+&lt;p>Despite all that, the phone worked. I carried a powerbank around to make up for
+the short battery life and, since I was never much of a phone photographer
+anyway, the camera didn&amp;rsquo;t bother me. Most importantly, however, my apps all
+worked, even towards the end of its life they all worked fluidly. Even Snapchat,
+which is more demanding than you&amp;rsquo;d expect, worked well enough. Around April 2017
+that phone died. I don&amp;rsquo;t know what exactly happened, but it just wouldn&amp;rsquo;t turn
+on one morning. That same day I walked into an Apple store and bought an iPhone
+7, the latest and greatest.&lt;/p>
+&lt;p>It was awesome. I loved the new design, the camera was amazing, TouchID was a
+bliss, the battery lasted a lifetime comparatively, the screen looked super
+sharp, I loved it. Also, the software was noticeably snappier. I was happy
+having made yet another good choice purchasing an iPhone; it was a little more
+expensive than some similar options, but the quality paid off. That happiness
+didn&amp;rsquo;t last though.&lt;/p>
+&lt;p>Fast forward to today, a mere 8 months after buying the iPhone 7, and I find it
+borderline unusable. The phone is slow, I mean &lt;em>really&lt;/em> slow. The apps I use
+most frequently, Whatsapp and Snapchat, are so buggy and slow it drives me
+insane. It&amp;rsquo;s almost as if doing virtually &lt;em>anything&lt;/em> equates to running Crysis
+in the background, the animations are choppy, input has high latency, it&amp;rsquo;s truly
+dreadful. Now, just to reiterate, I&amp;rsquo;m not doing 4K video editing and
+complaining, I&amp;rsquo;m sending messages and pictures of my dog, and even that is just
+a horrible experience. I&amp;rsquo;m not sure what&amp;rsquo;s causing this, and since I do not own
+neither a copy of Windows nor an Apple computer I am unable to factory reset my
+phone properly, so I&amp;rsquo;m not sure what to do. I might just go to an Apple Store
+this week and try and get it replaced, because it has really begun to annoy me.&lt;/p>
+&lt;p>This is, to me, the break of a trust relationship between me and Apple. In this
+relationship, I agreed to pay a premium for the iPhone, and Apple agreed to
+provide me with a great experience; they clearly have not held their part of the
+bargain, and neither will I from hereon after. Android phones have come a &lt;em>long&lt;/em>
+way. They look great, and the UI is now extremely beautiful, specially some
+variants like One Plus&amp;rsquo; &lt;a href="https://en.wikipedia.org/wiki/OxygenOS">&lt;em>Oxygen OS&lt;/em>&lt;/a>.
+Moreover, the recent FaceID flop (Unrelated Chinese coworkers being able to
+unlock the others&amp;rsquo; phone, masks fooling it, and other dramatic flaws), together
+with the absolutely staggering &lt;a href="https://www.wired.com/story/macos-high-sierra-hack-root/">macOS root-flaw&lt;/a> have made
+me lose faith in Apple as a company, at least for now. I&amp;rsquo;m not happy to be
+leaving the iPhone and iOS behind, when they worked it was an absolutely dreamy
+user experience, nor am I to settling on not getting a nice MacBook for work;
+alas there&amp;rsquo;s not much else to be done when the quality of Apple&amp;rsquo;s products has
+sunk so low.&lt;/p></content></item><item><title>On Leibniz's Truth</title><link>/posts/on-leibniz-truth/</link><pubDate>Wed, 25 Oct 2017 00:00:00 +0000</pubDate><guid>/posts/on-leibniz-truth/</guid><description>Let a statement be any sentence of form
+\[ \mathcal S + \phi \]
+Where \(\mathcal S\) is a subject and \(\phi\) is a predicate. The sentences &amp;ldquo;Spinoza died in the Hague&amp;rdquo;, and &amp;ldquo;Grey is grey&amp;rdquo;, for example, qualify as statements. In the first, we have &amp;ldquo;Spinoza&amp;rdquo; as the subject, and &amp;ldquo;died in the Hague&amp;rdquo; as the predicate. Note that, for a sentence to qualify as a statement, its predicate does not need to contain an object (consider the sentence \(X\text{ is.</description><content>&lt;p>Let a &lt;em>statement&lt;/em> be any sentence of form&lt;/p>
+&lt;p>\[
+\mathcal S + \phi
+\]&lt;/p>
+&lt;p>Where \(\mathcal S\) is a &lt;em>subject&lt;/em> and \(\phi\) is a &lt;em>predicate&lt;/em>. The
+sentences &amp;ldquo;Spinoza died in the Hague&amp;rdquo;, and &amp;ldquo;Grey is grey&amp;rdquo;, for example, qualify
+as statements. In the first, we have &amp;ldquo;Spinoza&amp;rdquo; as the subject, and &amp;ldquo;died in the
+Hague&amp;rdquo; as the predicate. Note that, for a sentence to qualify as a statement,
+its predicate does not need to contain an object (consider the sentence
+\(X\text{ is.}\)) Statements are said to be &lt;em>true&lt;/em> if and only if &amp;ldquo;the
+&lt;em>concept-predicate&lt;/em> is contained in the &lt;em>concept-subject&lt;/em>&amp;rdquo; (Leiniz&amp;rsquo;s
+Concept-Containment Theory of Truth).&lt;/p>
+&lt;p>\[
+\mathcal S + \phi\text{ is true} \iff \phi\in\mathcal C(\mathcal S)
+\]&lt;/p>
+&lt;p>Where here we use \(\mathcal C(\mathcal S)\) to denote the &lt;em>concept-subject&lt;/em>,
+or &lt;em>the concept of \(\mathcal S\)&lt;/em>. Trivial examples of concept-containment
+are tautological statements such as&lt;/p>
+&lt;p>\[
+X\text{ is }X
+\]&lt;/p>
+&lt;p>Statements like this are clearly true, and the concept-containment is evident as
+well, since it follows from the Law of Identity that the concept of \(X\) is
+contained in \(X\), in other words, tautological statement are such that the
+subject-concept and the predicate-concept are the same. These types of
+statements are called &lt;em>Primary Truths&lt;/em>.&lt;/p>
+&lt;p>Let us now consider for a moment the following statement:&lt;/p>
+&lt;p>\[
+\text{Washington crossed the Delaware}
+\]&lt;/p>
+&lt;p>Unlike the identity statement we saw above, here the subject-concept is &lt;em>not&lt;/em>
+the same as the predicate-concept, and most importantly there is no clear
+containment of the latter into the former, which is why we call it a &lt;em>Secondary
+Truth&lt;/em>. One can, for example, easily imagine Washington &lt;em>not&lt;/em> having crossed the
+Delaware, while on the other hand attempting to imagine \(X \text{ is not }X\)
+is fruitless at best (and maddening at worst). In a sense, it seems that while
+all primary truths are &amp;ldquo;self sufficient&amp;rdquo;, and depend on no external factors to
+be true, the same is not the case for secondary truths, they seem to depend on
+large class of externalites. For Washington to have crossed the Delaware, for
+example, a number of dependencies must have been satisfied, namely, Washington
+must exist, and so must the Delaware, and the Earth on which they act, and so
+on. It seems to us that the statement could well be false, without any dooming
+consequences, once again, it does not take a lot of mental gymnastics to imagine
+a universe where Washington simply did not cross the Delaware. The solution to
+this problem lies in the fact that all truths are what we call &lt;em>analytic&lt;/em>,
+meaning they can be reduced to primary truths, which in turn are trivially true.&lt;/p>
+&lt;p>Let us begin by acknowledging Washington as being more than an individual, we
+are referring here to a &lt;em>concept&lt;/em> of Washington. This concept, we must note, is
+not atomic, and can be divided into a set of elements that compose it, which is
+to say we have&lt;/p>
+&lt;p>\[
+\mathcal C(\mathcal S) = \{\alpha_1, \alpha_2, \ldots, \alpha_n\},
+\quad n\in\Bbb N \cup \{+\infty\}
+\]&lt;/p>
+&lt;p>Denoting a concept-subject as being composed of \(n\) characteristics. We now
+note, however, that any such \(\mathcal C(\mathcal S)\) is unique, that is to
+say that there can be no subject \(\mathcal S&amp;rsquo;\) such that \(\mathcal
+C(\mathcal S&amp;rsquo;) = \{\alpha_1, \alpha_2, \ldots, \alpha_n\}\), for were that to
+be the case, then it would follow that \(\mathcal C(\mathcal S) \subset
+\mathcal C(\mathcal S&amp;rsquo;)\) and \(\mathcal C(\mathcal S&amp;rsquo;) \subset \mathcal
+C(\mathcal S)\), which trivially implies \(\mathcal C(\mathcal S) = \mathcal
+C(\mathcal S&amp;rsquo;) \), and subsequently that \(\mathcal S = \mathcal S&amp;rsquo;\). This
+is to say that every concept is uniquely defined by the union of its parts, and
+if two concepts are composed of exactly the same elements, then they are in fact
+the same concept. Applying this to our statement, we can say that there
+exists a concept of our subject, Washington, \(\mathcal C(W)\), composed
+of \(n\) \(\alpha\)-elements, one of which takes form \(\alpha_k =
+\text{crossed the Delaware}\), with \(1 &amp;lt; k &amp;lt; n\). This is to say that&lt;/p>
+&lt;p>\[
+\mathcal C(W) = \{\alpha_1, \alpha_2, \ldots, \alpha_k, \ldots, \alpha_n\}
+\]&lt;/p>
+&lt;p>And also that, fundamentally, \(\text{Washington is Washington}\) if, and only
+if&lt;/p>
+&lt;p>\[
+\mathcal C(W) = \bigcup_{i=1}^{n}\alpha_i
+\]&lt;/p>
+&lt;p>Let us now suppose that Washington did &lt;em>not&lt;/em> cross the Delaware. This would mean
+we now have a concept, which we&amp;rsquo;ll denote
+\(\mathcal C(W&amp;rsquo;)= \{\beta_1, \ldots, \beta_{n-1}\}\) where&lt;/p>
+&lt;p>\[
+(\forall \alpha_i\in \mathcal C(W)\setminus\{\alpha_k\})
+(\exists\beta_j\in\mathcal C(W&amp;rsquo;))
+\text{ s.t. }\alpha_i = \beta_j
+\]&lt;/p>
+&lt;p>In other words, we have a concept \(\mathcal C(W&amp;rsquo;)\) that contains all
+elements of \(\mathcal C(W)\) &lt;em>except&lt;/em> \(\alpha_k\). This, however, implies
+that while \(\mathcal C(W&amp;rsquo;) \subset \mathcal C(W)\), the converse isn&amp;rsquo;t true,
+and \(\mathcal C(W) \not\subset \mathcal C(W&amp;rsquo;)\). Since we had previously
+defined that the only way for two subject-concepts to be the same, namely
+\(\mathcal C(\mathcal S) = \mathcal C(\mathcal S&amp;rsquo;) \iff \mathcal S = \mathcal
+S&amp;rsquo;\), is for them to mutually contain each other, we conclude that
+\(\mathcal C(W) \neq \mathcal C(W&amp;rsquo;)\), and most importantly&lt;/p>
+&lt;p>\[
+W \neq W'
+\]&lt;/p>
+&lt;p>Fundamentally this means that our imaginary idea of a Washington that did not
+cross the Delaware is, in fact, not an idea of Washington at all. It is a
+separate concept, without equivalence. Furthermore, Leibniz will argue that
+\(\mathcal C(W&amp;rsquo;)\) would not even make sense, because for one predicate to be
+lost from the subject-concept, an infinite number of other predicates must be
+changed, to the point where the concept has changed entirely.&lt;/p>
+&lt;p>Moreover, we can see that there is a set of concepts&lt;/p>
+&lt;p>\[
+\Omega = \mathcal P(\mathcal C(W))\setminus\mathcal C(W)
+\]&lt;/p>
+&lt;p>Which constitutes all the &amp;ldquo;lesser forms of Washington&amp;rdquo;, meaning concepts which
+are proper subsets of the main \(\mathcal C(W)\). According to Leibniz, the
+only thing that separates these lesser forms to the Washington we know is that
+God only gave existence to one such concept (\(\mathcal C(W)\)). This shows us
+something curious, which is that every concept that exists is the largest (in
+terms of the number of predicates that compose it) that it could be. In other
+words, a concept is defined by the set of its characteristics, and any proper
+subset of it defines something which is not the concept itself, formally:&lt;/p>
+&lt;p>\[
+(\forall \omega \in \Omega)(|\omega| &amp;lt; |\mathcal C(W)|)
+\]&lt;/p>
+&lt;p>Finally, we conclude that it follows from the tautological statement
+\(``\mathcal S\text{ is }\mathcal S&amp;quot;\) that any change in the composition of
+the subject-concept yields a new concept which is not the original, and
+therefore statements are only true insofar as their predicate is part of the
+composition of the subject-concept, for otherwise we violate the Law of
+Identity. In other words,&lt;/p>
+&lt;p>\[
+\qquad\qquad\mathcal S + \phi \text{ is true }\iff \phi\in\mathcal C(\mathcal S)\qquad\qquad_\blacksquare
+\]&lt;/p></content></item><item><title>Running Arch on the TI Nspire CX Calculator</title><link>/posts/arch-on-the-nspire/</link><pubDate>Fri, 28 Oct 2016 00:00:00 +0000</pubDate><guid>/posts/arch-on-the-nspire/</guid><description>This is a follow up to my previous post on how to run Debian on the Nspire, this time we will be going deeper into the matter and compiling the Linux Kernel ourselves, and doing such in a way that it&amp;rsquo;s compatible with Arch Linux ARM
+Hardware requirements The requirements for this project are the same as for the last one, here&amp;rsquo;s what you&amp;rsquo;ll need:
+A Texas TI Nspire CX or CX CAS USB Hub Mini-B OTG USB Cable USB Drive Setting everything up Since we will be building the Kernel ourselves this time we will need to do some special work on our setup, in particular to our build environment.</description><content>&lt;p>This is a follow up to my previous post on how to run Debian on the Nspire,
+this time we will be going deeper into the matter and compiling the Linux Kernel
+ourselves, and doing such in a way that it&amp;rsquo;s compatible with
+&lt;a href="archlinuxarm.org">Arch Linux ARM&lt;/a>&lt;/p>
+&lt;h2 id="hardware-requirements">Hardware requirements&lt;/h2>
+&lt;p>The requirements for this project are the same as for the
+&lt;a href="/post/2016-05-30-debian-on-the-nspire">last one&lt;/a>, here&amp;rsquo;s what you&amp;rsquo;ll need:&lt;/p>
+&lt;ul>
+&lt;li>A Texas TI Nspire CX or CX CAS&lt;/li>
+&lt;li>USB Hub&lt;/li>
+&lt;li>Mini-B OTG USB Cable&lt;/li>
+&lt;li>USB Drive&lt;/li>
+&lt;/ul>
+&lt;h2 id="setting-everything-up">Setting everything up&lt;/h2>
+&lt;p>Since we will be building the Kernel ourselves this time we will need to do some
+special work on our setup, in particular to our build environment.&lt;/p>
+&lt;h3 id="cross-compiling">Cross Compiling&lt;/h3>
+&lt;p>Firstly, we must get a cross-compiler working, in this case an &lt;code>arm-none-eabi&lt;/code>
+type compiler, there&amp;rsquo;s a caveat though, in order for the Kernel to work with
+the Nspire we must build it on an outdated toolchain. There is a good tutorial
+over on &lt;a href="https://github.com/ndless-nspire/Ndless/wiki/Ndless-SDK:-C-and-assembly-development-introduction">Ndless SDK&lt;/a> on how to do that, but we will be going over
+the steps here.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Clone the SDK&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>git clone --recursive https://github.com/ndless-nspire/Ndless.git&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Run the &lt;code>ndless-sdk/toolchain/build_toolchain.sh&lt;/code> script.&lt;/p>
+&lt;ul>
+&lt;li>This will download the toolchain as well as build it for you. It will
+take a while.
+&lt;figure class="left" >
+&lt;img src="./images/compiling.jpg" />
+&lt;figcaption class="center" >Compiling is tough on the CPU&lt;/figcaption>
+&lt;/figure>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>The original guide recommends adding the binaries&amp;rsquo; path to your &lt;code>PATH&lt;/code>, but
+since I don&amp;rsquo;t think that amending your &lt;code>.bashrc&lt;/code> for one-time projects like
+these is worth it, and having to manually edit your path can be boring,
+I have created this &lt;a href="./files/setpath.sh">&lt;code>bash&lt;/code> script&lt;/a>
+that does that. Place it inside the &lt;code>Ndless&lt;/code> folder, and then source it
+(make sure your current work path is the &lt;code>Ndless&lt;/code> folder too, i.e. &lt;code>cd&lt;/code>
+into it).&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Your cross-compiler should be working now. Test it by running
+&lt;code>arm-none-eabi-gcc&lt;/code> and see if you get any output.
+&lt;figure class="left" >
+&lt;img src="./images/xcompiler.jpg" />
+&lt;figcaption class="center" >You should get output like this&lt;/figcaption>
+&lt;/figure>
+&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>If you managed to produce output in step 4. that means your Cross Compiler is
+working well. Remember to source that file whenever you want to use the
+binaries you compiled, or add them to your &lt;code>PATH&lt;/code> on &lt;code>.bashrc&lt;/code> if you think
+you might be using them often.&lt;/p>
+&lt;h4 id="getting-the-kernel">Getting the kernel&lt;/h4>
+&lt;p>Every kernel compilation starts with a configuration file, this one is no
+different. Since setting the configuration so that it works on the Nspire is a
+hassle, I have set up &lt;a href="https://github.com/lovesegfault/nspire-kernel">a repository&lt;/a> that will contain
+configurations for different versions of the Linux kernel. At the time of
+writing, solely &lt;code>4.3.0&lt;/code> is there, but work on other versions is ongoing. Feel
+free to contact me if you&amp;rsquo;d like a config for a version of the kernel not yet
+supported. For the rest of this guide we will be using Kernel &lt;code>4.3.0&lt;/code>, although
+nothing should change for future versions.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Download the Linux kernel and untar it&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://www.kernel.org/pub/linux/kernel/v4.x/linux-4.3.tar.xz">&lt;code>linux-4.3.tar.xz&lt;/code>&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Clone the configurations repository&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>git clone https://github.com/lovesegfault/nspire-kernel&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Copy the configuration file to the kernel folder, name it .config&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>cp nspire-kernel/4.3.0/config linux-4.3/.config&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/config.jpg" />
+&lt;figcaption class="center" >You should be able to get output like this&lt;/figcaption>
+&lt;/figure>
+&lt;p>With this your kernel is ready for compilation, don&amp;rsquo;t worry, we will get to it
+in a moment.&lt;/p>
+&lt;h2 id="compiling-the-kernel">Compiling the kernel&lt;/h2>
+&lt;p>Now that we have set up all the pieces that we will need for the
+compilation, we can start it. Make sure you have your .config file in the right
+place. Also confirm that you have the toolchain we compiled in your &lt;code>PATH&lt;/code>.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;code>ARCH=arm make -jX&lt;/code>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>ARCH=arm&lt;/code> specifies the architecture we&amp;rsquo;re building to&lt;/li>
+&lt;li>&lt;code>-jX&lt;/code> parallelizes compilation. Replace &lt;code>X&lt;/code> with your thread count.
+&lt;figure class="left" >
+&lt;img src="./images/linux-compiling.jpg" />
+&lt;figcaption class="center" >Compiling the kernel, get yourself a cup of coffee&lt;/figcaption>
+&lt;/figure>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Check that you have the following files&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>arch/arm/boot/zImage&lt;/code>&lt;/li>
+&lt;li>&lt;code>arch/arm/boot/dts/cx.dtb&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;p>The compilation step is now complete. We have built our kernel image (&lt;code>zImage&lt;/code>)
+and out device tree file (&lt;code>nspire-cx.dtb&lt;/code>) which are the files we needed.&lt;/p>
+&lt;h2 id="preparing-the-system-drive">Preparing the system drive&lt;/h2>
+&lt;p>In my last post we set op our rootfs using debian tools, this time it will
+be a bit different. Up until now this guide was distro-independent, apart
+from the fact that the config file is heavily influence by arch linux&amp;rsquo;s one,
+but we must shift this perspective now to focus on the subject of this post:
+Arch Linux. For the rest of this project we will be using &lt;a href="archlinuxarm.org">ALARM&lt;/a>, the
+Arch Linux port for the ARM architecture.&lt;/p>
+&lt;h3 id="getting-the-files">Getting the files&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>Download the latest version of ALARM for ARMv5&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="http://os.archlinuxarm.org/os/ArchLinuxARM-armv5-latest.tar.gz">http://os.archlinuxarm.org/os/ArchLinuxARM-armv5-latest.tar.gz&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Make sure your USB drive uses an MBR partition table&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Format the drive. Add some SWAP space, it will be useful for doing more
+memory-hungry operations.&lt;/p>
+&lt;ul>
+&lt;li>I&amp;rsquo;m using 512MiB Swap space on my drive, reason for which is the fact
+that my drive is small at 8GB.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Untar the file you downloaded into the drive&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>sudo bsdtar xzf ArchLinuxARM-armv5-latest.tar.gz -C ~/mnt/&lt;/code>
+Replace &lt;code>~/mnt&lt;/code> with wherever you mounted your drive.
+&lt;figure class="left" >
+&lt;img src="./images/rootfs.jpg" />
+&lt;figcaption class="center" >Your rootfs should look like this&lt;/figcaption>
+&lt;/figure>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="installing-modules">Installing modules&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;code>cd&lt;/code> into the directory where we compiled linux&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Make sure the &lt;code>arm-none-eabi&lt;/code> toolchain is in your &lt;code>PATH&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Install modules to the USB drive&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>sudo ARCH=arm make modules_install INSTALL_MOD_PATH=~/mnt/&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/modules.jpg" />
+&lt;figcaption class="center" >Modules installed&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="changing-root-with-qemu">Changing root with QEMU&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>Make sure you have &lt;code>qemu-user-static&lt;/code> and &lt;code>binfmt-support&lt;/code> installed.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Copy QEMU binaries to the drive: &lt;code>sudo cp /usr/bin/qemu-arm-static ~/mnt/usr/bin&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Register &lt;code>qemu-arm-static&lt;/code> as an ARM interpreter in the kernel (must be
+root)&lt;/p>
+&lt;ul>
+&lt;li>&lt;script type="application/javascript" src="https://gist.github.com/lovesegfault/eded4fe8ef2fb88bfa1e08529e2cb6ca.js">&lt;/script>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Change root into the new rootfs. If you are running arch and you have the
+&lt;code>arch-install-scripts&lt;/code> package installed you can use &lt;code>arch-chroot&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Synchronize package databases &lt;code>pacman -Syy&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>At this point you might want to install some recommended packages, such as
+&lt;code>sudo&lt;/code>. If you have a USB WiFi Adapter connected to your hub you should
+also consider installing &lt;code>dialog&lt;/code> and &lt;code>wpa_supplicant&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="downgrading-the-kernel">Downgrading the kernel&lt;/h3>
+&lt;p>Since we are using an outdated kernel version, &lt;code>4.3.0&lt;/code>, relative to the one
+on the ALARM image we extracted we must downgrade the kernel. Firstly you will
+need a kernel package. You can download the ones I compiled
+(&lt;a href="./files/linux-armv5-4.3.0-1-arm.pkg.tar.xz">&lt;code>linux-armv5-4.3.0-1-arm.pkg.tar.xz&lt;/code>&lt;/a> and
+&lt;a href="./files/linux-armv5-headers-4.3.0-1-arm.pkg.tar.xz">&lt;code>linux-armv5-headers-4.3.0-1-arm.pkg.tar.xz&lt;/code>&lt;/a>) and install
+from the &lt;code>chroot&lt;/code> with &lt;code>pacman -U [FILES]&lt;/code>, or compile it yourself. You can do
+that with either &lt;a href="https://wiki.archlinux.org/index.php/Distcc">&lt;code>distcc&lt;/code>&lt;/a> (recommended) or with the following steps:&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Clone the ALARM &lt;a href="https://github.com/archlinuxarm/PKGBUILDs/">PKGBUILD repository&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Roll it back to commit &lt;code>c82145d0d491c2e216ff49ec60d3e83c13e73230&lt;/code>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>git reset --hard c82145d0d491c2e216ff49ec60d3e83c13e73230&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Copy the &lt;code>core/linux-armv5&lt;/code> folder somewhere else&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Replace the &lt;code>config&lt;/code> file in the folder with our own&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Get an MD5Sum of our config file&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Replace the MD5Sum on the &lt;code>PKGBUILD&lt;/code> file with out new one, it&amp;rsquo;s the last
+one in the list.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>makepkg -cs --install&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/downgrade.jpg" />
+&lt;figcaption class="center" >Downgrade in progress&lt;/figcaption>
+&lt;/figure>
+&lt;p>Whichever way you choose, you can check if it worked by:&lt;/p>
+&lt;ul>
+&lt;li>Running &lt;code>ls /lib/modules&lt;/code> and seeing if you see the correct module folder
+there.&lt;/li>
+&lt;li>Running &lt;code>pacman -Qs&lt;/code> and checking if it lists the kernel as version
+&lt;code>4.3.0-1&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;figure class="left" >
+&lt;img src="./images/check-downgrade.jpg" />
+&lt;figcaption class="center" >Downgrade successful&lt;/figcaption>
+&lt;/figure>
+&lt;p>Lastly, add the packages &lt;code>linux-armv5&lt;/code> and &lt;code>linux-armv5-headers&lt;/code> to your ignore
+list over on &lt;code>/etc/pacman.conf&lt;/code>. To do so, uncomment the &lt;code>IgnorePkg&lt;/code> line, and
+add them, separated by spaces, to it. This will guarantee that these changes
+won&amp;rsquo;t be later overwritten by some system upgrade.&lt;/p>
+&lt;h3 id="setting-up-the-calculator">Setting up the calculator&lt;/h3>
+&lt;p>To run the bootloader for the Linux kernel you will need to
+&lt;a href="http://ndless.me/">jailbreak&lt;/a> your calculator. There are a lot of good online tutorials on
+how to do this, I, for one, recommend the guide from &lt;a href="https://tiplanet.org/forum/ndl3ss.php">TIPlanet&lt;/a>.
+With that out of the way we can get to setting up the files on the calculator&amp;rsquo;s
+flash memory.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Download the &lt;a href="./files/linuxloader2.tns">bootloader&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Download the &lt;a href="./files/start_usb.ll2.tns">starting script&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>cd&lt;/code> into the folder containing Linux, where we performed the compilation
+steps.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Copy &lt;code>arch/arm/boot/zImage&lt;/code> and &lt;code>arch/arm/boot/dts/cx.dtb&lt;/code> somewhere&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Concatenate the &lt;code>.tns&lt;/code> extension to both of them&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>Since the TI Connectivity software does not work on Linux at all (not even
+under Wine), you will require either a Windows or MacOS machine to get
+files to and from your calculator, Virtual Machines work.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Edit the &lt;code>ndless.cfg.tns&lt;/code> file and append &lt;code>ext.ll2 linuxloader2&lt;/code> to it.&lt;/p>
+&lt;ul>
+&lt;li>This associates our starting script to the bootloader program&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Create a folder named &lt;code>linux&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Place the files you downloaded, &lt;code>zImage.tns&lt;/code>, and &lt;code>nspire-cx.dtb.tns&lt;/code> into
+the &lt;code>linux&lt;/code> folder&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/files.jpg" />
+&lt;figcaption class="center" >Files on the calculator&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="finishing-up">Finishing up&lt;/h3>
+&lt;p>Once the files have been placed on the calculator, the process is done. You may now
+start the OS by executing the bootloader. If you have any questions on how to
+do this you can reference the &lt;a href="/post/2016-05-30-debian-on-the-nspire">initial article&lt;/a>. Below is a
+demo video of the calculator playing Doom on Linux.&lt;/p>
+&lt;div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+&lt;iframe src="https://www.youtube.com/embed/O3eSspki0Ws" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen title="YouTube Video">&lt;/iframe>
+&lt;/div></content></item><item><title>Running Debian on the TI Nspire CX Calculator</title><link>/posts/debian-on-the-nspire/</link><pubDate>Mon, 30 May 2016 00:00:00 +0000</pubDate><guid>/posts/debian-on-the-nspire/</guid><description>I&amp;rsquo;ve been taking a look at running Linux on ARM microprocessors, cross-compiling the Kernel from an x64 architecture and kernel tinkerings of the kind. After a bit of research I came across the information that my calculator, a Texas Instruments Nspire CX CAS, happens to use an ARM processor. With a clock of 150MHz on it&amp;rsquo;s CPU, 64MB of RAM and merely 100MB of flash memory I wasn&amp;rsquo;t sure Linux would run on this, but it turns out it&amp;rsquo;s possible .</description><content>&lt;p>I&amp;rsquo;ve been taking a look at running Linux on ARM microprocessors,
+cross-compiling the Kernel from an x64 architecture and kernel tinkerings of
+the kind. After a bit of research I came across the information that my
+calculator, a &lt;a href="https://education.ti.com/en/us/products/calculators/graphing-calculators/ti-nspire-cx-cas-handheld">Texas Instruments Nspire CX CAS&lt;/a>, happens to use an ARM
+processor. With a clock of 150MHz on it&amp;rsquo;s CPU, 64MB of RAM and merely 100MB of
+flash memory I wasn&amp;rsquo;t sure Linux would run on this, but it turns out it&amp;rsquo;s
+possible
+.&lt;/p>
+&lt;h2 id="hadware-requirements">Hadware Requirements&lt;/h2>
+&lt;figure class="left" >
+&lt;img src="./images/io.jpg" />
+&lt;/figure>
+&lt;p>The IO of the Nspire is poor. As you can see in the image above, the TI has one
+mini USB port (left) and one non-standard connector (right) used for their
+Wi-Fi add-on. Since the calculator&amp;rsquo;s keyboard is painful to type on, I
+recommend you get a &lt;a href="http://www.amazon.com/s?ie=UTF8&amp;amp;field-keywords=usb%20hub">USB hub&lt;/a> to connect a keyboard and the USB drive.
+Since the calculator solely has mini B, you will need a &lt;a href="http://www.amazon.com/s?ie=UTF8&amp;amp;field-keywords=mini%20usb%20otg">Mini-B OTG USB
+cable&lt;/a> to connect your hub to the calculator. You&amp;rsquo;ll also need a USB
+drive, since the internal 100MB isn&amp;rsquo;t enough to store Debian&amp;rsquo;s filesystem.&lt;/p>
+&lt;h2 id="setting-up-the-drive">Setting up the drive&lt;/h2>
+&lt;p>Firstly it&amp;rsquo;s important to note that you should be using &lt;a href="https://www.debian.org/">Debian&lt;/a> to
+perform this. I happen to run &lt;a href="https://www.archlinux.org/">Arch Linux&lt;/a>, and after long and insistent
+attempts at performing this on it I yielded to using Debian atop of a VM.&lt;/p>
+&lt;p>With that said, begin by formatting your USB drive to EXT4. You can do this by:&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Identify the address of your drive by running &lt;code>lsblk&lt;/code>. It should be of form
+&lt;code>/dev/sdxY&lt;/code>, mine is &lt;code>/dev/sdc1&lt;/code> for example.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Make sure the drive is &lt;strong>unmounted&lt;/strong> by running &lt;code>sudo umount /dev/sdxY&lt;/code>.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Run &lt;code>sudo mkfs.ext4 /dev/sdxY&lt;/code> .&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>With this done we now must install our dependencies by executing
+&lt;code>sudo apt-get install qemu-user-static binfmt-support debootstrap&lt;/code>. These
+packages are for:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://packages.debian.org/sid/qemu-user-static">&lt;code>qemu-user-static&lt;/code>&lt;/a> - Running our ARM compiled system on our x86/x64
+machine.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="http://www.nongnu.org/binfmt-support/">&lt;code>binfmt-support&lt;/code>&lt;/a> - &lt;em>&amp;ldquo;A more flexible version of the #! executable
+interpreter mechanism&amp;rdquo;&lt;/em>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://wiki.debian.org/Debootstrap">&lt;code>debootstrap&lt;/code>&lt;/a> - Installs a Debian base system into a
+directory&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>Proceed by mounting the flash drive, create a folder for the mouting to take
+place, &lt;code>mkdir foo&lt;/code> for example, and mount the drive with
+&lt;code>sudo mount /dev/sdxY foo&lt;/code>. We must now bootstrap Linux on the drive, which is
+what &lt;code>debootstrap&lt;/code> is for. Run
+&lt;code>sudo debootstrap --arch=armel --foreign stable foo/&lt;/code>. This will take a while,
+be patient. Once that has finished we must copy the ARM emulator (qemu)
+to our new rootfs, which we can do with
+&lt;code>sudo cp /usr/bin/qemu-arm-static foo/usr/bin&lt;/code>. We must also copy the APT list
+with &lt;code>sudo cp /etc/apt/sources.list foo/etc/apt/sources.list&lt;/code>. We can now finish
+bootstrapping by rooting into the rootfs with &lt;code>sudo chroot foo/&lt;/code> and running
+&lt;code>/debootstrap/debootstrap --second-stage&lt;/code>.&lt;/p>
+&lt;p>Now we can set up some quirks of the OS, begin by setting a root password with
+&lt;code>passwd&lt;/code>. After this I recommend you exit the system by running &lt;code>exit&lt;/code> and
+then using chroot to get into the rootfs once more. Also remember to update
+your repositories with &lt;code>apt-get update&lt;/code>. Now it&amp;rsquo;s possible to download any
+desired packages with &lt;code>apt-get install -d PACKAGE&lt;/code>, the &lt;code>-d&lt;/code> flag is crucial
+here since we must install them once running on the ARM CPU and binaries.
+I recommend installing &lt;code>sudo&lt;/code> at least, and then setting up a user
+using with akin of &lt;code>useradd -m -G sudo -s /bin/bash USERNAME&lt;/code>. Also remember to
+set a password for your newly created user with &lt;code>passwd USERNAME&lt;/code>. Make sure to
+keep track of what you download so you can install it later on.&lt;/p>
+&lt;h2 id="setting-up-the-calculator">Setting up the calculator&lt;/h2>
+&lt;p>By default the Nspire firmware doesn&amp;rsquo;t allow you to run more complex code, so in
+order to do that we&amp;rsquo;ll need to break out of the firmware&amp;rsquo;s limitations. The
+jailbreak for the CX is the &lt;a href="http://ndless.me/">Ndless&lt;/a>. There are good online tutorials
+on how to do the jailbreak, I recommend the one from &lt;a href="https://tiplanet.org/forum/ndl3ss.php">TIPlanet&lt;/a> as a
+great reference, make sure you pick the correct one for your firmware version.
+The process is simple and painless, this shouldn&amp;rsquo;t be much of a setback.
+Once you have completed your jailbreak I recommend you take a look at all the
+&lt;a href="https://ndless-apps.org/">cool apps&lt;/a> you can install. &lt;a href="https://tiplanet.org/forum/archives_voir.php?id=89439">Micro Python&lt;/a>, which is an
+almost fully functional Python interpreter, and &lt;a href="https://tiplanet.org/forum/archives_voir.php?id=6631">nDoom&lt;/a> which, you
+guessed it, is a port of Doom, are specially interesting.&lt;/p>
+&lt;p>Once you have the jailbreak out of the way it&amp;rsquo;s time to set up the files on the
+calculator&amp;rsquo;s own file system (ROM). This part will require Windows or OSX,
+my attempts at running TI&amp;rsquo;s connectivity software on Wine haven&amp;rsquo;t been
+successful. Begin by download the &lt;a href="https://tiplanet.org/nspire-linux-builds/">required files&lt;/a>, which are:&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://tiplanet.org/nspire-linux-builds/devicetree/zImage_expanded_latest.tns">Kernel&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://tiplanet.org/nspire-linux-builds/devicetree/nspire-cx.dtb">DTB file&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://tiplanet.org/nspire-linux-builds/linuxloader2.tns">Loader binary&lt;/a>&lt;/li>
+&lt;li>&lt;a href="./files/start_usb.ll2.tns">Startup script&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;p>We must now edit the &lt;code>ndless.cfg.tns&lt;/code> file and add &lt;code>ext.ll2 linuxloader2&lt;/code> to the
+end of it, this will associate our script to the linux loader. Rename the DTB
+file to &lt;code>nspire-cx.dtb.tns&lt;/code> and create a folder on your calculator named &lt;code>Linux&lt;/code>,
+and inside it place all the required files you downloaded.&lt;/p>
+&lt;h2 id="booting-up">Booting up&lt;/h2>
+&lt;p>With these steps having been successful your system is ready for using. Make
+sure Ndless is functional, go into the &lt;code>Linux&lt;/code> folder and run the
+&lt;code>start_usb.ll2.tns&lt;/code> script. Booting takes a while, given that you followed
+this guide with no mistakes, after a couple of minutes Debian should be up and
+running. You can now install any packages you downloaded beforehand by running
+&lt;code>apt-get install PACKAGES&lt;/code> as root. In case you&amp;rsquo;re looking to try out a desktop
+environment I&amp;rsquo;ve tested Xorg which worked fine, as well as OpenBox which was
+slow (as expected) but was usable to my surprise. After that you&amp;rsquo;re done, your
+calculator now runs a fully functional Linux distro.&lt;/p></content></item></channel></rss>

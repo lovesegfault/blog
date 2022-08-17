@@ -1,0 +1,60 @@
+<!doctype html><html lang=en><head><title>Thinkpad Nightmare :: null pointer</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="A few weeks ago I finally got my new work computer. I had been using an underpowered MacBook Pro that I had grown to hate for months, and so I asked for a Linux laptop, and another systems engineer followed along. When they asked me which laptop I would like, I recommended a Thinkpad. I had heard nothing but good things about them and their Linux support, and so I felt confident they would prove to be a good choice."><meta name=keywords content><meta name=robots content="noodp"><link rel=canonical href=/posts/thinkpad-nightmare/><link rel=stylesheet href=/assets/style.css><link rel=stylesheet href=/assets/green.css><link rel=apple-touch-icon href=/img/apple-touch-icon-192x192.png><link rel="shortcut icon" href=/images/favicon.png><meta name=twitter:card content="summary"><meta name=twitter:creator content><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="og:title" content="Thinkpad Nightmare"><meta property="og:description" content="A few weeks ago I finally got my new work computer. I had been using an underpowered MacBook Pro that I had grown to hate for months, and so I asked for a Linux laptop, and another systems engineer followed along. When they asked me which laptop I would like, I recommended a Thinkpad. I had heard nothing but good things about them and their Linux support, and so I felt confident they would prove to be a good choice."><meta property="og:url" content="/posts/thinkpad-nightmare/"><meta property="og:site_name" content="null pointer"><meta property="og:image" content="/images/favicon.png"><meta property="og:image:width" content="2048"><meta property="og:image:height" content="1024"><meta property="article:section" content="essay"><meta property="article:published_time" content="2019-01-24 23:38:15 +0000 UTC"></head><body class=green><div class="container center headings--one-size"><header class=header><div class=header__inner><div class=header__logo><a href=/><div class=logo>null pointer</div></a></div><div class=menu-trigger>menu</div></div><nav class=menu><ul class="menu__inner menu__inner--desktop"><li><a href=/about>About</a></li><li><a href=/categories>Categories</a></li><li><a href=/tags>Tags</a></li></ul><ul class="menu__inner menu__inner--mobile"><li><a href=/about>About</a></li><li><a href=/categories>Categories</a></li><li><a href=/tags>Tags</a></li></ul></nav></header><div class=content><div class=post><h1 class=post-title><a href=/posts/thinkpad-nightmare/>Thinkpad Nightmare</a></h1><div class=post-meta><span class=post-date>2019-01-24</span></div><span class=post-tags>#<a href=/tags/lenovo/>lenovo</a>&nbsp;
+#<a href=/tags/thinkpad/>thinkpad</a>&nbsp;
+#<a href=/tags/bios/>bios</a>&nbsp;
+#<a href=/tags/nightmare/>nightmare</a>&nbsp;</span><div class=post-content><div><p>A few weeks ago I finally got my new work computer. I had been using an
+underpowered MacBook Pro that I had grown to hate for months, and so I asked for
+a Linux laptop, and another systems engineer followed along. When they asked me
+which laptop I would like, I recommended a Thinkpad. I had heard nothing but
+good things about them and their Linux support, and so I felt confident they
+would prove to be a good choice. I ended up going for the Xeon variant of the
+Lenovo P1, a laptop costing roughly $3000.</p><p>The day I got the machine I was beaming with excitement, &ldquo;Finally I will be able
+to use a tiling window manager again!&rdquo; I booted it up, allowed Windows to
+perform its updates and rebooted. After that I allowed Lenovo Vantage, their
+update/management software to search for updates, and sure enough it found some
+updates and drivers. I let it run, and in the end it prompted me to update my
+BIOS. I had read online about multiple issues regarding the 1.15 version that my
+machine had shipped with, such as bricking when certain options were enabled, so
+I allowed it to run. Some shell command executed, and then the machine promptly
+rebooted. The BIOS update utility showed up, and started doing its thing, until
+the progress bar stopped. One hour passed, and then another, and then five, and
+the bar did not move. I searched around online and it did not seem like anyone
+was experiencing this, so I called Lenovo support.</p><p>Here I really want to stop for a moment to emphasize just how remarkably
+terrible Lenovo support is. Firstly, going through the menus is an advanced game
+of 4-D chess against the robotic voices that guide you through the maze of
+options. In fact, in one of my attempts I even managed to reach an infinite loop
+where it was impossible to go back, and all the options were invalid. When,
+after completing the dungeon and passing through IBM and then back to Lenovo,
+you finally speak to a human, you are welcomed by the Lenovo technical support
+center in Atlanta, Georgia<sup id=fnref:1><a href=#fn:1 class=footnote-ref role=doc-noteref>1</a></sup>. Now, I am not a native speaker of English, but
+my (spoken) English is almost undetectable, most people think I&rsquo;m from Ohio and
+I&rsquo;ve had a hard time convincing some otherwise, and yet every single person I
+spoke to at the support center was almost unintelligible. I really could not
+understand what they were saying, which made it all the more frustrating. To cut
+this short, I eventually managed to communicate, at which point they told me to
+unplug the computer and allow it to power off eventually and see what happened.
+My computer was bricked.</p><p>With an expensive piece of metal sitting on my desk, I called Lenovo support
+again, and was informed that it would take up to a month for it to be repaired.
+I chose to go for a replacement. The replacement eventually came in, and I did
+the same update process, except this time it worked fine, yippie!</p><p>The machine mostly worked fine with Linux, except for the fact that I had some
+weird issue where it would shut down randomly, it was rare enough it didn&rsquo;t
+bother me all that much. Sure enough, I went to check and there was another BIOS
+update fixing the shutdown issue. I took a Xanax<sup id=fnref:2><a href=#fn:2 class=footnote-ref role=doc-noteref>2</a></sup>, prepared for the worst,
+and performed the update. Surprisingly, it worked perfectly fine. Or so I
+though, somehow in the update Power on AC seemed to have been activated, which I
+found rather annoying, so I went ahead and disabled that in the BIOS. After that
+my machine never booted again. So here I am, again, with an expensive piece of
+metal.</p><p>I didn&rsquo;t dare call Lenovo support this time, I value my sanity too much, instead
+I just contacted our vendor CDW<sup id=fnref:3><a href=#fn:3 class=footnote-ref role=doc-noteref>3</a></sup> and asked for a replacement, which I should get
+some time soon. In the mean time I am stuck with the MacBook that I hate and
+with unfinished, valuable, work inside of the Thinkpad that failed me again.</p><p>I wish I could recommend Lenovo and this Thinkpad, but if they can&rsquo;t get
+something as basic and as essential as their BIOS right they might as well give
+up on making computers. I just hope I get my replacement soon, before Chinese
+New Years so it doesn&rsquo;t take even longer so that I can go back to work soon.</p><div class=footnotes role=doc-endnotes><hr><ol><li id=fn:1><p>I only know this because an annoying voice, almost mocking you after the
+journey it took to reach the support center, announces it proudly.&#160;<a href=#fnref:1 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li><li id=fn:2><p>Not really.&#160;<a href=#fnref:2 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li><li id=fn:3><p>The unsung hero here is our CDW representative, Shane, who is the most
+timely, professional, and helpful person I have ever dealt with in this area.
+I could not recommend CDW more.&#160;<a href=#fnref:3 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li></ol></div></div></div><div class=pagination><div class=pagination__title><span class=pagination__title-h>Read other posts</span><hr></div><div class=pagination__buttons><span class="button previous"><a href=/posts/home/><span class=button__icon>←</span>
+<span class=button__text>Home</span></a></span>
+<span class="button next"><a href=/posts/notes-on-euclidean-spaces/><span class=button__text>Notes on Euclidean Spaces</span>
+<span class=button__icon>→</span></a></span></div></div><script src=https://utteranc.es/client.js repo=lovesegfault/blog issue-term=title theme=github-dark crossorigin=anonymous async></script></div></div><footer class=footer><div class=footer__inner><div class="copyright copyright--user"><span>Copyright &copy; 2021 - Bernardo Meurer</span>
+<span>:: Theme made by <a href=https://twitter.com/panr>panr</a></span></div></div></footer><script src=/assets/main.js></script>
+<script>window.WebFontConfig={custom:{families:["KaTeX_AMS","KaTeX_Caligraphic:n4,n7","KaTeX_Fraktur:n4,n7","KaTeX_Main:n4,n7,i4,i7","KaTeX_Math:i4,i7","KaTeX_Script","KaTeX_SansSerif:n4,n7,i4","KaTeX_Size1","KaTeX_Size2","KaTeX_Size3","KaTeX_Size4","KaTeX_Typewriter"]}}</script><script defer src=https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.js integrity="sha256-4O4pS1SH31ZqrSO2A/2QJTVjTPqVe+jnYgOWUVr7EEc=" crossorigin=anonymous></script><link rel=preload href=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css integrity=sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc crossorigin=anonymous as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css integrity=sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc crossorigin=anonymous></noscript><script defer src=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js integrity=sha384-YNHdsYkH6gMx9y3mRkmcJ2mFUjTd0qNQQvY9VYZgQd7DcN7env35GzlmFaZ23JGp crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js integrity=sha384-vZTG03m+2yp6N6BNi5iM4rW4oIwk5DfcNdFfxkk9ZWpDriOkXX8voJBFrAO7MpVl crossorigin=anonymous onload=renderMathInElement(document.body)></script></div></body></html>

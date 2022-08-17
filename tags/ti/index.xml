@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>ti on null pointer</title><link>/tags/ti/</link><description>Recent content in ti on null pointer</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>Copyright &amp;copy; 2021 - Bernardo Meurer</copyright><lastBuildDate>Fri, 28 Oct 2016 00:00:00 +0000</lastBuildDate><atom:link href="/tags/ti/index.xml" rel="self" type="application/rss+xml"/><item><title>Running Arch on the TI Nspire CX Calculator</title><link>/posts/arch-on-the-nspire/</link><pubDate>Fri, 28 Oct 2016 00:00:00 +0000</pubDate><guid>/posts/arch-on-the-nspire/</guid><description>This is a follow up to my previous post on how to run Debian on the Nspire, this time we will be going deeper into the matter and compiling the Linux Kernel ourselves, and doing such in a way that it&amp;rsquo;s compatible with Arch Linux ARM
+Hardware requirements The requirements for this project are the same as for the last one, here&amp;rsquo;s what you&amp;rsquo;ll need:
+A Texas TI Nspire CX or CX CAS USB Hub Mini-B OTG USB Cable USB Drive Setting everything up Since we will be building the Kernel ourselves this time we will need to do some special work on our setup, in particular to our build environment.</description><content>&lt;p>This is a follow up to my previous post on how to run Debian on the Nspire,
+this time we will be going deeper into the matter and compiling the Linux Kernel
+ourselves, and doing such in a way that it&amp;rsquo;s compatible with
+&lt;a href="archlinuxarm.org">Arch Linux ARM&lt;/a>&lt;/p>
+&lt;h2 id="hardware-requirements">Hardware requirements&lt;/h2>
+&lt;p>The requirements for this project are the same as for the
+&lt;a href="/post/2016-05-30-debian-on-the-nspire">last one&lt;/a>, here&amp;rsquo;s what you&amp;rsquo;ll need:&lt;/p>
+&lt;ul>
+&lt;li>A Texas TI Nspire CX or CX CAS&lt;/li>
+&lt;li>USB Hub&lt;/li>
+&lt;li>Mini-B OTG USB Cable&lt;/li>
+&lt;li>USB Drive&lt;/li>
+&lt;/ul>
+&lt;h2 id="setting-everything-up">Setting everything up&lt;/h2>
+&lt;p>Since we will be building the Kernel ourselves this time we will need to do some
+special work on our setup, in particular to our build environment.&lt;/p>
+&lt;h3 id="cross-compiling">Cross Compiling&lt;/h3>
+&lt;p>Firstly, we must get a cross-compiler working, in this case an &lt;code>arm-none-eabi&lt;/code>
+type compiler, there&amp;rsquo;s a caveat though, in order for the Kernel to work with
+the Nspire we must build it on an outdated toolchain. There is a good tutorial
+over on &lt;a href="https://github.com/ndless-nspire/Ndless/wiki/Ndless-SDK:-C-and-assembly-development-introduction">Ndless SDK&lt;/a> on how to do that, but we will be going over
+the steps here.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Clone the SDK&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>git clone --recursive https://github.com/ndless-nspire/Ndless.git&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Run the &lt;code>ndless-sdk/toolchain/build_toolchain.sh&lt;/code> script.&lt;/p>
+&lt;ul>
+&lt;li>This will download the toolchain as well as build it for you. It will
+take a while.
+&lt;figure class="left" >
+&lt;img src="./images/compiling.jpg" />
+&lt;figcaption class="center" >Compiling is tough on the CPU&lt;/figcaption>
+&lt;/figure>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>The original guide recommends adding the binaries&amp;rsquo; path to your &lt;code>PATH&lt;/code>, but
+since I don&amp;rsquo;t think that amending your &lt;code>.bashrc&lt;/code> for one-time projects like
+these is worth it, and having to manually edit your path can be boring,
+I have created this &lt;a href="./files/setpath.sh">&lt;code>bash&lt;/code> script&lt;/a>
+that does that. Place it inside the &lt;code>Ndless&lt;/code> folder, and then source it
+(make sure your current work path is the &lt;code>Ndless&lt;/code> folder too, i.e. &lt;code>cd&lt;/code>
+into it).&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Your cross-compiler should be working now. Test it by running
+&lt;code>arm-none-eabi-gcc&lt;/code> and see if you get any output.
+&lt;figure class="left" >
+&lt;img src="./images/xcompiler.jpg" />
+&lt;figcaption class="center" >You should get output like this&lt;/figcaption>
+&lt;/figure>
+&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>If you managed to produce output in step 4. that means your Cross Compiler is
+working well. Remember to source that file whenever you want to use the
+binaries you compiled, or add them to your &lt;code>PATH&lt;/code> on &lt;code>.bashrc&lt;/code> if you think
+you might be using them often.&lt;/p>
+&lt;h4 id="getting-the-kernel">Getting the kernel&lt;/h4>
+&lt;p>Every kernel compilation starts with a configuration file, this one is no
+different. Since setting the configuration so that it works on the Nspire is a
+hassle, I have set up &lt;a href="https://github.com/lovesegfault/nspire-kernel">a repository&lt;/a> that will contain
+configurations for different versions of the Linux kernel. At the time of
+writing, solely &lt;code>4.3.0&lt;/code> is there, but work on other versions is ongoing. Feel
+free to contact me if you&amp;rsquo;d like a config for a version of the kernel not yet
+supported. For the rest of this guide we will be using Kernel &lt;code>4.3.0&lt;/code>, although
+nothing should change for future versions.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Download the Linux kernel and untar it&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://www.kernel.org/pub/linux/kernel/v4.x/linux-4.3.tar.xz">&lt;code>linux-4.3.tar.xz&lt;/code>&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Clone the configurations repository&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>git clone https://github.com/lovesegfault/nspire-kernel&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Copy the configuration file to the kernel folder, name it .config&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>cp nspire-kernel/4.3.0/config linux-4.3/.config&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/config.jpg" />
+&lt;figcaption class="center" >You should be able to get output like this&lt;/figcaption>
+&lt;/figure>
+&lt;p>With this your kernel is ready for compilation, don&amp;rsquo;t worry, we will get to it
+in a moment.&lt;/p>
+&lt;h2 id="compiling-the-kernel">Compiling the kernel&lt;/h2>
+&lt;p>Now that we have set up all the pieces that we will need for the
+compilation, we can start it. Make sure you have your .config file in the right
+place. Also confirm that you have the toolchain we compiled in your &lt;code>PATH&lt;/code>.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;code>ARCH=arm make -jX&lt;/code>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>ARCH=arm&lt;/code> specifies the architecture we&amp;rsquo;re building to&lt;/li>
+&lt;li>&lt;code>-jX&lt;/code> parallelizes compilation. Replace &lt;code>X&lt;/code> with your thread count.
+&lt;figure class="left" >
+&lt;img src="./images/linux-compiling.jpg" />
+&lt;figcaption class="center" >Compiling the kernel, get yourself a cup of coffee&lt;/figcaption>
+&lt;/figure>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Check that you have the following files&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>arch/arm/boot/zImage&lt;/code>&lt;/li>
+&lt;li>&lt;code>arch/arm/boot/dts/cx.dtb&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;p>The compilation step is now complete. We have built our kernel image (&lt;code>zImage&lt;/code>)
+and out device tree file (&lt;code>nspire-cx.dtb&lt;/code>) which are the files we needed.&lt;/p>
+&lt;h2 id="preparing-the-system-drive">Preparing the system drive&lt;/h2>
+&lt;p>In my last post we set op our rootfs using debian tools, this time it will
+be a bit different. Up until now this guide was distro-independent, apart
+from the fact that the config file is heavily influence by arch linux&amp;rsquo;s one,
+but we must shift this perspective now to focus on the subject of this post:
+Arch Linux. For the rest of this project we will be using &lt;a href="archlinuxarm.org">ALARM&lt;/a>, the
+Arch Linux port for the ARM architecture.&lt;/p>
+&lt;h3 id="getting-the-files">Getting the files&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>Download the latest version of ALARM for ARMv5&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="http://os.archlinuxarm.org/os/ArchLinuxARM-armv5-latest.tar.gz">http://os.archlinuxarm.org/os/ArchLinuxARM-armv5-latest.tar.gz&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Make sure your USB drive uses an MBR partition table&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Format the drive. Add some SWAP space, it will be useful for doing more
+memory-hungry operations.&lt;/p>
+&lt;ul>
+&lt;li>I&amp;rsquo;m using 512MiB Swap space on my drive, reason for which is the fact
+that my drive is small at 8GB.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Untar the file you downloaded into the drive&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>sudo bsdtar xzf ArchLinuxARM-armv5-latest.tar.gz -C ~/mnt/&lt;/code>
+Replace &lt;code>~/mnt&lt;/code> with wherever you mounted your drive.
+&lt;figure class="left" >
+&lt;img src="./images/rootfs.jpg" />
+&lt;figcaption class="center" >Your rootfs should look like this&lt;/figcaption>
+&lt;/figure>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="installing-modules">Installing modules&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;code>cd&lt;/code> into the directory where we compiled linux&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Make sure the &lt;code>arm-none-eabi&lt;/code> toolchain is in your &lt;code>PATH&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Install modules to the USB drive&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>sudo ARCH=arm make modules_install INSTALL_MOD_PATH=~/mnt/&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/modules.jpg" />
+&lt;figcaption class="center" >Modules installed&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="changing-root-with-qemu">Changing root with QEMU&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>Make sure you have &lt;code>qemu-user-static&lt;/code> and &lt;code>binfmt-support&lt;/code> installed.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Copy QEMU binaries to the drive: &lt;code>sudo cp /usr/bin/qemu-arm-static ~/mnt/usr/bin&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Register &lt;code>qemu-arm-static&lt;/code> as an ARM interpreter in the kernel (must be
+root)&lt;/p>
+&lt;ul>
+&lt;li>&lt;script type="application/javascript" src="https://gist.github.com/lovesegfault/eded4fe8ef2fb88bfa1e08529e2cb6ca.js">&lt;/script>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Change root into the new rootfs. If you are running arch and you have the
+&lt;code>arch-install-scripts&lt;/code> package installed you can use &lt;code>arch-chroot&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Synchronize package databases &lt;code>pacman -Syy&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>At this point you might want to install some recommended packages, such as
+&lt;code>sudo&lt;/code>. If you have a USB WiFi Adapter connected to your hub you should
+also consider installing &lt;code>dialog&lt;/code> and &lt;code>wpa_supplicant&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="downgrading-the-kernel">Downgrading the kernel&lt;/h3>
+&lt;p>Since we are using an outdated kernel version, &lt;code>4.3.0&lt;/code>, relative to the one
+on the ALARM image we extracted we must downgrade the kernel. Firstly you will
+need a kernel package. You can download the ones I compiled
+(&lt;a href="./files/linux-armv5-4.3.0-1-arm.pkg.tar.xz">&lt;code>linux-armv5-4.3.0-1-arm.pkg.tar.xz&lt;/code>&lt;/a> and
+&lt;a href="./files/linux-armv5-headers-4.3.0-1-arm.pkg.tar.xz">&lt;code>linux-armv5-headers-4.3.0-1-arm.pkg.tar.xz&lt;/code>&lt;/a>) and install
+from the &lt;code>chroot&lt;/code> with &lt;code>pacman -U [FILES]&lt;/code>, or compile it yourself. You can do
+that with either &lt;a href="https://wiki.archlinux.org/index.php/Distcc">&lt;code>distcc&lt;/code>&lt;/a> (recommended) or with the following steps:&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Clone the ALARM &lt;a href="https://github.com/archlinuxarm/PKGBUILDs/">PKGBUILD repository&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Roll it back to commit &lt;code>c82145d0d491c2e216ff49ec60d3e83c13e73230&lt;/code>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>git reset --hard c82145d0d491c2e216ff49ec60d3e83c13e73230&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Copy the &lt;code>core/linux-armv5&lt;/code> folder somewhere else&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Replace the &lt;code>config&lt;/code> file in the folder with our own&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Get an MD5Sum of our config file&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Replace the MD5Sum on the &lt;code>PKGBUILD&lt;/code> file with out new one, it&amp;rsquo;s the last
+one in the list.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>makepkg -cs --install&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/downgrade.jpg" />
+&lt;figcaption class="center" >Downgrade in progress&lt;/figcaption>
+&lt;/figure>
+&lt;p>Whichever way you choose, you can check if it worked by:&lt;/p>
+&lt;ul>
+&lt;li>Running &lt;code>ls /lib/modules&lt;/code> and seeing if you see the correct module folder
+there.&lt;/li>
+&lt;li>Running &lt;code>pacman -Qs&lt;/code> and checking if it lists the kernel as version
+&lt;code>4.3.0-1&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;figure class="left" >
+&lt;img src="./images/check-downgrade.jpg" />
+&lt;figcaption class="center" >Downgrade successful&lt;/figcaption>
+&lt;/figure>
+&lt;p>Lastly, add the packages &lt;code>linux-armv5&lt;/code> and &lt;code>linux-armv5-headers&lt;/code> to your ignore
+list over on &lt;code>/etc/pacman.conf&lt;/code>. To do so, uncomment the &lt;code>IgnorePkg&lt;/code> line, and
+add them, separated by spaces, to it. This will guarantee that these changes
+won&amp;rsquo;t be later overwritten by some system upgrade.&lt;/p>
+&lt;h3 id="setting-up-the-calculator">Setting up the calculator&lt;/h3>
+&lt;p>To run the bootloader for the Linux kernel you will need to
+&lt;a href="http://ndless.me/">jailbreak&lt;/a> your calculator. There are a lot of good online tutorials on
+how to do this, I, for one, recommend the guide from &lt;a href="https://tiplanet.org/forum/ndl3ss.php">TIPlanet&lt;/a>.
+With that out of the way we can get to setting up the files on the calculator&amp;rsquo;s
+flash memory.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Download the &lt;a href="./files/linuxloader2.tns">bootloader&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Download the &lt;a href="./files/start_usb.ll2.tns">starting script&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>cd&lt;/code> into the folder containing Linux, where we performed the compilation
+steps.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Copy &lt;code>arch/arm/boot/zImage&lt;/code> and &lt;code>arch/arm/boot/dts/cx.dtb&lt;/code> somewhere&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Concatenate the &lt;code>.tns&lt;/code> extension to both of them&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>Since the TI Connectivity software does not work on Linux at all (not even
+under Wine), you will require either a Windows or MacOS machine to get
+files to and from your calculator, Virtual Machines work.&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Edit the &lt;code>ndless.cfg.tns&lt;/code> file and append &lt;code>ext.ll2 linuxloader2&lt;/code> to it.&lt;/p>
+&lt;ul>
+&lt;li>This associates our starting script to the bootloader program&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Create a folder named &lt;code>linux&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Place the files you downloaded, &lt;code>zImage.tns&lt;/code>, and &lt;code>nspire-cx.dtb.tns&lt;/code> into
+the &lt;code>linux&lt;/code> folder&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure class="left" >
+&lt;img src="./images/files.jpg" />
+&lt;figcaption class="center" >Files on the calculator&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="finishing-up">Finishing up&lt;/h3>
+&lt;p>Once the files have been placed on the calculator, the process is done. You may now
+start the OS by executing the bootloader. If you have any questions on how to
+do this you can reference the &lt;a href="/post/2016-05-30-debian-on-the-nspire">initial article&lt;/a>. Below is a
+demo video of the calculator playing Doom on Linux.&lt;/p>
+&lt;div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+&lt;iframe src="https://www.youtube.com/embed/O3eSspki0Ws" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen title="YouTube Video">&lt;/iframe>
+&lt;/div></content></item><item><title>Running Debian on the TI Nspire CX Calculator</title><link>/posts/debian-on-the-nspire/</link><pubDate>Mon, 30 May 2016 00:00:00 +0000</pubDate><guid>/posts/debian-on-the-nspire/</guid><description>I&amp;rsquo;ve been taking a look at running Linux on ARM microprocessors, cross-compiling the Kernel from an x64 architecture and kernel tinkerings of the kind. After a bit of research I came across the information that my calculator, a Texas Instruments Nspire CX CAS, happens to use an ARM processor. With a clock of 150MHz on it&amp;rsquo;s CPU, 64MB of RAM and merely 100MB of flash memory I wasn&amp;rsquo;t sure Linux would run on this, but it turns out it&amp;rsquo;s possible .</description><content>&lt;p>I&amp;rsquo;ve been taking a look at running Linux on ARM microprocessors,
+cross-compiling the Kernel from an x64 architecture and kernel tinkerings of
+the kind. After a bit of research I came across the information that my
+calculator, a &lt;a href="https://education.ti.com/en/us/products/calculators/graphing-calculators/ti-nspire-cx-cas-handheld">Texas Instruments Nspire CX CAS&lt;/a>, happens to use an ARM
+processor. With a clock of 150MHz on it&amp;rsquo;s CPU, 64MB of RAM and merely 100MB of
+flash memory I wasn&amp;rsquo;t sure Linux would run on this, but it turns out it&amp;rsquo;s
+possible
+.&lt;/p>
+&lt;h2 id="hadware-requirements">Hadware Requirements&lt;/h2>
+&lt;figure class="left" >
+&lt;img src="./images/io.jpg" />
+&lt;/figure>
+&lt;p>The IO of the Nspire is poor. As you can see in the image above, the TI has one
+mini USB port (left) and one non-standard connector (right) used for their
+Wi-Fi add-on. Since the calculator&amp;rsquo;s keyboard is painful to type on, I
+recommend you get a &lt;a href="http://www.amazon.com/s?ie=UTF8&amp;amp;field-keywords=usb%20hub">USB hub&lt;/a> to connect a keyboard and the USB drive.
+Since the calculator solely has mini B, you will need a &lt;a href="http://www.amazon.com/s?ie=UTF8&amp;amp;field-keywords=mini%20usb%20otg">Mini-B OTG USB
+cable&lt;/a> to connect your hub to the calculator. You&amp;rsquo;ll also need a USB
+drive, since the internal 100MB isn&amp;rsquo;t enough to store Debian&amp;rsquo;s filesystem.&lt;/p>
+&lt;h2 id="setting-up-the-drive">Setting up the drive&lt;/h2>
+&lt;p>Firstly it&amp;rsquo;s important to note that you should be using &lt;a href="https://www.debian.org/">Debian&lt;/a> to
+perform this. I happen to run &lt;a href="https://www.archlinux.org/">Arch Linux&lt;/a>, and after long and insistent
+attempts at performing this on it I yielded to using Debian atop of a VM.&lt;/p>
+&lt;p>With that said, begin by formatting your USB drive to EXT4. You can do this by:&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Identify the address of your drive by running &lt;code>lsblk&lt;/code>. It should be of form
+&lt;code>/dev/sdxY&lt;/code>, mine is &lt;code>/dev/sdc1&lt;/code> for example.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Make sure the drive is &lt;strong>unmounted&lt;/strong> by running &lt;code>sudo umount /dev/sdxY&lt;/code>.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Run &lt;code>sudo mkfs.ext4 /dev/sdxY&lt;/code> .&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>With this done we now must install our dependencies by executing
+&lt;code>sudo apt-get install qemu-user-static binfmt-support debootstrap&lt;/code>. These
+packages are for:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://packages.debian.org/sid/qemu-user-static">&lt;code>qemu-user-static&lt;/code>&lt;/a> - Running our ARM compiled system on our x86/x64
+machine.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="http://www.nongnu.org/binfmt-support/">&lt;code>binfmt-support&lt;/code>&lt;/a> - &lt;em>&amp;ldquo;A more flexible version of the #! executable
+interpreter mechanism&amp;rdquo;&lt;/em>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://wiki.debian.org/Debootstrap">&lt;code>debootstrap&lt;/code>&lt;/a> - Installs a Debian base system into a
+directory&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>Proceed by mounting the flash drive, create a folder for the mouting to take
+place, &lt;code>mkdir foo&lt;/code> for example, and mount the drive with
+&lt;code>sudo mount /dev/sdxY foo&lt;/code>. We must now bootstrap Linux on the drive, which is
+what &lt;code>debootstrap&lt;/code> is for. Run
+&lt;code>sudo debootstrap --arch=armel --foreign stable foo/&lt;/code>. This will take a while,
+be patient. Once that has finished we must copy the ARM emulator (qemu)
+to our new rootfs, which we can do with
+&lt;code>sudo cp /usr/bin/qemu-arm-static foo/usr/bin&lt;/code>. We must also copy the APT list
+with &lt;code>sudo cp /etc/apt/sources.list foo/etc/apt/sources.list&lt;/code>. We can now finish
+bootstrapping by rooting into the rootfs with &lt;code>sudo chroot foo/&lt;/code> and running
+&lt;code>/debootstrap/debootstrap --second-stage&lt;/code>.&lt;/p>
+&lt;p>Now we can set up some quirks of the OS, begin by setting a root password with
+&lt;code>passwd&lt;/code>. After this I recommend you exit the system by running &lt;code>exit&lt;/code> and
+then using chroot to get into the rootfs once more. Also remember to update
+your repositories with &lt;code>apt-get update&lt;/code>. Now it&amp;rsquo;s possible to download any
+desired packages with &lt;code>apt-get install -d PACKAGE&lt;/code>, the &lt;code>-d&lt;/code> flag is crucial
+here since we must install them once running on the ARM CPU and binaries.
+I recommend installing &lt;code>sudo&lt;/code> at least, and then setting up a user
+using with akin of &lt;code>useradd -m -G sudo -s /bin/bash USERNAME&lt;/code>. Also remember to
+set a password for your newly created user with &lt;code>passwd USERNAME&lt;/code>. Make sure to
+keep track of what you download so you can install it later on.&lt;/p>
+&lt;h2 id="setting-up-the-calculator">Setting up the calculator&lt;/h2>
+&lt;p>By default the Nspire firmware doesn&amp;rsquo;t allow you to run more complex code, so in
+order to do that we&amp;rsquo;ll need to break out of the firmware&amp;rsquo;s limitations. The
+jailbreak for the CX is the &lt;a href="http://ndless.me/">Ndless&lt;/a>. There are good online tutorials
+on how to do the jailbreak, I recommend the one from &lt;a href="https://tiplanet.org/forum/ndl3ss.php">TIPlanet&lt;/a> as a
+great reference, make sure you pick the correct one for your firmware version.
+The process is simple and painless, this shouldn&amp;rsquo;t be much of a setback.
+Once you have completed your jailbreak I recommend you take a look at all the
+&lt;a href="https://ndless-apps.org/">cool apps&lt;/a> you can install. &lt;a href="https://tiplanet.org/forum/archives_voir.php?id=89439">Micro Python&lt;/a>, which is an
+almost fully functional Python interpreter, and &lt;a href="https://tiplanet.org/forum/archives_voir.php?id=6631">nDoom&lt;/a> which, you
+guessed it, is a port of Doom, are specially interesting.&lt;/p>
+&lt;p>Once you have the jailbreak out of the way it&amp;rsquo;s time to set up the files on the
+calculator&amp;rsquo;s own file system (ROM). This part will require Windows or OSX,
+my attempts at running TI&amp;rsquo;s connectivity software on Wine haven&amp;rsquo;t been
+successful. Begin by download the &lt;a href="https://tiplanet.org/nspire-linux-builds/">required files&lt;/a>, which are:&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://tiplanet.org/nspire-linux-builds/devicetree/zImage_expanded_latest.tns">Kernel&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://tiplanet.org/nspire-linux-builds/devicetree/nspire-cx.dtb">DTB file&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://tiplanet.org/nspire-linux-builds/linuxloader2.tns">Loader binary&lt;/a>&lt;/li>
+&lt;li>&lt;a href="./files/start_usb.ll2.tns">Startup script&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;p>We must now edit the &lt;code>ndless.cfg.tns&lt;/code> file and add &lt;code>ext.ll2 linuxloader2&lt;/code> to the
+end of it, this will associate our script to the linux loader. Rename the DTB
+file to &lt;code>nspire-cx.dtb.tns&lt;/code> and create a folder on your calculator named &lt;code>Linux&lt;/code>,
+and inside it place all the required files you downloaded.&lt;/p>
+&lt;h2 id="booting-up">Booting up&lt;/h2>
+&lt;p>With these steps having been successful your system is ready for using. Make
+sure Ndless is functional, go into the &lt;code>Linux&lt;/code> folder and run the
+&lt;code>start_usb.ll2.tns&lt;/code> script. Booting takes a while, given that you followed
+this guide with no mistakes, after a couple of minutes Debian should be up and
+running. You can now install any packages you downloaded beforehand by running
+&lt;code>apt-get install PACKAGES&lt;/code> as root. In case you&amp;rsquo;re looking to try out a desktop
+environment I&amp;rsquo;ve tested Xorg which worked fine, as well as OpenBox which was
+slow (as expected) but was usable to my surprise. After that you&amp;rsquo;re done, your
+calculator now runs a fully functional Linux distro.&lt;/p></content></item></channel></rss>

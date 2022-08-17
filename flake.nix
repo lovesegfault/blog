@@ -16,7 +16,7 @@
         pkgs = import nixpkgs { inherit system; overlays = [ gitignore.overlay ]; };
       in
       {
-        defaultPackage = with pkgs; stdenv.mkDerivation {
+        packages.default = with pkgs; stdenv.mkDerivation {
           name = "blog";
           src = gitignoreSource ./.;
 
@@ -36,7 +36,7 @@
           '';
         };
 
-        devShell = self.defaultPackage.${system}.overrideAttrs (oldAttrs: {
+        devShells.default = self.packages.${system}.default.overrideAttrs (oldAttrs: {
           buildInputs = with pkgs; (oldAttrs.buildInputs or [ ]) ++ [
             git-lfs
             mdl

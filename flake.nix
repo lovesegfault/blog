@@ -11,7 +11,7 @@
   };
 
   outputs = { self, gitignore, nixpkgs, utils }:
-    utils.lib.eachDefaultSystem (system:
+    utils.lib.eachSystem [ "aarch64-darwin" "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs { inherit system; overlays = [ gitignore.overlay ]; };
       in

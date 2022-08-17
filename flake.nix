@@ -45,6 +45,7 @@
             pre-commit
             proselint
             rnix-lsp
+            statix
           ];
         });
       });

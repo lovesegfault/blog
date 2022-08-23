@@ -46,6 +46,7 @@
             proselint
             rnix-lsp
             statix
+            ltex-ls
           ];
         });
       });

@@ -60,8 +60,6 @@ documenting some edge-case of [NonStop Kernel][nonstop] systems.
 
 ## Linking
 
-### Background
-
 Linking is the process of resolving references, know as symbols or links, into
 library modules. This process can be done entirely at compile time, in which
 case it is known as static linking, or at runtime, in which case we call it
@@ -79,8 +77,6 @@ later in this section, at which point I think proving it will be trivial.
 
 ## ELF: Executable and Linkable Format
 
-### Background
-
 Originally called the "Extensible Linking Format", the Executable and Linkable
 Format (ELF) is a standard for many kinds of binary files, such as
 executable files ("programs"), object code (i.e. not-yet-linked binaries),
@@ -97,7 +93,6 @@ stay narrowly focused on how it relates to dynamic linking.
 ### Workings
 
 {{< figure src="./images/elf101.png" caption="ELF 101 by FIXME">}}
-
 
 [^1]: If you've ever used GCC to compile a C program with no output name, you
   might remember it spitting out a `a.out` file. That's a vestige of the a.out

@@ -5,12 +5,14 @@ meta = "false"
 
 <img src="./me.jpg" alt="picture of me" width="30%" style="float:left;margin:10px">
 
-I'm Bernardo, a Quantum Software Engineer at Google, where I
-work on QKernel and QCC (Quantum Circuit Compiler).
+I'm Bernardo, a software engineer at AWS, where I work on Rust build systems.
+
+Previously, I worked at Google Quantum AI on the QKernel, the control stack for
+the quantum computer, and QCC, the quantum circuit compiler.
 
 I was born in Brazil, and studied Computer Engineering at [IST][ist] in Lisbon,
-Portugal before dropping out. I now live in San Francisco, California, and you
-can reach me at [bernardo@meurer.org][persmail].
+Portugal before dropping out. I now live in New York City, and you can reach me
+at [bernardo@meurer.org][persmail].
 
 You can read more about me in my [CV][cv].
 
@@ -25,8 +27,7 @@ Here are, for curiosity's sake, some other things I enjoy:
 * Problems
     * Music archival
     * Safe cross-process memory sharing
-    * OoO CPU design
-    * Declarative system configuration
+    * Reproducible builds
 
 * Music
     * Hermeto Pascoal
@@ -38,11 +39,10 @@ Here are, for curiosity's sake, some other things I enjoy:
 
 * Projects
     * Rust
+    * Nix
     * Gentoo
-    * bcachefs
-    * NixOS
     * Neovim
-    * Alacritty
+    * bcachefs
 
 * Movies
     * The Seventh Seal

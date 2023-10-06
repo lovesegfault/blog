@@ -11,7 +11,7 @@
     width: 760px;
     max-width: 100%;
 
-    @media (--tablet) {
+    @media ($tablet) {
       flex-direction: column;
     }
   }
@@ -22,10 +22,11 @@
 
   .copyright {
     display: flex;
-    flex-direction: row;
+    flex-flow: row wrap;
+    flex: 1;
     align-items: center;
     font-size: 1rem;
-    color: var(--light-color-secondary);
+    justify-content: center;
 
     &--user {
       margin: auto;
@@ -34,17 +35,10 @@
 
     & > *:first-child:not(:only-child) {
       margin-right: 10px;
-
-       @media (--tablet) {
-        border: none;
-        padding: 0;
-        margin: 0;
-      }
     }
 
-    @media (--tablet) {
-      flex-direction: column;
-      margin-top: 10px;
+    span {
+      white-space: nowrap;
     }
   }
 }

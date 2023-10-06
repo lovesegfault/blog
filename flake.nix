@@ -40,7 +40,6 @@
           buildInputs = with pkgs; (oldAttrs.buildInputs or [ ]) ++ [
             git-lfs
             mdl
-            nix-linter
             nixpkgs-fmt
             pre-commit
             proselint

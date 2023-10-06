@@ -21,16 +21,18 @@ creator = "lovesegfault"
 [languages.en]
 languageName = "English"
 title = "null pointer"
-subtitle = "Bernardo's ramblings and non sequuntur"
-owner = "Bernardo Meurer"
 copyright = "Copyright &copy; 2021 - Bernardo Meurer"
-menuMore = "Show more"
+
+[languages.en.params]
+subtitle = "Bernardo's ramblings and non sequuntur"
 readMore = "Read more"
 readOtherPosts = "Read other posts"
-newerPosts = "Newer posts"
-olderPosts = "Older posts"
 missingContentMessage = "Page not found..."
 missingBackButtonLabel = "Back to home page"
+newerPosts = "Newer posts"
+olderPosts = "Older posts"
+owner = "Bernardo Meurer"
+menuMore = "Show more"
 
 [languages.en.params.logo]
 logoText = "null pointer"

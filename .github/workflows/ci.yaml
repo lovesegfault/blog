@@ -4,41 +4,31 @@ on:
     branches: [master]
   pull_request:
 
+permissions: {}
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.1.0
-      - uses: cachix/install-nix-action@v18
-        with:
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-            experimental-features = nix-command flakes
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v5
       - name: markdownlint
         run: nix develop -c mdl content
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: cachix/install-nix-action@v18
-        with:
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-            experimental-features = nix-command flakes
+      - uses: DeterminateSystems/nix-installer-action@v5
       - name: nix-build
         run: nix build -L
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: cachix/install-nix-action@v18
-        with:
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-            experimental-features = nix-command flakes
+      - uses: DeterminateSystems/nix-installer-action@v5
       - name: nix-build
         run: nix flake check

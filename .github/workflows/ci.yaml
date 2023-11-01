@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v5
+      - uses: DeterminateSystems/nix-installer-action@v6
       - name: markdownlint
         run: nix develop -c mdl content
   build:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: DeterminateSystems/nix-installer-action@v5
+      - uses: DeterminateSystems/nix-installer-action@v6
       - name: nix-build
         run: nix build -L
   check:
@@ -29,6 +29,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: DeterminateSystems/nix-installer-action@v5
+      - uses: DeterminateSystems/nix-installer-action@v6
       - name: nix-build
         run: nix flake check

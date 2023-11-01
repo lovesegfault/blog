@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: DeterminateSystems/nix-installer-action@v5
+      - uses: DeterminateSystems/nix-installer-action@v6
       - name: nix-build
         run: nix build -L
       # c.f. https://github.com/actions/deploy-pages/issues/58

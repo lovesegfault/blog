@@ -23,7 +23,7 @@ jobs:
       # c.f. https://github.com/actions/deploy-pages/issues/58
       - name: fixup
         run: cp --recursive --dereference --no-preserve=mode,ownership result public
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: ./public
 

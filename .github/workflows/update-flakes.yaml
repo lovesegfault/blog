@@ -12,7 +12,7 @@ jobs:
     outputs:
       flake-inputs: ${{ steps.get-flake-inputs.outputs.flake-inputs }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: false
           sparse-checkout: flake.lock
@@ -29,10 +29,14 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.get-flake-inputs.outputs.flake-inputs) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           lfs: false
-      - uses: DeterminateSystems/nix-installer-action@v20
+          # flake-update-action pushes with the PAT, and its nested
+          # create-pull-request@v6 can't unset credentials persisted by
+          # checkout >= v6, which results in a duplicate auth header.
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@v23
         with:
           extra-conf: accept-flake-config = true
       - run: git config --global user.email "hatesegfault@protonmail.ch"

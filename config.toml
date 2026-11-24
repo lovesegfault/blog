@@ -1,17 +1,16 @@
 baseurl = "/"
-languageCode = "en-us"
+locale = "en-us"
 title = "null pointer"
 theme = "hugo-theme-terminal"
-paginate = 5
+pagination.pagerSize = 5
 
 [params]
 contentTypeName = "posts"
-themeColor = "green"
 showMenuItems = 5
 showLanguageSelector = false
 fullWidthTheme = false
 centerTheme = true
-favicon = "images/favicon.png"
+oneHeadingSize = true
 showLastUpdated = false
 
 [params.twitter]
@@ -19,7 +18,7 @@ creator = "lovesegfault"
 
 [languages]
 [languages.en]
-languageName = "English"
+label = "English"
 title = "null pointer"
 copyright = "Copyright &copy; 2021 - Bernardo Meurer"
 
@@ -72,3 +71,4 @@ url = "/tags"
 [markup.highlight]
     codeFences = true
     guessSyntax = true
+    noClasses = false

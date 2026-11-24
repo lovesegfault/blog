@@ -11,6 +11,10 @@
 {{- if ge $limit 1 -}}
 {{- $pages = $pages | first $limit -}}
 {{- end -}}
+{{- /* Feed readers have no page to resolve relative links against */ -}}
+{{- $siteRefs := `(href|src)="(/(?:[^/"][^"]*)?")` -}}
+{{- $pageRefs := `(href|src)="(?:\./|(#))` -}}
+{{- $site := printf `${1}="%s${2}` (strings.TrimSuffix "/" .Site.BaseURL) -}}
 {{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
@@ -29,13 +33,15 @@
     {{ printf "<atom:link href=%q rel=\"self\" type=%q />" .Permalink .MediaType | safeHTML }}
     {{- end }}
     {{- range $pages }}
+    {{- $page := printf `${1}="%s${2}` .Permalink }}
     <item>
       <title>{{ .Title }}</title>
       <link>{{ .Permalink }}</link>
       <pubDate>{{ .Date.Format "Mon, 02 Jan 2006 15:04:05 -0700" | safeHTML }}</pubDate>
-      <guid>{{ .Permalink }}</guid>
-      <description>{{ .Summary | html }}</description>
-      <content>{{ .Content | html }}</content>
+      {{- /* Not the permalink, so that changing baseurl does not resend every post */}}
+      <guid isPermaLink="false">{{ .RelPermalink }}</guid>
+      <description>{{ .Summary | replaceRE $siteRefs $site | replaceRE $pageRefs $page | html }}</description>
+      <content>{{ .Content | replaceRE $siteRefs $site | replaceRE $pageRefs $page | html }}</content>
     </item>
     {{- end }}
   </channel>

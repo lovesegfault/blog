@@ -8,10 +8,20 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
   };
 
-  outputs = { self, gitignore, nixpkgs, utils }:
-    utils.lib.eachSystem [ "aarch64-darwin" "x86_64-linux" ] (system:
+  outputs =
+    {
+      self,
+      gitignore,
+      nixpkgs,
+      utils,
+    }:
+    utils.lib.eachSystem [ "aarch64-darwin" "x86_64-linux" ] (
+      system:
       let
-        pkgs = import nixpkgs { inherit system; overlays = [ gitignore.overlay ]; };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ gitignore.overlay ];
+        };
       in
       {
         packages.default = with pkgs; stdenvNoCC.mkDerivation {
@@ -37,16 +47,20 @@
         };
 
         devShells.default = self.packages.${system}.default.overrideAttrs (oldAttrs: {
-          buildInputs = with pkgs; (oldAttrs.buildInputs or [ ]) ++ [
-            git-lfs
-            mdl
-            nixpkgs-fmt
-            pre-commit
-            proselint
-            rnix-lsp
-            statix
-            ltex-ls
-          ];
+          buildInputs =
+            with pkgs;
+            (oldAttrs.buildInputs or [ ])
+            ++ [
+              git-lfs
+              ltex-ls-plus
+              mdl
+              nil
+              nixfmt
+              pre-commit
+              proselint
+              statix
+            ];
         });
-      });
+      }
+    );
 }

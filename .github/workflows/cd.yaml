@@ -1,0 +1,41 @@
+name: CD
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - name: nix-build
+        run: nix build -L
+      # c.f. https://github.com/actions/deploy-pages/issues/58
+      - name: fixup
+        run: cp --recursive --dereference --no-preserve=mode,ownership result public
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./public
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v5
+        id: deployment

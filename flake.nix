@@ -24,27 +24,29 @@
         };
       in
       {
-        packages.default = with pkgs; stdenvNoCC.mkDerivation {
-          name = "blog";
-          src = gitignoreSource ./.;
+        packages.default =
+          with pkgs;
+          stdenvNoCC.mkDerivation {
+            name = "blog";
+            src = gitignoreSource ./.;
 
-          nativeBuildInputs = [ hugo ];
+            nativeBuildInputs = [ hugo ];
 
-          dontConfigure = true;
+            dontConfigure = true;
 
-          buildPhase = ''
-            runHook preBuild
-            hugo --minify
-            runHook postBuild
-          '';
+            buildPhase = ''
+              runHook preBuild
+              hugo --minify
+              runHook postBuild
+            '';
 
-          installPhase = ''
-            runHook preInstall
-            mkdir -p $out
-            cp -r public/* $out
-            runHook postInstall
-          '';
-        };
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out
+              cp -r public/* $out
+              runHook postInstall
+            '';
+          };
 
         devShells.default = self.packages.${system}.default.overrideAttrs (oldAttrs: {
           buildInputs =

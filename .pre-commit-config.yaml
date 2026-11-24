@@ -1,3 +1,5 @@
+# Vendored subtrees must stay identical to upstream
+exclude: ^themes/
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
@@ -6,7 +8,7 @@ repos:
   - id: check-yaml
   - id: detect-private-key
   - id: end-of-file-fixer
-    exclude: themes/
+    exclude: \.svg$
   - id: forbid-new-submodules
   - id: mixed-line-ending
   - id: trailing-whitespace
@@ -32,4 +34,3 @@ repos:
     entry: mdl
     language: system
     files: \.(md|mdown|markdown)$
-    exclude: themes/*

@@ -32,21 +32,49 @@ jobs:
       - uses: actions/checkout@v7
         with:
           lfs: false
-          # flake-update-action pushes with the PAT, and its nested
-          # create-pull-request@v6 can't unset credentials persisted by
-          # checkout >= v6, which results in a duplicate auth header.
           persist-credentials: false
       - uses: DeterminateSystems/nix-installer-action@v23
         with:
           extra-conf: accept-flake-config = true
-      - run: git config --global user.email "hatesegfault@protonmail.ch"
-      - run: git config --global user.name "hatesegfault"
-      - uses: cpcloud/flake-update-action@v2.0.1
+      - id: update
+        env:
+          INPUT: ${{ matrix.flake }}
+        run: |
+          locked() {
+            jq -er --arg input "$INPUT" '.nodes[.nodes.root.inputs[$input]].locked | "\(.owner)/\(.repo) \(.rev)"' flake.lock
+          }
+
+          before="$(locked)"
+          nix flake update "$INPUT"
+          after="$(locked)"
+          if [ "$before" = "$after" ]; then
+            exit 0
+          fi
+
+          read -r repo old <<< "$before"
+          read -r _ new <<< "$after"
+          {
+            echo "changed=true"
+            echo "commit-message=chore(flake/${INPUT}): ${old:0:8} -> ${new:0:8}"
+            echo "title=chore(flake/${INPUT}): \`${old:0:8}\` -> \`${new:0:8}\`"
+            echo "body=https://github.com/${repo}/compare/${old}...${new}"
+          } >> "$GITHUB_OUTPUT"
+      - id: pr
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
         with:
-          dependency: ${{ matrix.flake }}
-          pull-request-token: ${{ secrets.PAT }}
-          pull-request-author: hatesegfault <hatesegfault@protonmail.ch>
+          # Not GITHUB_TOKEN, as PRs opened with that don't trigger CI
+          token: ${{ secrets.PAT }}
+          author: hatesegfault <hatesegfault@protonmail.ch>
+          committer: hatesegfault <hatesegfault@protonmail.ch>
+          add-paths: flake.lock
+          branch: update-${{ matrix.flake }}
           delete-branch: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-branch-prefix: update-
-          automerge: true
+          commit-message: ${{ steps.update.outputs.commit-message }}
+          title: ${{ steps.update.outputs.title }}
+          body: ${{ steps.update.outputs.body }}
+      - if: steps.pr.outputs.pull-request-operation == 'created'
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+          PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+        run: gh pr merge --auto --rebase "$PR_URL"

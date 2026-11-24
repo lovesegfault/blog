@@ -1,4 +1,4 @@
-baseurl = "/"
+baseurl = "https://lovesegfault.com/"
 locale = "en-us"
 title = "null pointer"
 theme = "hugo-theme-terminal"

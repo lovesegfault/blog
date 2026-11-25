@@ -5,12 +5,12 @@ meta = "false"
 
 <img src="./me.jpg" alt="picture of me" width="30%" style="float:left;margin:10px">
 
-I'm Bernardo, a software engineer at Anthropic, where I work on Rust and Nix.
-I'm also a NixOS maintainer.
+I'm Bernardo, a software engineer at Anthropic, where I work on RL
+infrastructure. I'm also a NixOS maintainer.
 
-Previously, I worked at AWS on Rust build systems, and at Google Quantum AI on
-the QKernel, the control stack for the quantum computer, and QCC, the quantum
-circuit compiler.
+Previously, I worked at AWS on the Rust build infrastructure and developer
+experience, and at Google Quantum AI on the QKernel, the control stack for the
+quantum computer, and QCC, the quantum circuit compiler.
 
 I was born in Brazil, and studied Computer Engineering at [IST][ist] in Lisbon,
 Portugal before dropping out. I now live in New York City, and you can reach me
@@ -60,5 +60,5 @@ Here are, for curiosity's sake, some other things I enjoy:
     * In Defense of Lost Causes - Slavoj Žižek
 
 [cv]: https://github.com/lovesegfault/cv/releases/latest/download/cv.pdf
-[ist]: https://tecnico.ulisboa.pt/en/
+[ist]: https://en.wikipedia.org/wiki/Instituto_Superior_T%C3%A9cnico
 [persmail]: mailto:bernardo@meurer.org

@@ -1,0 +1,63 @@
+# Temporary: checks the redesign on both systems, and in Firefox and Safari. Goes away before merging.
+name: verify
+on:
+  push:
+    branches-ignore: [master, "dependabot/**", "update-*"]
+
+permissions: {}
+
+concurrency:
+  group: verify
+  cancel-in-progress: true
+
+jobs:
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - run: nix run --inputs-from . nixpkgs#mdl -- -r '~MD002,~MD004,~MD007,~MD013,~MD033,~MD041' README.md content || true
+      - run: nix run --inputs-from . nixpkgs#markdownlint-cli -- README.md content
+      - if: always()
+        run: nix shell --inputs-from . nixpkgs#{cargo,rustfmt} -c cargo fmt --all --check
+      - if: always()
+        run: nix run --inputs-from . nixpkgs#nixfmt -- flake.nix nix/*.nix && git diff --exit-code
+      - if: always()
+        run: nix run --inputs-from . nixpkgs#statix -- check
+      - if: always()
+        run: nix run --inputs-from . nixpkgs#actionlint
+  browse:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            driver: geckodriver
+          - os: macos-latest
+            driver: safaridriver
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - uses: DeterminateSystems/magic-nix-cache-action@v15
+      - run: nix build -L
+      - run: nix flake check -L
+      - run: mkdir shots && tar -czhf shots/site.tar.gz --exclude '*.xz' --exclude '*.pdf' --exclude images result
+      - if: always() && runner.os == 'macOS'
+        run: sudo safaridriver --enable
+      - if: always()
+        run: |
+          perl -pi -e 's/^title = /comments = false\ntitle = /' content/posts/*.md content/posts/*/index.md
+          nix develop -c forno build --drafts
+          nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
+          nix develop -c forno serve &
+          curl --retry 60 --retry-connrefused --retry-delay 1 -so /dev/null http://127.0.0.1:1313/
+          MOZ_HEADLESS=1 python3 .github/browse.py ${{ matrix.driver }}
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: shots-${{ matrix.driver }}
+          path: shots
+          retention-days: 3

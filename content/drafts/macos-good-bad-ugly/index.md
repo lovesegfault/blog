@@ -16,7 +16,8 @@ how much they hated computers. Unsurprisingly, then, I grew up with a desktop
 that was all-around garbage and running Windows on it, from XP to 7, was a
 painful endeavor.
 
-{{< figure src="./images/ubuntu-cd.jpg" caption="Back in the day!">}}
+![A red Ubuntu 5.10 install CD](images/ubuntu-cd.jpg)
+Back in the day!
 
 Luckily, when I was around 7 we had Bring Your Father to School Day, and one of my
 classmates' father worked at Canonical and gave us all Ubuntu CDs. I installed
@@ -49,7 +50,7 @@ feel of macOS, especially Mojave with its comfortable Dark Mode.
 
 Another thing that I really liked was having the Numbers/Pages/Keynote software
 suit, it really does feel much better than LibreOffice. I wouldn't normally care
-much for Pages or Keynote, but I found that my usual \\(\LaTeX\\) (and beamer)
+much for Pages or Keynote, but I found that my usual $\LaTeX$ (and beamer)
 workflow didn't work so well on macOS. Numbers is what I liked the most, not
 having to use LibreOffice Calc was great. Overall the suite felt polished and
 easy to use, except for the eventual annoying warnings about missing fonts on

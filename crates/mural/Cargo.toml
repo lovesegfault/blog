@@ -1,0 +1,16 @@
+[package]
+name = "mural"
+description = "Fires the valley into a ceramic mural"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+rayon.workspace = true
+roxmltree = "0.21"
+svgtypes = "0.16"
+tiny-skia = { version = "0.12", default-features = false, features = ["simd", "std"] }

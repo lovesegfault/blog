@@ -39,7 +39,9 @@ the steps here.
 1. Run the `ndless-sdk/toolchain/build_toolchain.sh` script.
     - This will download the toolchain as well as build it for you. It will
     take a while.
-    {{<figure src="./images/compiling.jpg" caption="Compiling is tough on the CPU">}}
+
+    ![Compiler output scrolling by, next to htop with every core busy](images/compiling.jpg)
+    Compiling is tough on the CPU
 
 1. The original guide recommends adding the binaries' path to your `PATH`, but
     since I don't think that amending your `.bashrc` for one-time projects like
@@ -51,7 +53,9 @@ the steps here.
 
 1. Your cross-compiler should be working now. Test it by running
     `arm-none-eabi-gcc` and see if you get any output.
-    {{<figure src="./images/xcompiler.jpg" caption="You should get output like this">}}
+
+    ![arm-none-eabi-gcc failing with: no input files](images/xcompiler.jpg)
+    You should get output like this
 
 If you managed to produce output in step 4. that means your Cross Compiler is
 working well. Remember to source that file whenever you want to use the
@@ -78,7 +82,8 @@ nothing should change for future versions.
 1. Copy the configuration file to the kernel folder, name it .config
     - `cp nspire-kernel/4.3.0/config linux-4.3/.config`
 
-{{<figure src="./images/config.jpg" caption="You should be able to get output like this">}}
+![A terminal showing the first lines of the kernel's .config](images/config.jpg)
+You should be able to get output like this
 
 With this your kernel is ready for compilation, don't worry, we will get to it
 in a moment.
@@ -92,7 +97,9 @@ place. Also confirm that you have the toolchain we compiled in your `PATH`.
 1. `ARCH=arm make -jX`
     - `ARCH=arm` specifies the architecture we're building to
     - `-jX` parallelizes compilation. Replace `X` with your thread count.
-    {{<figure src="./images/linux-compiling.jpg" class="mid" caption="Compiling the kernel, get yourself a cup of coffee">}}
+
+    ![The kernel being built, next to htop](images/linux-compiling.jpg)
+    Compiling the kernel, get yourself a cup of coffee
 
 1. Check that you have the following files
     - `arch/arm/boot/zImage`
@@ -125,7 +132,9 @@ Arch Linux port for the ARM architecture.
 1. Untar the file you downloaded into the drive
     - `sudo bsdtar xzf ArchLinuxARM-armv5-latest.tar.gz -C ~/mnt/`
         Replace `~/mnt` with wherever you mounted your drive.
-        {{<figure src="./images/rootfs.jpg" class="mid" caption="Your rootfs should look like this">}}
+
+        ![A terminal listing the top of a Linux root filesystem](images/rootfs.jpg)
+        Your rootfs should look like this
 
 ### Installing modules
 
@@ -136,7 +145,8 @@ Arch Linux port for the ARM architecture.
 1. Install modules to the USB drive
     - `sudo ARCH=arm make modules_install INSTALL_MOD_PATH=~/mnt/`
 
-{{<figure src="./images/modules.jpg" caption="Modules installed">}}
+![A terminal listing installed modules, ending in DEPMOD 4.3.0-nspire](images/modules.jpg)
+Modules installed
 
 ### Changing root with QEMU
 
@@ -147,7 +157,10 @@ Arch Linux port for the ARM architecture.
 
 1. Register `qemu-arm-static` as an ARM interpreter in the kernel (must be
     root)
-    - {{<gist lovesegfault eded4fe8ef2fb88bfa1e08529e2cb6ca>}}
+
+    ```bash title="register-qemu.sh" wrap
+    echo ':arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
+    ```
 
 1. Change root into the new rootfs. If you are running arch and you have the
     `arch-install-scripts` package installed you can use `arch-chroot`
@@ -184,7 +197,8 @@ that with either [`distcc`][distcc] (recommended) or with the following steps:
 
 1. `makepkg -cs --install`
 
-{{<figure src="./images/downgrade.jpg" caption="Downgrade in progress">}}
+![pacman asking to downgrade linux-armv5 from 4.7.6-1 to 4.3.0-1](images/downgrade.jpg)
+Downgrade in progress
 
 Whichever way you choose, you can check if it worked by:
 
@@ -193,7 +207,8 @@ Whichever way you choose, you can check if it worked by:
 * Running `pacman -Qs` and checking if it lists the kernel as version
     `4.3.0-1`
 
-{{<figure src="./images/check-downgrade.jpg" caption="Downgrade successful">}}
+![A terminal listing the 4.3.0 module folders, and pacman reporting linux-armv5 4.3.0-1](images/check-downgrade.jpg)
+Downgrade successful
 
 Lastly, add the packages `linux-armv5` and `linux-armv5-headers` to your ignore
 list over on `/etc/pacman.conf`. To do so, uncomment the `IgnorePkg` line, and
@@ -231,7 +246,8 @@ files to and from your calculator, Virtual Machines work.
 1. Place the files you downloaded, `zImage.tns`, and `nspire-cx.dtb.tns` into
     the `linux` folder
 
-{{<figure src="./images/files.jpg" caption="Files on the calculator">}}
+![The TI-Nspire file browser, with four files in the linux folder](images/files.jpg)
+Files on the calculator
 
 ### Finishing up
 
@@ -240,10 +256,10 @@ start the OS by executing the bootloader. If you have any questions on how to
 do this you can reference the [initial article][debian-nspire]. Below is a
 demo video of the calculator playing Doom on Linux.
 
-{{<youtube O3eSspki0Ws>}}
+![The calculator playing Doom on Linux](https://www.youtube.com/watch?v=O3eSspki0Ws)
 
-[ALARM]: archlinuxarm.org
-[debian-nspire]: /post/2016-05-30-debian-on-the-nspire
+[ALARM]: https://archlinuxarm.org
+[debian-nspire]: /posts/debian-on-the-nspire/
 [ndless-sdk]: https://github.com/ndless-nspire/Ndless/wiki/Ndless-SDK:-C-and-assembly-development-introduction
 [bash-src]: ./files/setpath.sh
 [nspire-kernel]: https://github.com/lovesegfault/nspire-kernel

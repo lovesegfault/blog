@@ -1,0 +1,5 @@
+[alias]
+wasm = "build --profile wasm --target wasm32-unknown-unknown --package collision --package explainers"
+
+[target.wasm32-unknown-unknown]
+linker = "wasm-ld"

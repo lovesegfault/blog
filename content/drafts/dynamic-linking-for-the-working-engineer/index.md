@@ -92,7 +92,8 @@ stay narrowly focused on how it relates to dynamic linking.
 
 ### Workings
 
-{{< figure src="./images/elf101.png" caption="ELF 101 by FIXME">}}
+![A poster taking apart a small ELF executable, from headers to loading](images/elf101.png)
+ELF 101 by FIXME
 
 [^1]: If you've ever used GCC to compile a C program with no output name, you
   might remember it spitting out a `a.out` file. That's a vestige of the a.out

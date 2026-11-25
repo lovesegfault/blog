@@ -1,9 +1,8 @@
 +++
 title = "About"
-meta = "false"
 +++
 
-<img src="./me.jpg" alt="picture of me" width="30%" style="float:left;margin:10px">
+![picture of me](me.jpg#margin)
 
 I'm Bernardo, a software engineer at Anthropic, where I work on RL
 infrastructure. I'm also a NixOS maintainer.
@@ -17,10 +16,6 @@ Portugal before dropping out. I now live in New York City, and you can reach me
 at [bernardo@meurer.org][persmail].
 
 You can read more about me in my [CV][cv].
-
-&nbsp;
-
-&nbsp;
 
 ---
 

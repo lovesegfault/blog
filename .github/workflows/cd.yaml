@@ -18,6 +18,7 @@ jobs:
         with:
           lfs: true
       - uses: DeterminateSystems/nix-installer-action@v23
+      - uses: DeterminateSystems/magic-nix-cache-action@v15
       - name: nix-build
         run: nix build -L
       # c.f. https://github.com/actions/deploy-pages/issues/58

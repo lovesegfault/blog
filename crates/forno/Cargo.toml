@@ -1,0 +1,54 @@
+[package]
+name = "forno"
+description = "Builds lovesegfault.com"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+blake3 = "1"
+clap = { version = "4", features = ["derive"] }
+collision = { path = "../collision" }
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
+jiff = "0.2"
+maud.workspace = true
+memchr = "2"
+moxcms = "0.8"
+mural = { path = "../mural" }
+pulldown-cmark = { version = "0.13", default-features = false }
+rayon.workspace = true
+resvg = { version = "0.49", default-features = false, features = ["text"] }
+rquickjs = "0.14"
+serde = { version = "1", features = ["derive"] }
+toml = "1"
+wasmi = { version = "2", default-features = false, features = ["auto-dispatch", "stable", "std", "validate"] }
+webp = { version = "0.3", default-features = false }
+
+# Syntax highlighting. To add a language, add its grammar here and to `highlight.rs`.
+arborium-highlight = { version = "2.18", features = ["tree-sitter"] }
+arborium-asm = "2.18"
+arborium-bash = "2.18"
+arborium-c = "2.18"
+arborium-cpp = "2.18"
+arborium-css = "2.18"
+arborium-dockerfile = "2.18"
+arborium-go = "2.18"
+arborium-haskell = "2.18"
+arborium-html = "2.18"
+arborium-ini = "2.18"
+arborium-javascript = "2.18"
+arborium-json = "2.18"
+arborium-lua = "2.18"
+arborium-markdown = "2.18"
+arborium-nix = "2.18"
+arborium-python = "2.18"
+arborium-rust = "2.18"
+arborium-toml = "2.18"
+arborium-typescript = "2.18"
+arborium-x86asm = "2.18"
+arborium-yaml = "2.18"
+arborium-zig = "2.18"

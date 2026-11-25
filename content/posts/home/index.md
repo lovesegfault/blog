@@ -34,7 +34,7 @@ being the only ones to discover teleportation, or at least the only ones to name
 it. Saudade is a notoriously untranslatable word; it is "longing, melancholy,
 nostalgia, ... a vague and constant desire for something that does not, and
 probably cannot exist, not an active discontent or poignant sadness, but an
-indolent, dreaming wistfulness.''[^1] Saudade is everything taking so long to be
+indolent, dreaming wistfulness."[^1] Saudade is everything taking so long to be
 so miserable, it fills the soul with lacking. As Drummond wrote, we also have
 saudade of what hasn't been, and it hurts a lot[^2]. Saudade is raw power in
 word-form; it is impossible for me to say it without getting goosebumps.
@@ -58,15 +58,12 @@ it so strong. In some ways, home is a common denominator between us all,
 everyone has a home, somewhere in their memory. Home can disappear, and yet
 remain within us for as long as we are alive. I oscillate between seeing this as
 a curse or a blessing, because saudade of what can no longer exist hurts so
-much. Thinking about this reminded me of David Byrne's track ["Home,][home][^3]
+much. Thinking about this reminded me of David Byrne's track ["Home,"][home][^3]
 where he sings:
 
-> You can fly - from the stuff that still surrounds you
->
-> We're home - and the band keeps marching on
->
-> Connecting - to every living soul
->
+> You can fly - from the stuff that still surrounds you\
+> We're home - and the band keeps marching on\
+> Connecting - to every living soul\
 > Compassion - for things I'll never know
 
 The whole song, in one way or another, deals deeply with the idea of home, but I
@@ -80,25 +77,23 @@ it's part of what makes us human, for it's part of who we are, always.
 Memories in Past Tense
 ---
 
-{{< figure src="./images/flowers.jpg" title="My great-aunt Eunice and I picking flowers" >}}
+![A baby held up behind a bed of red flowers](images/flowers.jpg)
+My great-aunt Eunice and I picking flowers
 
----
+![A white hallway with a tall wooden doorway, opening onto another room](images/hall.jpg)
+Hall of the house
 
-{{< figure src="./images/hall.jpg" title="Hall of the house" >}}
+![A small child holding the reins of a pale horse with a red saddle blanket](images/horse.jpg)
+Me learning how to ride a horse
 
----
+![A toddler with a bucket among geese and chickens](images/chickens.jpg)
+Me feeding the chickens
 
-{{< figure src="./images/horse.jpg" title="Me learning how to ride a horse" >}}
-
----
-
-{{< figure src="./images/chickens.jpg" title="Me feeding the chickens" >}}
-
----
-
-{{< figure src="./images/entrance.jpg" title="Entrance of the farm" >}}
+![A stone path across a lawn, leading to a white house among trees](images/entrance.jpg)
+Entrance of the farm
 
 [^1]: Emmons, Shirlee and Lewis, Wilbur Watkins; "Researching the Song: A Lexicon"
 [^2]: Drummond, Carlos de Andrade; "O Avesso Das Coisas"
 [^3]: Byrne, David; "Everything That Happens Will Happen Today"
+
 [home]: https://www.youtube.com/watch?v=dC8Gxqhcjhk

@@ -6,9 +6,7 @@ result
 result-*
 *.drv
 
-# Hugo
-.hugo_build.lock
-/resources
-
-# Zola
-public
+# The generator
+/.cache
+/public
+/target

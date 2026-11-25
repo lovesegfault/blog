@@ -1,4 +1,3 @@
-
 +++
 title = "The Lost Ark"
 date = 2019-04-22T00:54:01Z
@@ -25,7 +24,8 @@ projects into increasingly large amounts of analog-digital Frankenstein madness.
 It was a whole lot of fun, and I look back at that time with a deep sense of
 nostalgia.
 
-{{< figure src="./images/turntable.jpg" caption="My initial setup">}}
+![A turntable on a shelf of records, between two speakers](images/turntable.jpg)
+My initial setup
 
 Sadly all good things must end, and that was definitely true for my time in
 Lisbon. I had grown increasingly frustrated with the university I was attending,
@@ -36,7 +36,8 @@ nationality and culture in order to be respected or liked by a large portion of
 my peers. I was done with all that, and it was time to go somewhere else, so I
 did.
 
-{{< figure src="./images/packing-up.jpg" caption="Packing up">}}
+![Open suitcases on the floor of a bedroom](images/packing-up.jpg)
+Packing up
 
 I decided to move to the US, to Santa Barbara in particular, and with the help
 of many friends I had set up my move fairly quickly. One question, however,
@@ -76,7 +77,8 @@ start, I missed the freedom I had had all my life; being 20 in America feels
 like being 13 in Brazil, and I swiftly discovered that the maturity of my peers
 mirrored that, for the most part.
 
-{{< figure src="./images/balcony.jpg" caption="My beloved balcony view" class="scaled">}}
+![Tiled buildings and red roofs under a pink sky](images/balcony.jpg)
+My beloved balcony view
 
 I tried setting up my turntable in my room, even though I only had one record
 in my new collection[^4], but it wasn't possible. The vibrations from the

@@ -1,0 +1,30 @@
+url = "https://lovesegfault.com"
+# Comments are filed under "<post> :: <title>", so changing this orphans them.
+title = "null pointer"
+subtitle = "Bernardo’s ramblings and non sequuntur"
+author = "Bernardo Meurer"
+language = "en-us"
+twitter = "@lovesegfault"
+# The repository whose issues hold the comments.
+comments = "lovesegfault/blog"
+
+[farm]
+at = "22° 02′ 46.2″ S 43° 02′ 38.2″ W"
+story = "/posts/home/"
+
+# TeX macros for every page. A page can add its own in the same way.
+[macros]
+
+[redirects]
+"/posts/" = "/"
+"/drafts/" = "/"
+"/drafts/page/1/" = "/"
+"/page/1/" = "/"
+"/page/2/" = "/"
+"/page/3/" = "/"
+"/posts/page/1/" = "/"
+"/posts/page/2/" = "/"
+"/posts/page/3/" = "/"
+"/tags/*/page/1/" = "/tags/*/"
+"/categories/*/page/1/" = "/categories/*/"
+"/categories/essay/page/2/" = "/categories/essay/"

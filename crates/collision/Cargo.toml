@@ -1,0 +1,9 @@
+[package]
+name = "collision"
+description = "Writing, drawn as particle tracks"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

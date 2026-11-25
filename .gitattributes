@@ -12,6 +12,5 @@
 **/images/** filter=lfs diff=lfs merge=lfs -text
 static/slides/** filter=lfs diff=lfs merge=lfs -text
 
-# Vendored with git-subtree, whose squash commits hold plain blobs. Putting
-# these in LFS makes every subtree pull conflict on binary files.
-themes/hugo-theme-terminal/** !filter !diff !merge !text
+# Small, and the site does not build without them.
+assets/** !filter !diff !merge !text

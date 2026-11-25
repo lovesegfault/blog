@@ -201,8 +201,8 @@ this power away from us, the people.
 between Law and Technology." *Information & Communications Technology Law*, vol.
 23, no. 2, Apr. 2014, pp. 117–135., doi:10.1080/13600834.2014.925631.
 
-<a name="goldstein"></a>2. Goldstein, Paul. ``The Future of Copyright in a
-Digital Environment: Summary of Discussion,'' in *The Future of Copyright in a
+<a name="goldstein"></a>2. Goldstein, Paul. "The Future of Copyright in a
+Digital Environment: Summary of Discussion," in *The Future of Copyright in a
 Digital Environment: Proceedings of the Royal Academy Colloquium* (Amsterdam,
 6-7 July 1995), Kluwer Law International, 1996.
 
@@ -233,5 +233,5 @@ Project: The Statute of Anne*; April 10, 1710,
 doi:10.1145/1070838.1070871.
 
 <a name="rushdie"></a>9. Rushdie, Salman. "Excerpts From Rushdie's Address:
-1,000 Days `Trapped Inside a Metaphor'." *The New York Times*, 12 Dec. 1991,
+1,000 Days 'Trapped Inside a Metaphor'." *The New York Times*, 12 Dec. 1991,
 [www.nytimes.com/books/99/04/18/specials/rushdie-address.html](http://www.nytimes.com/books/99/04/18/specials/rushdie-address.html).

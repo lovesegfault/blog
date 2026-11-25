@@ -1,5 +1,3 @@
-# Vendored subtrees must stay identical to upstream
-exclude: ^themes/
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
@@ -31,6 +29,24 @@ repos:
   - id: markdownlint
     name: Markdownlint
     description: Run markdownlint on your Markdown files
-    entry: mdl
+    entry: markdownlint
     language: system
     files: \.(md|mdown|markdown)$
+  - id: rustfmt
+    name: rustfmt
+    entry: cargo fmt --all
+    language: system
+    files: \.rs$
+    pass_filenames: false
+  - id: clippy
+    name: clippy
+    entry: cargo clippy --workspace --all-targets -- --deny warnings
+    language: system
+    files: \.rs$
+    pass_filenames: false
+  - id: scrub
+    name: scrub
+    description: Keep the location of photos out of the repository
+    entry: forno scrub
+    language: system
+    files: (?i)\.(jpe?g|png)$

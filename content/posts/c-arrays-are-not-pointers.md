@@ -16,7 +16,7 @@ the case.[^1]
 This is the first situation that caused me to see how arrays and pointers are
 really distinct. Consider the following code:
 
-```C
+```c
 #include<stdio.h>
 #include<stdlib.h>
 
@@ -31,10 +31,10 @@ int main(void) {
 First, let's understand what `sizeof()` is _supposed_ to do, from the [ISO C
 Standard][cstd]:
 
-> **6.5.3.4, item 2**
->
 > The `sizeof` operator  yields  the  size  (in  bytes)  of  its  operand,
 > which  may  be  an expression or the parenthesized name of a type.
+>
+> -- 6.5.3.4, item 2
 
 So, given that I'm on a 64-bit system, we'd expect to see the following output,
 were arrays and pointers to be the same:
@@ -56,8 +56,6 @@ wat?
 
 Alright, let's go take a gander at the standard again
 
-> **6.2.5, item 20**
->
 > An array type describes a contiguously allocated nonempty set of objects with
 > a particular member object type, called the element type. Array types are
 > characterized by their element type **and by the number of elements in the
@@ -65,6 +63,8 @@ Alright, let's go take a gander at the standard again
 > element type is T, the array type is sometimes called "array of T". The
 > construction of an array type from an element type is called "array type
 > derivation". *[Emphasis mine]*
+>
+> -- 6.2.5, item 20
 
 The first clue lies here, where we already learn that arrays are decidedly
 **not** pointers! Pointers have no relationship, from the compiler's point of
@@ -75,14 +75,14 @@ T" is really "array of T with length N."[^2] There can be no array without a kno
 length[^3], in stark contrast to pointers, where the compiler never knows their
 length.
 
-> **6.5.3.4, item 4**
->
 > When `sizeof` is applied to an operand that has type `char`, `unsigned char`, or
 > `signed char`, (or a qualified version thereof) the result is 1. **When applied to
 > an operand that has array type, the result is the total number of bytes in the
 > array**. When applied to an operand that has structure or union type, the result
 > is the total number of bytes in such an object, including internal and trailing
 > padding. *[Emphasis mine]*
+>
+> -- 6.5.3.4, item 4
 
 And there's the final clue, `sizeof()` has special behavior for arrays[^4]! For
 an array it will look at the `sizeof()` the object type, the length of the
@@ -93,7 +93,7 @@ do `sizeof(foo)` I will hit this special behavior, and get the size as being
 With this in mind our initial example starts making more sense, let's look at it
 again:
 
-```C
+```c start=5
 int *ptr = calloc(5, sizeof(int));
 int arr[5] = {0};
 printf("sizeof(ptr) = %ld\n", sizeof(ptr));
@@ -116,7 +116,7 @@ length of `arr` in bytes, which is `20`.
 
 Consider the following example:
 
-```C
+```c
 #include<stdio.h>
 #include<stdlib.h>
 
@@ -184,8 +184,6 @@ What? How did the length change? And why is only the beginning of the array
 getting filled up with data? What the hell is going on here! Let's go back to
 the standard for a moment:
 
-> **6.7.5.3, item 7**
->
 > **A declaration of a parameter as "array of type" shall be adjusted to
 > "qualified pointer to type"**, where the type qualifiers (if any) are those
 > specified within the `[` and `]` of the array type derivation. If the keyword
@@ -193,6 +191,8 @@ the standard for a moment:
 > for each call to the function, the value of the corresponding actual argument
 > shall provide access to the first element of an array with at least as many
 > elements as specified by the size expression. _[Emphasis mine]_
+>
+> -- 6.7.5.3, item 7
 
 As if things weren't confusing enough, the standard defines that whenever you
 declare a parameter to a function as an array, such as `void randomize(int
@@ -281,12 +281,12 @@ example, `malloc()` have different provenances. The standard touches on this
 indirectly when they talk about library functions that take an array as
 argument:
 
-> **7.1.4, item 1**
->
 > If a function argument is described as being an array, the pointer actually
 > passed to the function shall have a value such that all address computations
 > and accesses to objects (that would be valid if the pointer did point to the
 > first element of such an array) are in fact valid.
+>
+> -- 7.1.4, item 1
 
 Now, this isn't _precisely_ the same issue that motivates DR-260, but
 nonetheless it alludes to the fact that there is a semantic difference between a
@@ -305,7 +305,7 @@ way too much about why!
 
 If you believe I missed something in this post, please feel free to mention it
 in the comments bellow, or reach me at
-[bernardo@arraysarenotpointers.dev](mail).
+[bernardo@arraysarenotpointers.dev][mail].
 
 [^1]: This post is aimed at beginners and, to a lesser degree, intermediate
   users of C. If you are an expert you are unlikely to be surprised by what I
@@ -330,4 +330,4 @@ in the comments bellow, or reach me at
 [cstd]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1548.pdf
 [dr260]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_260.htm
 [ptrprov]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2263.htm
-[mail]: mailto://bernardo@arraysarenotpointers.dev
+[mail]: mailto:bernardo@arraysarenotpointers.dev

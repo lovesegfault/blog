@@ -5,7 +5,7 @@ tags = [ "iphone", "apple", "opinion" ]
 categories = [ "essay" ]
 +++
 
-{{<figure src="./images/rotten-apple.jpg">}}
+![Half an apple, going brown](images/rotten-apple.jpg)
 
 I have always been a proud and happy iPhone user. My first smartphone was an
 iPhone 3G and, although I had owned a couple Motorola flip-phones before that, I
@@ -46,7 +46,8 @@ made the picture quality simply horrible. The battery life absolutely sucked
 about 3-4 years in, and around that time too the lightning connector became
 really finicky.
 
-{{< figure src="./images/bad-image.jpg" caption="Look at that dirt!">}}
+![Papers on a desk, with dark specks scattered over the picture](images/bad-image.jpg)
+Look at that dirt!
 
 Despite all that, the phone worked. I carried a powerbank around to make up for
 the short battery life and, since I was never much of a phone photographer

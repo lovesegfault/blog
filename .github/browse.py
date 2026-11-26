@@ -123,23 +123,35 @@ for post in "notes-on-euclidean-spaces", "on-leibniz-truth", "specimen", "zz-mat
     time.sleep(3)
     print("sweep", post, json.dumps(run(open(".github/verify/sweep.js").read()), ensure_ascii=False), flush=True)
 
-go(SITE + "/posts/specimen/#mathematics")
-run("getSelection().selectAllChildren(document.querySelector('#mathematics + p'))")
-time.sleep(1)
-save("picked")
-press("c")
-time.sleep(1)
-run("document.body.prepend(document.createElement('textarea')); document.body.firstChild.focus()")
-press("v")
-print("copied", json.dumps(run("return [document.body.firstChild.value, document.querySelectorAll('.copied').length]")))
+for name, ends in [
+    ("paragraph", "p, 0, p, p.childNodes.length"),
+    ("from the formula", "b.lastChild, 0, f.nextSibling, 9"),
+    ("back to the formula", "f.nextSibling, 9, b.lastChild, 0"),
+    ("up to the formula", "p.firstChild, 0, b.firstChild, 1"),
+    ("the formula", "b.firstChild, 0, b.lastChild, 1"),
+]:
+    go(SITE + "/colophon/")
+    go(SITE + "/posts/specimen/#mathematics")
+    time.sleep(1)
+    run(f"const p = document.querySelector('#mathematics + p'), f = p.querySelector('.formula'), b = f.querySelector('b'); getSelection().setBaseAndExtent({ends})")
+    time.sleep(1)
+    press("c")
+    time.sleep(1)
+    run("document.body.prepend(document.createElement('textarea')); document.body.firstChild.focus()")
+    press("v")
+    time.sleep(1)
+    print("copied", name, json.dumps(run("return [document.body.firstChild.value, document.querySelectorAll('.copied').length]")))
 
 for theme in "light", "dark":
     print("themes", theme, run(f"""const root = document.documentElement; root.dataset.theme = '{theme}';
-        return ['', 'light', 'dark'].map(forced => {{ root.style.colorScheme = forced; const s = getComputedStyle(document.body);
-            return s.color + ' on ' + s.backgroundImage.match(/day|night/); }}).join(', ')"""))
+        return ['', 'light', 'dark', 'light !important', 'dark !important', ''].map(forced => {{
+            root.style.cssText = 'color-scheme:' + forced; const s = getComputedStyle(document.body);
+            return forced + ' ' + s.color + ' on ' + s.backgroundImage.match(/day|night/); }}).join(', ')"""))
+print("themes toggled", run("""const root = document.documentElement; root.dataset.theme = '';
+    return [1, 2, 3].map(() => (document.querySelector('.dusk').click(), root.dataset.theme || '-')).join()"""), flush=True)
 
 go(SITE + "/posts/notes-on-euclidean-spaces/")
-run("""document.querySelectorAll('[aria-hidden], link, .figure').forEach(e => e.remove());
+run("""document.querySelectorAll('link, .figure').forEach(e => e.remove());
     document.body.style.cssText = 'font: 20px serif; max-width: 40em'; document.querySelector('#gram-matrix-1, #gram-matrix').scrollIntoView()""")
 time.sleep(1)
 save("plain")

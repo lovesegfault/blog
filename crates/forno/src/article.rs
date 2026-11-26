@@ -49,7 +49,7 @@ struct Writer<'a> {
     in_link: bool,
     verse: bool,
     in_figure: bool,
-    in_formula: Option<&'a Node>,
+    in_formula: bool,
     /// For pictures, in rem.
     room: f32,
     /// Each note, and how many times it was referred to.
@@ -73,7 +73,7 @@ impl<'a> Article<'a> {
             in_link: false,
             verse: false,
             in_figure: false,
-            in_formula: None,
+            in_formula: false,
             room: COLUMN,
             notes: Vec::new(),
             ids: page.body.ids.clone(),
@@ -170,11 +170,6 @@ impl<'a> Writer<'a> {
         let name = if is_mathml(kind) && node.get("notation").is_some() { "menclose" } else { &node.tag };
         let mut written = format!("<{name}");
         for (attribute, value) in node.attributes.iter().filter(|(attribute, _)| attribute != "id" || !self.copy) {
-            if attribute == "class" && is_mathml(kind) {
-                let displayed = self.in_formula.is_some_and(Node::is_displayed);
-                written.extend(value.split(' ').map(|class| formula::arranged(class, displayed)));
-                continue;
-            }
             let value = if attribute == "href" { &resolve(&self.page.url, value) } else { value };
             written += &format!(r#" {attribute}="{}""#, html!((value)).0);
         }
@@ -200,7 +195,7 @@ impl<'a> Writer<'a> {
     fn write(&mut self, node: &'a Node) -> Result<Markup> {
         let id = node.get("id").filter(|_| !self.copy);
         Ok(match node.tag.as_str() {
-            "" if self.in_formula.is_some() => html! { (formula::spoken(&node.text)) },
+            "" if self.in_formula => html! { (formula::spoken(&node.text)) },
             "" => html! { (node.text) },
             "a" if replace(&mut self.in_link, true) => self.inside(node),
             "p" if self.verse => html! { p id=[id] {
@@ -216,7 +211,7 @@ impl<'a> Writer<'a> {
             "math" => self.formula(node, id)?,
             "pre" => self.code(node, Options::default())?,
             "x-code" => self.code(node, Options::new(node)?)?,
-            "x-note" if self.in_formula.is_some() => bail!("a note cannot be inside a formula"),
+            "x-note" if self.in_formula => bail!("a note cannot be inside a formula"),
             "x-note" if self.copy => html!(),
             "x-note" if self.in_link => bail!("a note cannot be inside a link"),
             "x-note" => match node.option::<Option<String>>("again")? {
@@ -303,7 +298,7 @@ impl<'a> Writer<'a> {
 
     fn formula(&mut self, node: &'a Node, id: Option<&str>) -> Result<Markup> {
         let number = given(node.get("number").context("formulas are written between `$`")?);
-        let alone = self.in_formula.replace(node).is_some() || self.feed;
+        let alone = replace(&mut self.in_formula, true) || self.feed;
         let spoken = html! { math display=[node.get("display")] {
             (self.inside(node))
             @if let Some(number) = number.filter(|_| alone) { mspace width="2em" {} mtext id=[id] { (number) } }
@@ -316,7 +311,7 @@ impl<'a> Writer<'a> {
             drawn = drawn.split("</a>").flat_map(|part| part.split("<a ").next()).collect();
         }
         let set = html! {
-            span.formula id=[id.filter(|_| !node.is_displayed())] data-source=[node.get("source").or(node.get("text"))] {
+            span.formula id=[id.filter(|_| !node.is_displayed())] translate="no" data-source=[node.get("source")] {
                 (PreEscaped(drawn)) span.spoken { (spoken) }
             }
         };

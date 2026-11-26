@@ -38,5 +38,12 @@ $ cancel(a b c) + cancel(d e f, inverted: #true) + cancel(g h i, cross: #true) +
 #math.equation(block: true, alt: "turned", $x #rotate(30deg, reflow: true)[turned] + #scale(x: -100%)[flipped] + #box(clip: true, width: 1em, height: .6em)[clipped]$)
 #[#show "such that": strong; $ x "such that the words go on for quite a while, ε and all" y "שלום עולם" $]
 $ x #underline[such that the words go on for a while] y $
+Between שלום $a + b + c = d + e + f + g$ עולם words.
+#[#show math.equation: set par(leading: 2em); $ a \ b \ \ c $]
+Code $#{
+  let a = 1 // secret
+  a
+}$ here.
+
 #let twice(x) = $2 #x$
 #twice($y$), $a #h(-3em) b$, $p$, $ p = #h(-2em) & q $

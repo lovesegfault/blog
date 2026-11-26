@@ -47,8 +47,7 @@
   show math.equation: it => {
     let font = text.font
     show text: it => {
-      let words = text.font == font and it.text.contains(regex("[^\d.]"))
-      set text(font: ("Spectral", font).flatten(), weight: "regular") if words
+      set text(font: ("Spectral", font).flatten()) if text.font == font and it.text.contains(regex("[^\d.]"))
       it
     }
     show selector.or(link, ref): set text(cool)
@@ -57,7 +56,7 @@
     show math.underline: web(it => math.accent(it.body, "\u{332}"))
     show math.cancel: web(it => html.elem("mrow", attrs: (notation: "updiagonalstrike"), it.body))
     show math.frac.where(style: "skewed"): web(it => math.frac(it.num, it.denom, style: "vertical"))
-    show hide: web(it => html.elem("mphantom", it.body))
+    show hide: web(it => html.elem("mphantom", attrs: (style: "visibility:hidden"), it.body))
     it
   }
   show figure.where(kind: raw): set figure(kind: image)

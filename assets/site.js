@@ -25,18 +25,22 @@ function formulas() {
   on(document, "selectionchange", () => $$(".formula").forEach((it) => it.classList.toggle("picked", picked(it))));
   // Left to itself, a triple click stops at the first one.
   on(document, "click", ({ detail, target }) => {
-    const block = detail === 3 && target.closest("p, li, dd, td, h2, h3, figure, figcaption");
-    if (block && $(".formula", block)) selection.selectAllChildren(block);
+    const block = target.closest("p, li, dt, dd, th, td, h1, h2, h3, h4, figcaption, figure");
+    if (detail === 3 && block?.matches(":has(.formula):not(figure)")) selection.selectAllChildren(block);
   });
   on(document, "copy", () => {
-    for (const it of $$(".formula").filter((it) => selection.containsNode(it, true))) {
+    const [touched, at] = [$$(".formula").filter((it) => selection.containsNode(it, true)), scrollY];
+    for (const it of touched) {
       const [range, [start, end]] = [selection.getRangeAt(0), picked(it) ? ["Before", "After"] : ["After", "Before"]];
       if (it.contains(range.startContainer)) range[`setStart${start}`](it);
       if (it.contains(range.endContainer)) range[`setEnd${end}`](it);
       it.prepend(it.dataset.source);
       it.classList.add("copied");
-      setTimeout(() => (it.firstChild.remove(), it.classList.remove("copied")));
     }
+    requestAnimationFrame(() => {
+      for (const it of touched) it.firstChild.remove(), it.classList.remove("copied");
+      scrollTo(scrollX, at);
+    });
   });
 }
 

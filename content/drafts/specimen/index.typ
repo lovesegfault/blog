@@ -194,7 +194,7 @@ $
 Whatever Typst can set on paper looks the same here.
 $
   (Gamma, x : sigma tack e : tau) / (Gamma tack lambda x. thin e : sigma -> tau) "abs"
-  wide (cancel(x) y) / cancel(x) = #box(stroke: .5pt + cool, inset: .4em, baseline: .4em, $y$)
+  wide (cancel(x) y) / cancel(x) = #box(stroke: .5pt + cool, inset: .4em, $y$)
 $
 
 #figure(

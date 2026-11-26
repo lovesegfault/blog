@@ -93,7 +93,8 @@ ids and `index.xml` should only differ where that was the point.
 - **Typst.** `formula.rs`, `tree.rs` and `typeset.rs` use its internals, so read
   the release notes on HTML export, and drop what it has learned to do itself.
   The `typst*` crates move together, along with `ttf-parser` and
-  `unicode-math-class`, whose types cross over. Check the formulas by eye.
+  `unicode-math-class`, whose types cross over and which Dependabot leaves
+  alone. Check the formulas by eye.
 - **A language.** Its `arborium-*` crate in `crates/forno/Cargo.toml`, and a line
   in `highlight.rs`.
 - **A Typst package or a font.** `typst` in `flake.nix`, or `nix/fonts.nix`.

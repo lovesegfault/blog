@@ -14,8 +14,8 @@ use typst::syntax::{LinkedNode, ast};
 use typst_html::HtmlDocument;
 
 use crate::links::encode;
-use crate::output::read_text;
-use crate::tree::{Node, Tree};
+use crate::output::{read_text, walk};
+use crate::tree::{Node, Tree, plain};
 
 #[derive(Clone, Copy)]
 pub enum Comments {
@@ -91,14 +91,19 @@ impl Page {
         let (mut body, info) = (Tree::new(document), document.info());
         let front = body.nodes.extract_if(.., |node| node.tag == "x-front").next();
         let mut front = front.context("a page starts with `#show: post.with(title: [A Title])`")?;
-        ensure!(front.count(&["x-note"]) == 0, "a title cannot have a note");
+        let heading = front.children.pop_if(|node| node.tag == "h1").context("the title is not shown")?;
+        let typed = info.title.as_deref().filter(|_| heading.count(&["math"]) == 0);
         let date = |name| front.option::<Option<String>>(name)?.map(zoned).transpose();
-        let names = |name| Ok::<_, anyhow::Error>(front.option::<OneOrMultiple<String>>(name)?.0);
+        let names = |name| {
+            let OneOrMultiple::<String>(names) = front.option(name)?;
+            ensure!(names.iter().all(|it| !address(it).is_empty()), "`{name}` need letters for their addresses");
+            Ok(names)
+        };
         let draft = path.starts_with("content/drafts");
         let is_post = draft || path.starts_with("content/posts");
         ensure!(date("date")?.is_some() == is_post, "posts have a `date`, and other pages do not");
         Ok(Self {
-            title: info.title.as_deref().unwrap_or_default().trim().into(),
+            title: typed.unwrap_or(&plain(&heading.children)).trim().into(),
             url: match slug.as_str() {
                 _ if is_post => format!("/posts/{slug}/"),
                 "404" => NOT_FOUND.to_owned(),
@@ -108,11 +113,11 @@ impl Page {
             updated: date("updated")?,
             categories: names("categories")?,
             tags: names("tags")?,
-            description: info.description.as_deref().map(|text| text.trim().into()),
+            description: info.description.as_ref().map(|_| plain(&front.children).trim().into()),
             comments: front.option("comments").map(Comments::Issue).or(front.option("comments").map(Comments::Open))?,
             language: info.locale.unwrap_or_default().rfc_3066().into(),
-            heading: front.children.pop().context("the title is not shown")?,
             path: path.to_owned(),
+            heading,
             body,
             slug,
             draft,
@@ -125,12 +130,17 @@ pub fn is_source(path: &Path) -> bool {
     path.extension().is_some_and(|extension| extension == "typ")
 }
 
-/// Each `name.typ` and `name/index.typ`.
+/// Each `name.typ` and `name/index.typ`, and what is among the posts and should have been one of those.
 pub fn sources(drafts: bool) -> Vec<PathBuf> {
     let folders = ["content", "content/posts", "content/drafts"].into_iter().take(if drafts { 3 } else { 2 });
     let entries = folders.flat_map(fs::read_dir).flatten().flatten().map(|entry| entry.path());
-    let source = |path: PathBuf| if path.is_dir() { path.join("index.typ") } else { path };
-    entries.map(source).filter(|path| is_source(path) && path.is_file()).collect()
+    let source = |path: PathBuf| match (path.is_dir(), path.iter().count() > 2) {
+        _ if path.file_name()?.as_encoded_bytes().starts_with(b".") => None,
+        (true, true) => (!walk(&path).is_ok_and(|files| files.is_empty())).then(|| path.join("index.typ")),
+        (true, false) => Some(path.join("index.typ")).filter(|path| path.is_file()),
+        (false, post) => (is_source(&path) || post && path.extension()? == "md").then_some(path),
+    };
+    entries.filter_map(source).collect()
 }
 
 fn now() -> String {
@@ -144,7 +154,8 @@ fn named(folder: &str, slug: &str) -> Option<PathBuf> {
 /// As markup that means nothing but itself.
 fn literal(text: &str) -> String {
     let opening = text.find(|c: char| !c.is_ascii_digit());
-    let means = |at, c| "\\[]#$*_`<@~/".contains(c) || Some(at) == opening && "=+-.".contains(c);
+    let dash = |at: usize| ["--", "-?"].iter().any(|dash| text[at..].starts_with(dash));
+    let means = |at, c| "\\[]#$*_`<@~/".contains(c) || Some(at) == opening && "=+-.".contains(c) || dash(at);
     text.char_indices().flat_map(|(at, c)| means(at, c).then_some('\\').into_iter().chain([c])).collect()
 }
 
@@ -186,8 +197,9 @@ fn stamp(mut source: String, now: &str) -> Result<String> {
             _ => node.children().find_map(date),
         }
     }
-    let written = date(LinkedNode::new(&typst::syntax::parse(&source))).context("the draft has no `date`")?;
-    source.replace_range(written, now);
+    let markup = typst::syntax::parse(&source);
+    let written = LinkedNode::new(&markup).children().filter(|node| node.is::<ast::ShowRule>()).find_map(date);
+    source.replace_range(written.context("there is no `date` in `post.with`")?, now);
     Ok(source)
 }
 
@@ -211,12 +223,12 @@ mod tests {
 
     #[test]
     fn titles_are_not_markup() {
-        assert_eq!(literal("1. It's Vec<T> - or C#."), r"1\. It's Vec\<T> - or C\#.");
+        assert_eq!(literal("1. It's Vec<T> - or --C#."), r"1\. It's Vec\<T> - or \--C\#.");
     }
 
     #[test]
     fn publishing_only_touches_the_date() {
-        let draft = "#show: post.with(title: [date: x], date: \"0\")\n#f(date: 0)";
-        assert_eq!(stamp(draft.into(), "1").unwrap(), "#show: post.with(title: [date: x], date: 1)\n#f(date: 0)");
+        let draft = "#f(date: 0)\n#show: post.with(title: [date: x], date: \"0\")";
+        assert_eq!(stamp(draft.into(), "1").unwrap(), "#f(date: 0)\n#show: post.with(title: [date: x], date: 1)");
     }
 }

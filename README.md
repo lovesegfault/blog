@@ -12,8 +12,8 @@ forno serve            # previews everything, and follows your edits
 forno publish a-title  # moves it to content/posts, dated now
 ```
 
-Pushing to `master` deploys. Mistakes, broken links and whatever the web cannot
-show come up in the preview, and fail the build.
+Pushing to `master` deploys. Mistakes, broken links, dates in the future and
+whatever the web cannot show come up in the preview, and fail the build.
 
 Posts are [Typst](https://typst.app/docs/reference/syntax/), with the functions
 in [`blog.typ`](blog.typ). [The specimen](content/drafts/specimen/index.typ)
@@ -34,7 +34,7 @@ to the number of its issue.
 | `#important[…]`                               | A statement set apart       |
 | `$x$` or `$ x $`                              | A formula                   |
 | `#math.equation(alt: "…", $…$)`               | One that has a drawing      |
-| `<label>` after a formula or a figure         | A number, for `@label`      |
+| `<label>` after `$ x $` or a figure           | A number, for `@label`      |
 | `- [x]` or `- [ ]`                            | A task                      |
 | `#divider()`                                  | A break                     |
 
@@ -46,17 +46,19 @@ to the number of its issue.
 | `#picture("a.jpg", alt: "…")[…]`       | One with a caption                 |
 | `#row(image(…), image(…))`             | Some side by side                  |
 | `#video("a.mp4")[…]`                   | A video, which can be on YouTube   |
-| A `dot` block                          | A Graphviz diagram                 |
+| `#diagram(alt: "…")[…]`                | A `dot` block, laid out            |
 | `#drawing(alt: "…", …)`                | What Typst or CeTZ can draw        |
 | `#explainer("name")[…]`                | An interactive figure              |
 | `#figure(…, caption: […])`             | A caption for any of them          |
 | `#margin(…)` or `#fullwidth(…)`        | It in the margin, or across it     |
 
-An SVG that uses `currentColor` follows the theme.
+Colours in formulas, drawings and diagrams follow the theme, but for those given
+as `oklch` in a drawing. So does an SVG that uses `currentColor`.
 
-JPEGs and PNGs are published without their location or camera details, and the
-`scrub` pre-commit hook keeps those out of the repository too. Videos and other
-kinds of picture fail the build until you clean them.
+JPEGs and PNGs are published without their location or camera details. Other
+files that have them fail the build until you clean them, but archives are not
+looked into. The shell installs a pre-commit hook that does the same for the
+repository.
 
 ### Code
 

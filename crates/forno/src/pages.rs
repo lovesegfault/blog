@@ -62,7 +62,7 @@ fn layout(build: &Build, head: &Head, body: Markup) -> Markup {
                 script { (PreEscaped(BEFORE_PAINT)) }
                 script type="module" src=(style.script) {}
             }
-            body { (PreEscaped(gather(&body.0))) }
+            body.titled[head.title.is_some()] { (PreEscaped(gather(&body.0))) }
         }
     }
 }
@@ -91,7 +91,7 @@ fn list(posts: &[&Article]) -> Markup {
                     li.first[row == 0].draft[post.page.draft] {
                         a href=(post.page.url) data-lights=(post.page.slug) {
                             @if let Some(date) = &post.page.date { time.voice datetime=(date.date()) { (date.year()) } }
-                            span { (post.title) }
+                            " " span { (post.title) }
                         }
                     }
                 }
@@ -174,7 +174,7 @@ fn sheet(build: &Build, heading: Markup, figure: Markup, column: Markup, end: Ma
 /// Drafts are left out of cards, which are too slow to draw at every save.
 pub fn site_card(build: &Build, posts: &[&Article]) -> Result<String> {
     let published: Vec<_> = posts.iter().copied().filter(|post| !post.page.draft).collect();
-    card(build, &everything(&published, 170), None)
+    card(build, &everything(&published, 170), None, "/")
 }
 
 pub fn home(build: &Build, posts: &[&Article], card: &str) -> Result<Markup> {
@@ -200,7 +200,7 @@ pub fn article(build: &Build, article: &Article, newer: Option<&Article>, older:
         title: Some(&page.title),
         url: &page.url,
         description: if article.summary.is_empty() { &build.config.subtitle } else { &article.summary },
-        card: &if page.draft { String::new() } else { card(build, &event, Some(&article.name))? },
+        card: &if page.draft { String::new() } else { card(build, &event, Some(&article.name), &page.url)? },
         feed: "/index.xml",
         published: page.date.as_ref(),
     };
@@ -208,11 +208,11 @@ pub fn article(build: &Build, article: &Article, newer: Option<&Article>, older:
         h1 lang=(page.language) { (article.title) }
         @if let Some(date) = &page.date {
             p.voice {
-                @if page.draft { span { "draft" } }
-                (day(date))
-                @for category in &page.categories { a href={ "/categories/" (address(category)) "/" } { (category) } }
+                @if page.draft { span { "draft" } " " }
+                (day(date)) " "
+                @for name in &page.categories { a href={ "/categories/" (address(name)) "/" } { (name) } " " }
                 span { (article.minutes) " min" }
-                @if let Some(date) = &page.updated { span { "updated " (day(date)) } }
+                @if let Some(date) = &page.updated { " " span { "updated " (day(date)) } }
             }
         }
     };
@@ -260,7 +260,7 @@ pub fn term(build: &Build, of: &Taxonomy, term: &Term, posts: &[&Article], card:
     let (description, feed) = (format!("Posts under {}", term.name), format!("{}index.xml", term.url));
     let (title, url) = (Some(term.name), &term.url);
     let head = Head { title, url, description: &description, card, feed: &feed, published: None };
-    let heading = html! { h1 { (term.name) } p.voice { a href=(of.url) { (of.one) } a href=(feed) { "RSS" } } };
+    let heading = html! { h1 { (term.name) } p.voice { a href=(of.url) { (of.one) } " " a href=(feed) { "RSS" } } };
     let column = html! { div #Text { (list(&term.posts)) } };
     let figure = figure(build, &everything(posts, 110), &names(&term.posts), &POST)?;
     Ok(layout(build, &head, sheet(build, heading, figure, column, html!())))
@@ -309,7 +309,7 @@ pub fn feed(build: &Build, name: Option<&str>, url: &str, posts: &[&Article]) ->
         }
     };
     // XML has no way of writing these.
-    PreEscaped(feed.0.replace(|it: char| it < ' ' && !"\t\n\r".contains(it), ""))
+    PreEscaped(feed.0.replace(|it| it < ' ' && !"\t\n\r".contains(it) || "\u{FFFE}\u{FFFF}".contains(it), ""))
 }
 
 pub fn sitemap(build: &Build, urls: &[(&str, Option<&Zoned>)]) -> Markup {

@@ -4,6 +4,8 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use crate::output::{File, Files};
 
+const ADDRESSES: [&str; 4] = [" href=\"", ":href=\"", " src=\"", " poster=\""];
+
 fn is_external(url: &str) -> bool {
     let scheme = url.split_once(':').map_or("", |(scheme, _)| scheme);
     url.starts_with("//")
@@ -29,8 +31,7 @@ pub fn resolve(base: &str, url: &str) -> String {
 pub fn absolute(html: &str, site: &str, base: &str) -> String {
     let mut out = String::new();
     for part in html.split_inclusive("=\"") {
-        let is_address = ["href=\"", "src=\"", "poster=\""].iter().any(|attribute| out.ends_with(attribute));
-        if is_address && !is_external(part) {
+        if ADDRESSES.iter().any(|attribute| out.ends_with(attribute)) && !is_external(part) {
             out.extend([site, if part.starts_with('#') { base } else { "" }, &resolve(base, part)]);
         } else {
             out += part;
@@ -67,7 +68,7 @@ pub fn values<'a>(html: &'a str, opening: &'a str) -> impl Iterator<Item = Strin
 }
 
 /// Every link within the site that is broken.
-pub fn check(files: &Files) -> BTreeSet<String> {
+pub fn check(files: &Files, site: &str) -> BTreeSet<String> {
     let page = |(path, file): (&'_ String, &File)| match file {
         File::Made(html) if path.ends_with(".html") => Some((path.clone(), String::from_utf8_lossy(html).into_owned())),
         _ => None,
@@ -82,7 +83,7 @@ pub fn check(files: &Files) -> BTreeSet<String> {
         }
     }
     for (path, html) in &pages {
-        for url in values(html, " href=\"").chain(values(html, " src=\"")).filter(|url| !is_external(url)) {
+        for url in ADDRESSES.iter().flat_map(|attribute| values(html, attribute)).filter(|url| !is_external(url)) {
             let (address, anchor) = url.split_once('#').unwrap_or((&url, ""));
             let target = match address.split('?').next().unwrap() {
                 "" => Some(path),
@@ -91,6 +92,15 @@ pub fn check(files: &Files) -> BTreeSet<String> {
             let has_anchor = |target| !pages.contains_key(target) || anchors.contains(&(target, decode(anchor)));
             if !target.is_some_and(|target| anchor.is_empty() || has_anchor(target)) {
                 problems.insert(format!("{path}: `{url}` leads nowhere"));
+            }
+        }
+    }
+    // The feed has pictures that the pages only have prints of.
+    if let Some(File::Made(feed)) = files.get("/index.xml") {
+        let feed = String::from_utf8_lossy(feed).replace("&quot;", "\"").replace("&amp;", "&");
+        for url in values(&feed, &format!("src=\"{site}")) {
+            if find(files, &decode(url.split(['?', '#']).next().unwrap())).is_none() {
+                problems.insert(format!("/index.xml: `{url}` leads nowhere"));
             }
         }
     }
@@ -120,9 +130,9 @@ mod tests {
     #[test]
     fn broken_links_are_found() {
         let html = r##"<p id="a"><a href="#a"><a href="#b"><a href="/x"><a href="y"><a href="/x/#c"><i id="a">"##;
-        let files = [("/index.html", html), ("/x/index.html", "")];
+        let files = [("/index.html", html), ("/index.xml", "src=&quot;//s/z&quot;"), ("/x/index.html", "")];
         let files = files.map(|(path, html)| (path.to_owned(), File::Made(html.into()))).into();
-        let expected = ["`#b` leads nowhere", "`/x/#c` leads nowhere", "`y` leads nowhere", "called `a`"];
-        assert!(check(&files).iter().zip(expected).filter(|(found, end)| found.ends_with(end)).count() == 4);
+        let found = check(&files, "//s");
+        assert!(found.iter().filter_map(|problem| problem.split('`').nth(1)).eq(["#b", "/x/#c", "y", "a", "/z"]));
     }
 }

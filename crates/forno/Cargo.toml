@@ -10,10 +10,13 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
+base64 = "0.23"
 blake3 = "1"
 clap = { version = "4", features = ["derive"] }
 collision = { path = "../collision" }
+crc32fast = "1"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+imagesize = "0.15"
 jiff = "0.2"
 maud.workspace = true
 memchr = "2"
@@ -22,6 +25,7 @@ mural = { path = "../mural" }
 rayon.workspace = true
 resvg = { version = "0.49", default-features = false, features = ["text"] }
 serde = { version = "1", features = ["derive"] }
+svgtypes = "0.16"
 toml = "1"
 ttf-parser = "0.25"
 typst = "0.15"

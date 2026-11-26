@@ -49,4 +49,5 @@ repos:
     description: Keep the location of photos out of the repository
     entry: forno scrub
     language: system
-    files: (?i)\.(jpe?g|png)$
+    files: (?i)^(content|static)/|\.(jpe?g|png)$
+    exclude: \.typ$

@@ -9,6 +9,7 @@ mod output;
 mod pages;
 mod photo;
 mod programs;
+mod scrub;
 mod serve;
 mod site;
 mod style;
@@ -21,6 +22,7 @@ use std::{env, fs};
 use anyhow::{Context, Result, ensure};
 use clap::Parser;
 
+use crate::output::File;
 use crate::site::Tools;
 
 #[derive(Parser)]
@@ -43,8 +45,8 @@ enum Command {
         #[arg(long)]
         out: Option<PathBuf>,
     },
-    /// Take the location and camera details out of photos
-    Scrub { photos: Vec<PathBuf> },
+    /// Take the location and camera details out of photos, and look for them in other files
+    Scrub { files: Vec<PathBuf> },
 }
 
 fn main() -> Result<()> {
@@ -66,11 +68,11 @@ fn main() -> Result<()> {
             ensure!(site.problems.is_empty(), "nothing was written");
             output::write(&site.files, &out.map_or("public".into(), |out| here.join(out)))?;
         }
-        Command::Scrub { photos } => {
-            for path in photos.iter().map(|photo| here.join(photo)) {
-                let photo = output::read(&path)?;
-                let clean = photo::scrub(&photo).with_context(|| path.display().to_string())?;
-                if clean != photo {
+        Command::Scrub { files } => {
+            for path in files.iter().map(|file| here.join(file)) {
+                if let File::Made(clean) = scrub::scrub(&path)?
+                    && clean != fs::read(&path)?
+                {
                     fs::write(&path, clean)?;
                     println!("scrubbed {}", path.display());
                 }

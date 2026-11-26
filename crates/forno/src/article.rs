@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::mem::replace;
 use std::path::Path;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, bail, ensure};
 use collision::Post;
 use maud::{Markup, PreEscaped, html};
 use typst_html::tag::mathml::{is_mathml, is_token};
@@ -15,6 +15,7 @@ use crate::content::{Page, published, slugify};
 use crate::links::{absolute, resolve, values};
 use crate::output::{File, read, read_text};
 use crate::site::Build;
+use crate::style::themed;
 use crate::tree::{self, Ids, Node, plain};
 use crate::{formula, photo, programs};
 
@@ -62,6 +63,9 @@ const COLUMN: f32 = 32.5;
 const WIDE: f32 = 46.2;
 const MARGIN: f32 = 11.5;
 
+/// The stylesheet does not reach these.
+const THEMED: &str = "display: inherit; min-width: var(--fill); max-width: 100%; height: auto; margin: auto;";
+
 impl<'a> Article<'a> {
     pub fn new(build: &Build, page: &'a Page) -> Self {
         let blocks = &page.body.nodes;
@@ -103,24 +107,30 @@ fn labelled<'a>(nodes: &'a [Node], label: &str) -> Option<&'a Node> {
     nodes.iter().find_map(|node| found(node).or_else(|| labelled(&node.children, label)))
 }
 
-/// What Typst drew, with the colours that `blog.typ` names following the theme.
-fn themed(drawn: &Node) -> Result<String> {
-    if let Some(text) = drawn.get("missing") {
+/// What Typst drew.
+fn drawn(node: &Node) -> Result<&str> {
+    if let Some(text) = node.get("missing") {
         bail!("there is no font to draw `{text}` with");
     }
-    let colours =
-        [("000000", "ink"), ("ffffff", "paper"), ("a83a10", "ember"), ("17389c", "cobalt"), ("6b5c50", "dim")];
-    let paint = |svg: String, (day, name)| svg.replace(&format!("#{day}\""), &format!("var(--{name})\""));
-    Ok(colours.into_iter().fold(drawn.text.clone(), paint))
+    Ok(&node.text)
 }
 
 fn given(text: &str) -> Option<&str> {
     Some(text).filter(|text| !text.is_empty())
 }
 
-fn youtube(url: &str) -> Option<&str> {
-    let id = ["https://www.youtube.com/watch?v=", "https://youtu.be/"].iter().find_map(|p| url.strip_prefix(p))?;
-    id.split(['&', '?']).next()
+/// The links in a picture cannot be reached.
+fn role(svg: &str, alt: &str) -> Option<&'static str> {
+    given(alt).map(|_| if svg.contains("</a>") { "group" } else { "img" })
+}
+
+/// The video, and the second it starts at.
+fn youtube(url: &str) -> Option<(&str, u32)> {
+    let after = |signs: &str| signs.split(' ').find_map(|sign| url.split_once(sign)?.1.split(['&', '?', '#']).next());
+    let id = after("?v= &v= youtu.be/ /shorts/ /live/ /embed/").filter(|_| url.contains("youtu"))?;
+    let start = after("?t= &t= #t= start=").unwrap_or_default().split_inclusive(['h', 'm']);
+    let unit = |part: &str| 60_u32.pow(part.chars().find_map(|unit| "smh".find(unit)).unwrap_or(0) as u32);
+    Some((id, start.map(|part| part.trim_end_matches(['h', 'm', 's']).parse().unwrap_or(0) * unit(part)).sum()))
 }
 
 impl<'a> Writer<'a> {
@@ -152,8 +162,21 @@ impl<'a> Writer<'a> {
     fn inside(&mut self, node: &'a Node) -> Markup {
         let is = |node: &Node, kind: fn(_) -> _| HtmlTag::intern(&node.tag).is_ok_and(kind);
         let strict = is(node, is_mathml) && !is(node, is_token);
+        // For readers that keep nothing but the text.
+        let unseen = |signs: &String| {
+            html! { @if signs.trim().is_empty() { (signs) } @else {
+                mpadded width="0" height="0" depth="0" { mphantom { mtext { (signs) } } }
+            } }
+        };
         html! { @for node in &node.children {
-            @if strict && !is(node, is_mathml) { mtext { (self.attempt(node)) } } @else { (self.attempt(node)) }
+            @let part = self.attempt(node);
+            @let part = if strict && !is(node, is_mathml) { html! { mtext { (part) } } } else { part };
+            @let [before, after] = node.signs.each_ref().map(unseen);
+            @match (self.feed, node.signs.concat().trim()) {
+                (false, _) => (part),
+                (_, "") => { (before) (part) (after) }
+                _ => mrow { (before) (part) (after) },
+            }
         } }
     }
 
@@ -211,7 +234,6 @@ impl<'a> Writer<'a> {
             "math" => self.formula(node, id)?,
             "pre" => self.code(node, Options::default())?,
             "x-code" => self.code(node, Options::new(node)?)?,
-            "x-note" if self.in_formula => bail!("a note cannot be inside a formula"),
             "x-note" if self.copy => html!(),
             "x-note" if self.in_link => bail!("a note cannot be inside a link"),
             "x-note" => match node.option::<Option<String>>("again")? {
@@ -228,26 +250,32 @@ impl<'a> Writer<'a> {
                 let kind: String = node.option("kind")?;
                 let inside = html! { @if kind != "Important" { p.label { b { (kind) } } } (self.inside(node)) };
                 html! { @if self.feed { blockquote { (inside) } } @else {
-                    div.aside.(kind.to_lowercase()) id=[id] role="note" { (inside) }
+                    section.aside.(kind.to_lowercase()) id=[id] role="note" { (inside) }
                 } }
             }
             "x-wide" | "x-margin" => {
                 self.room = if node.tag == "x-wide" { WIDE } else { MARGIN };
-                html! { div class=(node.tag[2..]) id=[id] { (self.inside(node)) } }
+                html! { section class=(node.tag[2..]) id=[id] { (self.inside(node)) } }
             }
             "x-picture" if self.in_link || node.is_inline() => self.picture(node, false)?,
-            "x-picture" | "x-row" | "x-video" | "x-explainer" | "x-drawing" if !replace(&mut self.in_figure, true) => {
+            "x-picture" | "x-row" | "x-video" | "x-explainer" | "x-drawing"
+                if !node.is_inline() && !replace(&mut self.in_figure, true) =>
+            {
                 html! { figure id=[id] { (self.write(node)?) } }
             }
             "x-picture" => self.picture(node, true)?,
             "x-row" => html! { div.row { (self.inside(node)) } },
-            "x-video" => self.video(&node.option::<String>("source")?, plain(&node.children).trim()),
+            "x-video" => self.video(&node.option::<String>("source")?, plain(&node.children).trim())?,
             "x-explainer" => self.explainer(node, plain(&node.children).trim())?,
             "x-drawing" => {
                 let alt: Option<String> = node.option("alt")?;
-                self.frame(&node.children[0], self.alt(node, alt.as_deref()))?
+                let alt = self.alt(node, alt.as_deref());
+                match &node.children[..] {
+                    [frame, ..] if frame.tag == "x-frame" => self.drawing(drawn(frame)?, alt, false)?,
+                    graph => self.drawing(&programs::diagram(self.build.tools, plain(graph).trim())?, alt, true)?,
+                }
             }
-            "x-frame" => self.frame(node, "")?,
+            "x-frame" => self.drawing(drawn(node)?, "", false)?,
             _ => match node.level() {
                 Some(level) => self.heading(node, level),
                 None => self.element(node, html!()),
@@ -257,16 +285,17 @@ impl<'a> Writer<'a> {
 
     fn cite(&mut self, note: &'a Node) -> Markup {
         let index = self.notes.iter().position(|(cited, ..)| std::ptr::eq(*cited, note)).unwrap_or(self.notes.len());
-        if index == self.notes.len() {
+        let (number, earlier) = (index + 1, self.notes.get(index).map_or(0, |(_, times, _)| *times));
+        if earlier == 0 {
             // Notes can have notes.
-            self.notes.push((note, 0, String::new()));
+            self.notes.push((note, 1, String::new()));
             (self.verse, self.in_figure, self.room) = (false, false, COLUMN);
             let text = self.inside(note);
             self.notes[index].2 =
                 if note.children.iter().all(Node::is_inline) { html! { p { (text) } }.0 } else { text.0 };
+        } else {
+            self.notes[index].1 += 1;
         }
-        let (number, earlier) = (index + 1, self.notes[index].1);
-        self.notes[index].1 += 1;
         html! {
             sup.ref id={ "fnref" @if earlier > 0 { (earlier) } ":" (number) } {
                 a href={ "#fn:" (number) } role="doc-noteref" { (number) }
@@ -292,7 +321,7 @@ impl<'a> Writer<'a> {
         let item = self.element(node, html!());
         let text = item.0.trim_start_matches("<li>").trim_start_matches("<p>");
         let Some(mark) = ["[x] ", "[X] ", "[ ] "].into_iter().find(|mark| text.starts_with(mark)) else { return item };
-        let tick = html! { input type="checkbox" checked[mark != "[ ] "] disabled aria-label="Done"; };
+        let tick = html! { input.task type="checkbox" checked[mark != "[ ] "] disabled aria-label="Done"; };
         PreEscaped(item.0.replacen(mark, &tick.0, 1))
     }
 
@@ -306,12 +335,13 @@ impl<'a> Writer<'a> {
         if alone {
             return Ok(spoken);
         }
-        let mut drawn: String = themed(node)?.split_inclusive("</svg>").map(|piece| self.own(piece)).collect();
+        let mut drawn: String = themed(drawn(node)?).split_inclusive("</svg>").map(|piece| self.own(piece)).collect();
         if self.in_link {
             drawn = drawn.split("</a>").flat_map(|part| part.split("<a ").next()).collect();
         }
+        let source = node.get("source").map_or_else(|| formula::flat(node), Into::into);
         let set = html! {
-            span.formula id=[id.filter(|_| !node.is_displayed())] translate="no" data-source=[node.get("source")] {
+            span.formula id=[id.filter(|_| !node.is_displayed())] translate="no" data-source=(source) {
                 (PreEscaped(drawn)) span.spoken { (spoken) }
             }
         };
@@ -329,11 +359,8 @@ impl<'a> Writer<'a> {
         };
         let (language, code) = (block.get("lang").unwrap_or_default(), plain(&block.children));
         let label = node.get("id").or(block.get("id"));
-        if language == "dot" {
-            let drawing = programs::diagram(self.build.tools, &code, &self.ids.numbered("diagram"))?;
-            let drawing = html! { div.drawing.diagram { (PreEscaped(drawing)) } };
-            return Ok(html! { @if self.in_figure { (drawing) } @else { figure id=[label] { (drawing) } } });
-        }
+        ensure!(language != "dot", "a graph goes in `#diagram(alt: \"…\")[…]`");
+        ensure!(!self.in_link, "a block of code cannot be inside a link");
         let names: Vec<_> = notes.iter().map(|[name, _]| plain(&name.children)).collect();
         let listing = Listing::new(language, &options, &code, &names);
         let listing = listing.with_context(|| options.title.clone().unwrap_or("code".into()))?;
@@ -352,21 +379,33 @@ impl<'a> Writer<'a> {
     }
 
     fn picture(&mut self, node: &Node, framed: bool) -> Result<Markup> {
-        let (source, alt) = (node.get("src").unwrap(), self.alt(node, node.get("alt")));
-        let size = ["height", "width"].map(|side| node.get(side).unwrap_or_default());
+        let [source, kind, size, crop] = ["src", "kind", "size", "shape"].map(|name| node.get(name).unwrap());
+        let (alt, whole) = (self.alt(node, node.get("alt")), published(source));
         // Feeds get the files as they are, whose addresses last.
-        if photo::is_photo(Path::new(source)) && !self.feed {
-            return self.photo(source, alt, size, framed);
-        } else if photo::is(Path::new(source), &["svg"]) && !self.feed {
-            // One that takes its colour from the text has to be part of the page.
-            let svg = read_text(Path::new(source))?;
-            if let Some((_, svg)) = svg.split_once("<svg").filter(|_| svg.contains("currentColor")) {
-                return Ok(
-                    self.drawing(&format!(r#"<svg style="{}"{svg}"#, size.concat()).replace(r#" style="""#, ""), alt)
-                );
-            }
+        let prints = if matches!(kind, "jpeg" | "png") && !self.feed { self.prints(source.as_ref())? } else { vec![] };
+        let usual = prints.iter().rfind(|(width, _)| *width <= 1300).map(|(_, url)| url);
+        let choices: Vec<_> = prints.iter().map(|(width, url)| format!("{url} {width}w")).collect();
+        let sizes = format!("(min-width: 112em) {:.1}em, min({:.1}em, 90vw)", self.room * 1.6, self.room * 1.25);
+        let [width, height] = ["width", "height"].map(|side| node.get(side).filter(|_| !self.feed));
+        let framed = framed && usual.is_some();
+        let picture = html! {
+            img class=[(kind != "jpeg").then_some("sheer")] src=(usual.unwrap_or(&whole)) alt=(alt)
+                srcset=[given(&choices.join(", "))] sizes=[usual.and(Some(sizes))] width=[width] height=[height]
+                style=[given(&[if framed { "" } else { size }, crop].concat())] loading="lazy" decoding="async";
+        };
+        if kind != "themed" || self.feed {
+            return Ok(html! { @if framed { a.photo href=(whole) style=(size) { (picture) } } @else { (picture) } });
         }
-        Ok(html! { img src=(published(source)) alt=(alt) style=[given(&size.concat())] loading="lazy"; })
+        // To take its colour from the text it has to be in the page, but its names and styles are no one else's.
+        let svg = read_text(Path::new(source))?.replace(" id=\"", " id =\"").replace("href=\"#", "href =\"#");
+        let (ratio, size) = size.split_once(';').unwrap();
+        Ok(html! { span.drawing role=[role(&svg, alt)] aria-label=[given(alt)] style=(ratio) {
+            template shadowrootmode="open" {
+                style { (PreEscaped(format!(":host > svg {{ {THEMED} {size}{crop} }}"))) }
+                (PreEscaped(&svg[svg.find("<svg").unwrap_or(0)..]))
+            }
+            (picture)
+        } })
     }
 
     fn alt<'t>(&self, node: &Node, alt: Option<&'t str>) -> &'t str {
@@ -376,34 +415,21 @@ impl<'a> Writer<'a> {
         })
     }
 
-    fn photo(&self, source: &str, alt: &str, [height, width]: [&str; 2], framed: bool) -> Result<Markup> {
-        let photo = photo::print(&self.build.tools.cache, Path::new(source))?;
-        let name = slugify(&Path::new(source).file_stem().unwrap().to_string_lossy());
-        let mut prints = Vec::new();
-        for (width, file) in photo.prints {
-            prints.push((width, self.build.output.asset(&format!("{name}-{width}.webp"), File::Copied(file))?));
-        }
-        let (_, usual) = prints.iter().rfind(|(width, _)| *width <= 1300).unwrap();
-        let choices: Vec<_> = prints.iter().map(|(width, url)| format!("{url} {width}w")).collect();
-        let sizes = format!("(min-width: 112em) {:.1}em, min({:.1}em, 90vw)", self.room * 1.6, self.room * 1.25);
-        let picture = html! {
-            img src=(usual) srcset=(choices.join(", ")) sizes=(sizes) width=(photo.width) height=(photo.height)
-                alt=(alt) style=[given(&[height, if framed { "" } else { width }].concat())] loading="lazy" decoding="async";
-        };
-        let shape = format!("--ratio:{:.3};{width}", photo.width as f32 / photo.height as f32);
-        Ok(html! { @if framed { a.photo href=(published(source)) style=(shape) { (picture) } } @else { (picture) } })
+    fn prints(&self, photo: &Path) -> Result<Vec<(u32, String)>> {
+        let name = slugify(&photo.file_stem().unwrap().to_string_lossy());
+        let publish = |width, file| self.build.output.asset(&format!("{name}-{width}.webp"), File::Copied(file));
+        let prints = photo::print(&self.build.tools.cache, photo)?.into_iter();
+        prints.map(|(width, file)| Ok((width, publish(width, file)?))).collect()
     }
 
-    fn frame(&mut self, frame: &Node, alt: &str) -> Result<Markup> {
+    fn drawing(&mut self, svg: &str, alt: &str, graph: bool) -> Result<Markup> {
         if self.feed {
-            let drawing = self.build.output.asset("drawing.svg", File::Made(frame.text.clone().into()))?;
-            return Ok(html! { img src=(drawing) alt=(alt); });
+            let url = format!("/drawings{}{}.svg", self.page.url, self.ids.numbered("drawing"));
+            let file = File::Made(svg.replacen('>', "><style>svg { background: #fff }</style>", 1).into());
+            return Ok(html! { img src=(self.build.output.lasting(&url, file)?) alt=(alt); });
         }
-        Ok(self.drawing(&themed(frame)?, alt))
-    }
-
-    fn drawing(&mut self, svg: &str, alt: &str) -> Markup {
-        html! { span.drawing role=[given(alt).map(|_| "img")] aria-label=[given(alt)] { (PreEscaped(self.own(svg))) } }
+        let drawn = PreEscaped(self.own(&themed(svg)));
+        Ok(html! { span.drawing.diagram[graph] role=[role(svg, alt)] aria-label=[given(alt)] { (drawn) } })
     }
 
     /// Another drawing may have the same names for its parts.
@@ -420,13 +446,16 @@ impl<'a> Writer<'a> {
         used.iter().fold(drawn, |svg, id| svg.replace(&format!(" id=\"{id}\""), &format!(" id=\"{own}{id}\"")))
     }
 
-    fn video(&self, source: &str, alt: &str) -> Markup {
-        html! { @match youtube(source) {
+    fn video(&self, source: &str, alt: &str) -> Result<Markup> {
+        let file = source.split(['?', '#']).next().unwrap().to_lowercase();
+        let plays = [".mp4", ".webm", ".m4v", ".mov"].iter().any(|kind| file.ends_with(kind));
+        ensure!(plays || youtube(source).is_some(), "a video is an MP4 or a WebM, or is on YouTube");
+        Ok(html! { @match youtube(source) {
             Some(_) if self.feed => a href=(source) { (alt) },
-            Some(id) => iframe.video src={ "https://www.youtube-nocookie.com/embed/" (id) } title=(alt) loading="lazy"
-                allow="encrypted-media; fullscreen; picture-in-picture" {},
+            Some((id, start)) => iframe.video src={ "https://www.youtube-nocookie.com/embed/" (id) "?start=" (start) }
+                title=(alt) loading="lazy" allow="encrypted-media; fullscreen; picture-in-picture" {},
             None => video src=(resolve(&self.page.url, source)) aria-label=(alt) preload="metadata" controls playsinline {},
-        } }
+        } })
     }
 
     fn explainer(&self, node: &Node, alt: &str) -> Result<Markup> {

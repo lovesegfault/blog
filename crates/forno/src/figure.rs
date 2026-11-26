@@ -12,8 +12,11 @@ use maud::{Markup, html};
 use mural::{HOME, Scene};
 use resvg::tiny_skia::{IntSize, Mask, MaskType, Pixmap, PixmapPaint, Transform};
 use resvg::usvg::{Options, Tree};
+use ttf_parser::Face;
+use typst_kit::fonts::embedded;
 
 use crate::output::{File, read};
+use crate::photo::weigh;
 use crate::site::Build;
 
 /// For each class of track, from the vertex outwards.
@@ -88,10 +91,7 @@ const SCALE: f32 = 0.62;
 const CORNER: [i32; 2] = [-80, -12];
 
 fn picture(path: &Path, [width, height]: [u32; 2]) -> Result<Pixmap> {
-    let mut image = image::load_from_memory(&read(path)?)?.into_rgba8();
-    for image::Rgba([colour @ .., alpha]) in image.pixels_mut() {
-        *colour = colour.map(|channel| (u32::from(channel) * u32::from(*alpha) / 255) as u8);
-    }
+    let image = weigh(image::load_from_memory(&read(path)?)?.into_rgba8(), |alpha| alpha);
     let pixels = resize(&image, width, height, FilterType::Triangle).into_raw();
     IntSize::from_wh(width, height).and_then(|size| Pixmap::from_vec(pixels, size)).context("an empty picture")
 }
@@ -104,10 +104,22 @@ fn roman(size: usize) -> String {
     format!("font: 300 {size}px Spectral; letter-spacing: -.025em")
 }
 
+/// Each letter in the first font that has it. None has emoji.
+fn letters(fonts: &Options, line: &str) -> Markup {
+    let glyph = |c, font| fonts.fontdb.with_face_data(font, |it, at| Face::parse(it, at).ok()?.glyph_index(c))?;
+    html! { @for c in line.chars() {
+        @match fonts.fontdb.faces().enumerate().find(|(_, font)| glyph(c, font.id).is_some()) {
+            Some((0, _)) => (c),
+            Some((_, font)) => tspan font-family=(font.families[0].0) { (c) },
+            None => {},
+        }
+    } }
+}
+
 /// The title in lines, as large as there is room for.
 fn wrap(fonts: &Options, title: &str) -> (usize, Vec<String>) {
     let fits = |size, line: &str| {
-        let text = drawing(fonts, html! { text style=(roman(size)) { (line) } });
+        let text = drawing(fonts, html! { text style=(roman(size)) { (letters(fonts, line)) } });
         text.is_ok_and(|text| text.root().abs_bounding_box().width() <= 560.0)
     };
     let set = |size| {
@@ -125,7 +137,7 @@ fn wrap(fonts: &Options, title: &str) -> (usize, Vec<String>) {
 }
 
 /// Returns the address of the card. The site's own has no `title`.
-pub fn card(build: &Build, source: &Source, title: Option<&str>) -> Result<String> {
+pub fn card(build: &Build, source: &Source, title: Option<&str>, page: &str) -> Result<String> {
     let (config, fired) = (build.config, &build.style.fired);
     let tracks = tracks(source, &[], HOME.radius, if title.is_some() { 2.4 } else { 1.8 });
     let words = format!("{title:?} {} {} {fired:?} {:?}", config.title, config.subtitle, build.tools.vendor);
@@ -135,6 +147,8 @@ pub fn card(build: &Build, source: &Source, title: Option<&str>) -> Result<Strin
         for font in ["Spectral-Light", "BonaNova-Italic"] {
             fonts.fontdb_mut().load_font_data(read(&build.tools.vendor.join(format!("fonts/{font}.ttf")))?);
         }
+        embedded().for_each(|(font, _)| fonts.fontdb_mut().load_font_data(font.data().to_vec()));
+        fonts.font_resolver.select_fallback = Box::new(|_, _, _| None);
         let paste = |onto: &mut Pixmap, [x, y]: [i32; 2], piece: &Pixmap| {
             onto.draw_pixmap(x, y, piece.as_ref(), &PixmapPaint::default(), Transform::identity(), None);
         };
@@ -171,10 +185,9 @@ pub fn card(build: &Build, source: &Source, title: Option<&str>) -> Result<Strin
         let voice = |size| format!("font: italic {size}px 'Bona Nova'");
         let text = match title {
             Some(title) => html! {
-                // Neither font has emoji.
-                @let (size, lines) = wrap(&fonts, &title.replace(|c| c > '\u{2fff}', ""));
+                @let (size, lines) = wrap(&fonts, title);
                 @for (row, line) in lines.iter().enumerate() {
-                    text x=(x) y=(y + (row * size) as f32 * 1.06) style=(roman(size)) { (line) }
+                    text x=(x) y=(y + (row * size) as f32 * 1.06) style=(roman(size)) { (letters(&fonts, line)) }
                 }
                 text x="1140" y="572" text-anchor="end" style=(voice(40)) fill="#17389c" { (config.title) }
             },
@@ -191,5 +204,5 @@ pub fn card(build: &Build, source: &Source, title: Option<&str>) -> Result<Strin
         JpegEncoder::new_with_quality(&mut jpeg, 88).encode_image(&card)?;
         Ok(fs::write(folder.join("card.jpg"), jpeg)?)
     })?;
-    build.output.asset("card.jpg", File::Copied(folder.join("card.jpg")))
+    build.output.lasting(&format!("/cards{}.jpg", page.trim_end_matches('/')), File::Copied(folder.join("card.jpg")))
 }

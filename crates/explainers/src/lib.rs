@@ -1,6 +1,6 @@
 //! Figures that readers can play with.
 //!
-//! Each file in `src/bin` is one, and a post shows it with `![what it is](explainer:name)`. Its first view is written
+//! Each file in `src/bin` is one, and a post shows it with `#explainer("name")[what it is]`. Its first view is written
 //! into the page, so there is something to see before the program loads, or if it never does.
 
 use std::cell::RefCell;
@@ -8,7 +8,7 @@ use std::cell::RefCell;
 pub use maud::{Markup, html};
 
 pub trait Explainer {
-    /// `options` is whatever follows the `?` in `explainer:name?options`.
+    /// `options` is what the post gave to `explainer` under that name.
     fn new(options: &str) -> Self
     where
         Self: Sized;

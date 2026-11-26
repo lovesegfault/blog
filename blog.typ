@@ -7,13 +7,19 @@
 #let part(name, body, ..options) = html.elem("x-" + name, metadata(options.named()) + body)
 #let apart(name, body, ..options) = context web(it => part(name, it, ..options))(body)
 
+// Where it would be lost.
+#let noteless(body) = {
+  show footnote: _ => panic("a note cannot be here")
+  body
+}
+
 // Only what has a label gets a number.
 #let labelled(pattern) = (..) => for it in query(here()).filter(it => it.has("label")) {
   let kind(other) = (other.has("label"), other.at("kind", default: none), other.at("block", default: none))
   numbering(pattern, query(selector(it.func()).before(here())).filter(other => kind(other) == kind(it)).len())
 }
 
-/// For formulas and drawings. These follow the theme, as do black and white.
+/// The colours of the site, for formulas and drawings.
 #let warm = rgb("#a83a10")
 #let cool = rgb("#17389c")
 #let faint = rgb("#6b5c50")
@@ -30,10 +36,12 @@
   description: none,
   /// `false`, or the number of the issue that has them.
   comments: true,
+  /// As in `"pt-BR"`.
+  lang: "en",
   body,
 ) = {
   set document(title: title, description: description)
-  set text(font: "Spectral")
+  set text(font: "Spectral", lang: lang.split("-").first(), region: lang.split("-").at(1, default: none))
   show raw: set text(font: "TX-02") // Berkeley Mono
   set quote(block: true)
   set figure(numbering: labelled("1"))
@@ -57,16 +65,19 @@
     show math.cancel: web(it => html.elem("mrow", attrs: (notation: "updiagonalstrike"), it.body))
     show math.frac.where(style: "skewed"): web(it => math.frac(it.num, it.denom, style: "vertical"))
     show hide: web(it => html.elem("mphantom", attrs: (style: "visibility:hidden"), it.body))
-    it
+    noteless(it)
   }
   show figure.where(kind: raw): set figure(kind: image)
   show figure: it => {
-    show figure.caption: caption => if it.has("label") { caption } else { web(it => html.figcaption(it))(caption.body) }
+    let bare = if not it.has("label") and it.caption != none { it.caption.body }
+    show figure.caption.where(body: bare): caption => web(it => html.figcaption(it))(caption.body)
     it
   }
   show ref: it => if it.element != none and it.element.func() == heading and it.element.numbering == none {
     show footnote: none
     link(it.target, if it.supplement == auto { it.element.body } else { it.supplement })
+  } else if it.element != none and not it.element.at("block", default: true) {
+    panic("only a formula on display has a number")
   } else { it }
   show footnote: web(it => {
     h(0pt, weak: true)
@@ -87,7 +98,8 @@
     if side in (center, right, end) { html.div(style: "text-align:" + repr(side), it) } else { it }
   })
 
-  apart("front", std.title(), date: date, updated: updated, categories: categories, tags: tags, comments: comments)
+  let front = noteless(context if target() == "html" { html.div(description) } + std.title())
+  apart("front", front, date: date, updated: updated, categories: categories, tags: tags, comments: comments)
   body
 }
 
@@ -108,12 +120,22 @@
 /// Pictures side by side.
 #let row(..pictures) = block(apart("row", pictures.pos().join()))
 /// A file, or an address on YouTube.
-#let video(source, description) = block(apart("video", description, source: source))
+#let video(source, description) = block(apart("video", noteless(description), source: source))
 /// One of the programs in `crates/explainers/src/bin`.
-#let explainer(name, options: "", description) = block(apart("explainer", description, name: name, options: options))
+#let explainer(name, options: "", description) = block(
+  apart("explainer", noteless(description), name: name, options: options),
+)
+
+// What takes all the room it is given gets the column.
+#let fitted(it) = context if measure(it, width: 32.5em).width > measure(it).width { block(width: 32.5em, it) } else { it }
 
 /// Anything that Typst can draw.
-#let drawing(alt: none, body) = context web(it => block(part("drawing", html.frame(it), alt: alt)))(body)
+#let drawing(alt: none, body) = context web(it => block(part("drawing", html.frame(fitted(it)), alt: alt)))(
+  noteless(body),
+)
+
+/// A `dot` block, for Graphviz to lay out.
+#let diagram(alt: none, body) = block(apart("drawing", noteless(body), alt: alt))
 
 /// A block of code, or the path of a file. After it, `/ name: …` is a note on the line that ends in `<name>`.
 #let code(
@@ -133,7 +155,8 @@
   numbers: auto,
   /// Whether the first column has `+`, `-` or a space.
   diff: false,
-  wrap: false,
+  /// What programs print wraps, but for what is lined up.
+  wrap: auto,
   /// `true`, or the flags to open Compiler Explorer with.
   run: false,
   ..source,

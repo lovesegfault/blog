@@ -1,6 +1,7 @@
 //! What Typst makes of a page, as a tree.
 
 use std::collections::HashSet;
+use std::mem::take;
 
 use anyhow::{Result, anyhow};
 use collision::{Kind, Piece};
@@ -9,7 +10,7 @@ use typst::foundations::{Content, Dict, FromValue, Value};
 use typst::introspection::{Introspector, MetadataElem, Tag};
 use typst::model::{EnumElem, LateLinkResolver, Numbering};
 use typst::syntax::Span;
-use typst_html::{HtmlDocument, HtmlFrame, HtmlNode, HtmlTag, tag};
+use typst_html::{HtmlDocument, HtmlFrame, HtmlNode, HtmlTag, attr, tag};
 
 use crate::content::slugify;
 use crate::formula;
@@ -23,19 +24,24 @@ pub struct Node {
     pub attributes: Vec<(String, String)>,
     pub children: Vec<Node>,
     pub span: Span,
+    /// What goes before and after a part of a formula, in text.
+    pub signs: [String; 2],
     options: Dict,
 }
 
 #[derive(Clone, Default)]
 pub struct Ids(HashSet<String>);
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Tree {
     pub nodes: Vec<Node>,
     pub ids: Ids,
     /// What Typst's own links call something, and what it is called.
     pub renamed: Vec<(String, String)>,
     named: HashSet<String>,
+    quoting: bool,
+    /// How many numbered ones are open.
+    lists: usize,
 }
 
 impl Ids {
@@ -58,20 +64,26 @@ fn data(content: &Content) -> Option<&Value> {
 }
 
 /// What a list counts from, if it is lettered.
-fn counting(content: &Content) -> Option<&str> {
+fn counting(content: &Content, depth: usize) -> Option<&str> {
     let Numbering::Pattern(pattern) = content.to_packed::<EnumElem>()?.numbering.as_option().as_ref()? else {
         return None;
     };
-    pattern.pieces[0].1.shorthand().filter(|first| "aAiI".contains(first))
+    pattern.pieces.get(depth).or(pattern.pieces.last())?.1.shorthand().filter(|first| "aAiI".contains(first))
 }
 
-/// Typst takes the apostrophes of `f()`'s and the '90s for opening quotes, and that of the 90's for a prime.
-fn requote<'a>(before: &[Node], text: &'a str, after: Option<&HtmlNode>) -> &'a str {
+/// Typst takes the apostrophes of `f()`'s and the '90s for opening quotes, and that of the 90's for a prime. It then
+/// loses track of the quotation around them.
+fn requote<'a>(before: &[Node], text: &'a str, after: Option<&HtmlNode>, quoting: bool) -> &'a str {
     let after = if let Some(HtmlNode::Text(after, _)) = after { after } else { "" };
+    let before = if "‘’“”″".contains(text) { plain(before) } else { String::new() };
+    let closes = before.ends_with(|c: char| !c.is_whitespace() && !"([{“‘-–—/".contains(c));
+    let (quoting, measured) = (quoting && !before.contains('„'), before.ends_with(char::is_numeric));
     match text {
-        "‘" if matches!(after.as_bytes(), [b'0'..=b'9', b'0', b's', ..]) => "’",
-        "‘" if plain(before).ends_with(|c: char| !c.is_whitespace() && !"([{“-–—/".contains(c)) => "’",
-        "’" if after.starts_with(char::is_alphabetic) && plain(before).ends_with('-') => "‘",
+        "‘" if closes || matches!(after.as_bytes(), [b'0'..=b'9', b'0', b's', ..]) => "’",
+        "“" if quoting && (closes || before.is_empty() && after.starts_with([' ', ',', '.', ';', ')'])) => "”",
+        "″" if quoting && measured => "”",
+        "”" if measured && before.rmatches(['“', '”', '„']).take(2).eq(["”", "“"]) => "″",
+        "’" if after.starts_with(char::is_alphabetic) && before.ends_with('-') => "‘",
         "′" if after.starts_with(char::is_alphabetic) => "’",
         _ => text,
     }
@@ -80,7 +92,7 @@ fn requote<'a>(before: &[Node], text: &'a str, after: Option<&HtmlNode>) -> &'a 
 impl Tree {
     pub fn new(document: &HtmlDocument) -> Self {
         let ids = Ids(document.introspector().query_labelled().iter().filter_map(label).collect());
-        let mut tree = Self { nodes: Vec::new(), ids, renamed: Vec::new(), named: HashSet::new() };
+        let mut tree = Self { ids, ..Self::default() };
         tree.nodes = tree.grow(document, &document.root().children, Span::detached()).pop().unwrap().children;
         tree
     }
@@ -95,7 +107,9 @@ impl Tree {
         let mut blank = 0;
         for (at, node) in nodes.iter().enumerate() {
             if let HtmlNode::Tag(Tag::Start(origin, _)) = node {
-                blank = if data(origin) == Some(&Value::None) { grown.len() } else { blank };
+                if data(origin) == Some(&Value::None) {
+                    (blank, self.quoting) = (grown.len(), false);
+                }
                 origins.push(origin);
                 continue;
             }
@@ -109,12 +123,18 @@ impl Tree {
                 .chain([node.span()])
                 .find(|span| is_written(span.id()));
             let mut labels: Vec<String> = origins.iter().copied().filter_map(label).collect();
-            labels.retain(|label| self.named.insert(label.clone()));
+            // Typst leaves a mark of its own where something that shows nothing is linked to.
+            let next =
+                if let Some(HtmlNode::Element(next)) = nodes.get(at + 1) { next.attrs.get(attr::id) } else { None };
+            labels.retain(|label| next.is_none_or(|id| id != label) && self.named.insert(label.clone()));
 
             let mut new = Node::new("", own.unwrap_or(around));
             match node {
                 HtmlNode::Tag(_) => {}
-                HtmlNode::Text(text, _) => new.text = requote(&grown, text, nodes.get(at + 1)).into(),
+                HtmlNode::Text(text, _) => {
+                    new.text = requote(&grown, text, nodes.get(at + 1), self.quoting).into();
+                    self.quoting = new.text.rmatches(['“', '”']).next().map_or(self.quoting, |last| last == "“");
+                }
                 HtmlNode::Element(element) if element.pre_span => {
                     new.text = plain(&self.grow(document, &element.children, around));
                 }
@@ -122,8 +142,8 @@ impl Tree {
                     new.tag = element.tag.resolve().to_string();
                     new.attributes =
                         element.attrs.0.iter().map(|(name, value)| (name.to_string(), value.into())).collect();
-                    new.attributes
-                        .extend(origins.into_iter().find_map(counting).map(|first| ("type".into(), first.into())));
+                    let first = origins.into_iter().find_map(|origin| counting(origin, self.lists));
+                    new.attributes.extend(first.map(|first| ("type".into(), first.into())));
                     let mut inside = &element.children[..];
                     if new.tag == "math"
                         && let Some(drawn) = inside.iter().rposition(|node| matches!(node, HtmlNode::Frame(_)))
@@ -133,9 +153,14 @@ impl Tree {
                         new.attributes.extend(missing(frame));
                         inside = spoken;
                     }
+                    let aside = (new.tag == "x-note").then(|| take(&mut self.quoting));
+                    self.lists += usize::from(new.tag == "ol");
                     new.children = self.grow(document, inside, new.span);
+                    self.lists -= usize::from(new.tag == "ol");
+                    self.quoting = aside.unwrap_or(self.quoting);
                     if new.tag == "math" {
                         formula::arrange(&mut new, false);
+                        formula::punctuate(&mut new);
                     }
                     new.span = own.or(new.children.first().map(|first| first.span)).unwrap_or(around);
                     if let Some(HtmlNode::Tag(Tag::Start(first, _))) = element.children.first()
@@ -198,7 +223,8 @@ impl Tree {
 
 impl Node {
     fn new(tag: &str, span: Span) -> Self {
-        Self { tag: tag.into(), text: "".into(), attributes: vec![], children: vec![], span, options: Dict::new() }
+        let (text, attributes, children, signs, options) = <_>::default();
+        Self { tag: tag.into(), text, attributes, children, span, signs, options }
     }
 
     pub fn get(&self, attribute: &str) -> Option<&str> {
@@ -242,13 +268,13 @@ pub fn plain(nodes: &[Node]) -> String {
     for node in nodes {
         match node.tag.as_str() {
             "" => out += &node.text,
-            "math" => out.extend(node.get("text").unwrap_or_default().split_whitespace()),
+            "math" => out += &formula::flat(node),
             "br" => out.push(' '),
-            "x-note" | "x-video" | "x-explainer" | "script" | "style" => {}
+            "x-note" | "x-video" | "x-explainer" | "script" | "style" | "mphantom" => {}
             "p" | "li" | "dt" | "dd" | "th" | "td" | "pre" | "figcaption" => {
                 out += &format!("\n{}\n", plain(&node.children));
             }
-            _ => out += &plain(&node.children),
+            _ => out += &node.signs.join(&plain(&node.children)),
         }
     }
     out
@@ -259,8 +285,14 @@ pub fn words(nodes: &[Node]) -> usize {
 }
 
 pub fn summary(blocks: &[Node]) -> String {
-    let text = blocks.iter().find(|node| node.tag == "p").map_or(String::new(), |node| plain(&node.children));
-    let mut summary = String::new();
+    let (mut text, mut summary) = (String::new(), String::new());
+    for paragraph in blocks.iter().skip_while(|node| node.tag != "p").take_while(|node| node.tag == "p") {
+        if !text.ends_with(['.', '!', '?', '…', '”', ')']) {
+            text.extend([" ", plain(&paragraph.children).trim()]);
+        }
+    }
+    // What leads into a list says nothing without it.
+    text.truncate(text.strip_suffix(':').and_then(|text| text.rfind(". ")).map_or(text.len(), |end| end + 1));
     for word in text.split_whitespace() {
         if summary.len() + word.len() > 200 {
             return summary.trim_end_matches([' ', ',', ';', ':', '.']).to_owned() + "…";
@@ -289,7 +321,7 @@ pub fn shape(blocks: &[Node]) -> [Vec<Piece>; 2] {
         }
         let text = [". ", "! ", "? "].iter().fold(plain(&block.children), |text, end| text.replace(end, "\n"));
         for words in text.lines().map(|line| line.split_whitespace().count() as u32).filter(|&words| words > 0) {
-            sentences.push(Piece { kind, words, notes: std::mem::take(&mut notes) });
+            sentences.push(Piece { kind, words, notes: take(&mut notes) });
         }
     }
     // A page of short lines would be one knot of curls.
@@ -321,5 +353,13 @@ mod tests {
     #[test]
     fn apostrophes_are_not_quotes() {
         assert_eq!(plain(&set("`f()`'s 90's 'a' (5') $x$'s '90s").0), "\nf()’s 90’s ‘a’ (5′) x’s ’90s\n");
+        assert_eq!(plain(&set(r#""'90s" 5" "'80s 5" "a $ x $ 5""#).0), "\n“’90s” 5″ “’80s 5” “a x 5”\n");
+        assert_eq!(plain(&set(r#""$f''$ _"b"_" #text(lang: "pl")["5"]"#).0), "\n“f″ “b”” „5”\n");
+    }
+
+    #[test]
+    fn summaries_are_whole_sentences() {
+        assert_eq!(summary(&set("= A\nb\n\nc.\n\nd").0), "b c.");
+        assert_eq!(summary(&set("a. b:\n- c").0), "a.");
     }
 }

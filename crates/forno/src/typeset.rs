@@ -3,12 +3,12 @@
 use std::path::Path;
 
 use anyhow::Result;
-use typst::diag::{FileError, FileResult, PackageError, SourceDiagnostic, Tracepoint, error};
+use typst::diag::{FileError, FileResult, PackageError, SourceDiagnostic, Tracepoint, bail, error};
 use typst::foundations::{Bytes, Content, Datetime, Duration, NativeElement, ShowFn, Smart, Target};
 use typst::layout::{BlockElem, Rel, Sizing};
 use typst::loading::LoadSource;
 use typst::model::FootnoteContainer;
-use typst::syntax::{DiagSpan, FileId, LinkedNode, RootedPath, Source, SyntaxKind, VirtualPath, VirtualRoot};
+use typst::syntax::{DiagSpan, FileId, LinkedNode, RootedPath, Source, SyntaxKind, VirtualPath, VirtualRoot, ast};
 use typst::text::{Font, FontBook, RawElem, TextElem};
 use typst::utils::LazyHash;
 use typst::visualize::ImageElem;
@@ -20,6 +20,8 @@ use typst_kit::packages::FsPackages;
 
 use crate::content::is_source;
 use crate::output::{read, walk};
+use crate::scrub::scrub;
+use crate::site::SOURCES;
 use crate::{formula, photo};
 
 pub struct Typst {
@@ -38,20 +40,38 @@ struct Job<'a> {
 
 /// Pictures that browsers can show are left where they are.
 const PICTURE: ShowFn<ImageElem> = |image, engine, styles| {
-    let source = match image.source.derived.source.v {
-        LoadSource::Path(file) if *file.root() == VirtualRoot::Project && file.vpath().extension() != Some("pdf") => {
-            file.vpath().get_without_slash().into()
-        }
-        _ => typst_svg::WebImage::new(&image.decode(engine, styles)?).to_base64_url(),
+    let (source, kind, [across, down]) = if let LoadSource::Path(file) = image.source.derived.source.v
+        && *file.root() == VirtualRoot::Project
+        && let Some((kind, size)) = photo::measure(file.vpath().extension(), &image.source.derived.data)
+    {
+        (file.vpath().get_without_slash().into(), kind, size)
+    } else if image.source.derived.data.starts_with(b"\x1F\x8B") {
+        bail!(image.span(), "this has to be unpacked with `gunzip`");
+    } else {
+        let image = image.decode(engine, styles)?;
+        (typst_svg::WebImage::new(&image).to_base64_url(), "embedded", [image.width(), image.height()])
     };
-    let em = styles.resolve(TextElem::size);
-    let width = |it: Rel<_>| format!("width:calc({}% + {:.3}em)", it.rel.get() * 100.0, it.abs / em);
-    let height = if let Sizing::Rel(height) = image.height.get(styles) { Some(height.abs.at(em) / em) } else { None };
+    let (em, fit) = (styles.resolve(TextElem::size), ["cover", "contain", "fill"][image.fit.get(styles) as usize]);
+    let width = |it: Rel<_>| format!("width:calc({}% + {:.3}em);", it.rel.get() * 100.0, it.abs / em);
+    let [width, crop] = match (image.width.resolve(styles).custom().map(width), image.height.get(styles)) {
+        (width, Sizing::Auto) => [width.unwrap_or_default(), String::new()],
+        (None, Sizing::Rel(it)) if it.rel.is_zero() => {
+            [format!("width:{:.3}em;", it.abs.at(em) / em * across / down), String::new()]
+        }
+        (Some(width), Sizing::Rel(it)) if it.rel.is_zero() => {
+            [width + "max-width:100%;", format!("height:{:.3}em;object-fit:{fit};", it.abs.at(em) / em)]
+        }
+        _ => bail!(image.span(), "a page has no height to take a part of"),
+    };
+    let pixels = |count: f64| matches!(kind, "jpeg" | "png" | "pixels").then(|| count.to_string());
     let picture = HtmlElem::new(HtmlTag::intern("x-picture").unwrap())
         .with_attr(attr::src, source)
+        .with_attr(attr::kind, kind)
+        .with_attr(attr::size, format!("--ratio:{:.3};{width}", across / down))
+        .with_attr(attr::shape, crop)
         .with_optional_attr(attr::alt, image.alt.get_cloned(styles))
-        .with_optional_attr(attr::width, image.width.resolve(styles).custom().map(width))
-        .with_optional_attr(attr::height, height.map(|it| format!("width:auto;height:{it:.3}em;")));
+        .with_optional_attr(attr::width, pixels(across))
+        .with_optional_attr(attr::height, pixels(down));
     Ok(BlockElem::packed(picture.pack()))
 };
 
@@ -84,9 +104,19 @@ impl FileLoader for &Typst {
         }
         // Drawings have the pictures in them whole.
         let path = Path::new(file.vpath().get_without_slash());
-        let bytes = photo::discreet(path).and_then(|()| read(path));
-        let bytes = bytes.and_then(|bytes| if photo::is_photo(path) { photo::scrub(&bytes) } else { Ok(bytes) });
+        let bytes = if is_source(path) { read(path) } else { scrub(path).and_then(|file| Ok(file.bytes()?.into())) };
         bytes.map(Bytes::new).map_err(|error| FileError::Other(Some(format!("{error:#}").into())))
+    }
+}
+
+impl Job<'_> {
+    /// Only what `flake.nix` builds the site from.
+    fn allowed(&self, file: FileId) -> FileResult<FileId> {
+        let under = |file: FileId, root| Path::new(file.vpath().get_without_slash()).starts_with(root);
+        let draft = |file| under(file, "content/drafts");
+        let known = SOURCES.iter().any(|root| under(file, root)) && draft(file) <= draft(self.main);
+        let allowed = known || file == self.main || *file.root() != VirtualRoot::Project;
+        allowed.then_some(file).ok_or(FileError::Other(Some("the site is published without it".into())))
     }
 }
 
@@ -104,11 +134,11 @@ impl World for Job<'_> {
     }
 
     fn source(&self, file: FileId) -> FileResult<Source> {
-        self.desk.0.source(file)
+        self.desk.0.source(self.allowed(file)?)
     }
 
     fn file(&self, file: FileId) -> FileResult<Bytes> {
-        self.desk.0.file(file)
+        self.desk.0.file(self.allowed(file)?)
     }
 
     fn font(&self, index: usize) -> Option<Font> {
@@ -131,13 +161,24 @@ fn misread(node: &LinkedNode, source: &str, found: &mut Vec<SourceDiagnostic>) {
     node.children().for_each(|child| misread(&child, source, found));
     let (before, written, after) = (&source[..node.offset()], &source[node.range()], &source[node.range().end..]);
     let (previous, word) = (node.prev_sibling_kind().unwrap_or(End), char::is_alphanumeric);
+    let (inside, last) = (written.trim_matches(['*', '_']), node.prev_sibling());
     let linked = || source.split(written).any(|before| before.trim_end().ends_with("link("));
+    let block = |it: LinkedNode| it.cast().is_some_and(ast::Raw::block) || it.cast().is_some_and(ast::Equation::block);
+    let prose = matches!(previous, Text | Strong | Emph | SmartQuote | Shorthand | Escape | Link | Raw | Equation);
     let wrapped = before[before.trim_end().len()..].matches('\n').count() == 1 && !matches!(previous, EnumItem | End);
     let opens = previous == End || before.ends_with([' ', '\n', '(']) || before.ends_with(" \"");
     let (it, sign) = match node.kind() {
         _ if node.parent_kind() != Some(Markup) => return,
         Equation if before.ends_with(char::is_alphabetic) || after.starts_with(char::is_numeric) => ("a formula", '$'),
-        Label if previous == Text && !linked() => ("a label", '<'),
+        Label if prose && !last.is_some_and(block) && !linked() => ("a label", '<'),
+        Strong if inside.trim() != inside => ("strong emphasis", '*'),
+        Emph if inside.trim() != inside => ("emphasis", '_'),
+        Link if after.starts_with(|c| word(c) || c == '–') => {
+            return found.push(error!(node.span(), "this link is cut short"; hint: "write it as `#link(\"…\")`"));
+        }
+        SetRule if written.contains("lang:") && node.parent().and_then(LinkedNode::parent).is_none() => {
+            return found.push(error!(node.span(), "the language of a page is `lang`, in `post.with`"));
+        }
         LineComment | BlockComment if before.ends_with(|c: char| !c.is_whitespace()) => ("a comment", '/'),
         Semicolon if !previous.is_stmt() && !after.starts_with(|c| word(c) || "([.-_".contains(c)) => ("code", ';'),
         Hash if after.starts_with(char::is_numeric) => ("code", '#'),
@@ -215,13 +256,14 @@ pub mod tests {
 
     #[test]
     fn prose_is_not_lost_to_markup() {
-        for lost in r#"$5 or $6|R$x$|Vec<T>|a <b>|#1|at ~5|"~/a"|*#emph[a];*|ftp://a|a/*b*/|C:\a"#.split('|') {
+        let lost = r#"$5 or $6|R$x$|Vec<T>|a <b>|#1|at ~5|"~/a"|*#emph[a];*|ftp://a|a/*b*/|C:\a|`a` <b>|"<a>""#;
+        for lost in lost.split('|').chain(["$a$ <b>", "_a _b", "2 * 3 * 4", "http://a/São", "#set text(lang: \"pt\")"])
+        {
             assert_eq!(set(lost).1.len(), 1, "{lost}");
         }
         assert_eq!(set("in\n2012. a\n\nb:\n1. c\n2. d\n\ne\n\n5. f").1.len(), 1);
-        for fine in
-            r"$n$th|= A <a>|a <b> #link(<b>)[c]|a~b|#let a = 1; b|#emph[a];(b)|http://a|a // b|\u{41}".split('|')
-        {
+        let fine = r"$n$th|= A <a>|a <b> #link(<b>)[c]|a~b|#let a = 1; b|#emph[a];(b)|http://a|a // b|\u{41}";
+        for fine in fine.split('|').chain(["$ a $ <b>", "```\na\n``` <b>", "*> _b_*", "#[#set text(lang: \"pt\")]"]) {
             assert_eq!(set(fine).1, [""; 0]);
         }
     }

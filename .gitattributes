@@ -14,3 +14,4 @@ static/slides/** filter=lfs diff=lfs merge=lfs -text
 
 # Small, and the site does not build without them.
 assets/** !filter !diff !merge !text
+content/about/me.jpg !filter !diff !merge

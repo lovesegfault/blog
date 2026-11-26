@@ -9,7 +9,10 @@
   "https://github.com/lovesegfault/cv/releases/latest/download/cv.pdf",
 )
 
-#margin(image("me.jpg", alt: "picture of me"))
+#margin(image(
+  "me.jpg",
+  alt: "Me in a rust-colored jacket, looking down into the finder of a medium format camera",
+))
 
 I'm Bernardo, a software engineer at Anthropic, where I work on RL
 infrastructure. I'm also a NixOS maintainer.

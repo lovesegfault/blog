@@ -1,4 +1,4 @@
-# Temporary: looks at where the fonts can come from. Goes away before merging.
+# Temporary: builds the site from before and after a change, on both systems. Goes away before merging.
 name: verify
 on:
   push:
@@ -7,38 +7,59 @@ on:
 permissions: {}
 
 jobs:
-  fonts:
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - run: SKIP=clippy,scrub nix develop -c pre-commit run --all-files --show-diff-on-failure
+      - if: always()
+        run: nix run --inputs-from . nixpkgs#actionlint
+      - if: always()
+        run: nix run --inputs-from . nixpkgs#deadnix -- --fail
+  site:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        back: [0, 1]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          lfs: true
+          ref: ${{ matrix.back == 1 && 'b85c71280e732d09733718a4165ea309f4b9982c' || github.sha }}
       - uses: DeterminateSystems/nix-installer-action@v23
-      - name: spectral
+      - uses: actions/cache@v5
+        with:
+          path: ~/built
+          key: ${{ runner.os }}-${{ hashFiles('flake.*', 'Cargo.*', '.cargo/**', 'crates/**') }}
+      - name: nix-build
         run: |
-          nix build --inputs-from . nixpkgs#spectral
-          find -L result -type f | sort
-          for face in Light LightItalic Regular Italic SemiBold SemiBoldItalic; do
-            hash="$(nix hash file "result/share/fonts/truetype/Spectral-$face.ttf")"
-            echo "SPECTRAL $face $hash $(grep -cF "$hash" nix/vendor.nix)"
+          nix copy --no-check-sigs --from "file://$HOME/built" "$(nix eval --raw .#forno)" "$(nix eval --raw .#programs)" || true
+          nix build -L
+          nix copy --to "file://$HOME/built" .#forno .#programs
+      - run: nix flake check -L
+      - name: look
+        run: |
+          mkdir out
+          system="$(nix eval --impure --raw --expr builtins.currentSystem)"
+          nix build -o specimen ".#checks.$system.specimen"
+          FORNO_WASM="$(nix eval --raw .#programs)" nix develop -c "$(nix eval --raw .#forno)/bin/forno" build --drafts
+          find -L result specimen public -type f -exec shasum -a 256 {} + | sort -k 2 > out/files
+          nix develop -c tinymist compile --root . content/drafts/specimen/index.typ specimen.pdf
+          nix shell --inputs-from . nixpkgs#poppler-utils -c pdffonts specimen.pdf > out/fonts
+          for it in "packages.$system.default" "devShells.$system.default"; do
+            nix path-info -Sh "$(nix build --no-link --print-out-paths ".#$it.inputDerivation")" >> out/sizes
           done
-      - name: bona-nova
-        run: |
-          time nix build -L --impure --expr '
-            with import (builtins.getFlake (toString ./.)).inputs.nixpkgs { };
-            fetchFromGitHub {
-              owner = "google";
-              repo = "fonts";
-              rev = "6ebe737e44fd64ee736bbc6feed6136a6dbfd222";
-              rootDir = "ofl/bonanova";
-              hash = lib.fakeHash;
-            }' || true
-      - name: typst
-        run: |
-          time nix build --impure --expr '
-            with import (builtins.getFlake (toString ./.)).inputs.nixpkgs { };
-            typst.withPackages (it: [ it.cetz_0_5_2 ])'
-          ls -lR result/lib
-          nix path-info -Sh ./result
+          nix path-info -r ./result >> out/sizes
+          # shellcheck disable=SC2016
+          nix develop -c sh -c 'command -v dot; env | grep "^TYPST\|^FORNO\|^GRAPHVIZ"; find -L "$TYPST_FONT_PATHS" -type f' > out/shell
+          echo '#import "@preview/fletcher:0.5.8": *' >> content/colophon.typ
+          FORNO_WASM="$(nix eval --raw .#programs)" nix develop -c "$(nix eval --raw .#forno)/bin/forno" build > out/missing 2>&1 || true
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-${{ runner.os }}-${{ matrix.back }}
+          path: out
+          retention-days: 1

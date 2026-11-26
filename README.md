@@ -82,6 +82,7 @@ Each file in `crates/explainers/src/bin` is an interactive figure. Start from
 | `static`            | Files published as they are                          |
 | `crates/forno`      | The generator                                        |
 | `crates/mural`      | Fires `assets/valley.svg` into tiles                 |
+| `valley`            | Draws `assets/valley.svg` from public maps           |
 | `crates/collision`  | Turns writing into particle tracks                   |
 | `flake.nix`         | The tools, and the Typst packages that posts import  |
 | `nix/fonts.nix`     | The fonts                                            |

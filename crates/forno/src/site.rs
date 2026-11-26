@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::env;
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
+use std::sync::Mutex;
 
 use anyhow::{Context, Result};
 use rayon::prelude::*;
@@ -11,9 +11,8 @@ use serde::Deserialize;
 
 use crate::article::Article;
 use crate::content::{self, NOT_FOUND, Page, address};
-use crate::math::Math;
 use crate::output::{Cache, File, Files, Output, read, read_text, walk};
-use crate::style::{self, Style};
+use crate::style::Style;
 use crate::typeset::{Desk, Typst};
 use crate::{links, pages, photo};
 
@@ -42,7 +41,6 @@ pub struct Farm {
 pub struct Tools {
     pub vendor: PathBuf,
     pub cache: Cache,
-    pub math: Math,
     typst: Typst,
     /// Each page, as it was when it last made sense.
     pages: Mutex<HashMap<PathBuf, Page>>,
@@ -55,9 +53,6 @@ pub struct Build<'a> {
     pub programs: &'a Path,
     pub output: Output,
     pub desk: Desk<'a>,
-    /// The styles that formulas have asked for, and then the sheet that has them.
-    pub math: Mutex<BTreeSet<String>>,
-    pub math_sheet: OnceLock<String>,
     problems: Mutex<BTreeSet<String>>,
 }
 
@@ -83,8 +78,7 @@ pub struct Term<'a> {
 impl Tools {
     pub fn new() -> Result<Self> {
         let vendor: PathBuf = env::var_os("FORNO_VENDOR").context("run this inside `nix develop`")?.into();
-        let (math, typst) = (Math::new(&vendor), Typst::new(&vendor)?);
-        Ok(Self { vendor, cache: Cache(".cache/forno".into()), math, typst, pages: Mutex::default() })
+        Ok(Self { typst: Typst::new(&vendor)?, vendor, cache: Cache(".cache/forno".into()), pages: Mutex::default() })
     }
 }
 
@@ -144,8 +138,8 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
     let config: Config = toml::from_str(&read_text(Path::new("site.toml"))?).context("site.toml")?;
     let output = Output::default();
     let style = Style::new(tools, programs, &output)?;
-    let (desk, (math, math_sheet, problems)) = (tools.typst.desk(), Default::default());
-    let build = Build { config: &config, tools, style: &style, programs, output, desk, math, math_sheet, problems };
+    let (desk, problems) = (tools.typst.desk(), Mutex::default());
+    let build = Build { config: &config, tools, style: &style, programs, output, desk, problems };
     let add = |url: &str, page: maud::Markup| build.output.add(url, File::Made(page.0.into_bytes()));
 
     // Posts, newest first, and then the other pages.
@@ -153,7 +147,6 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
     let mut sources: Vec<Page> = paths.par_iter().filter_map(|path| build.page(path)).collect();
     sources.sort_by(|a, b| (&b.date, &a.slug).cmp(&(&a.date, &b.slug)));
     let articles: Vec<Article> = sources.par_iter().map(|page| Article::new(&build, page)).collect();
-    build.math_sheet.set(style::math(&build)?).unwrap();
     let posts: Vec<&Article> = articles.iter().take_while(|article| article.page.date.is_some()).collect();
     let card = pages::site_card(&build, &posts)?;
 

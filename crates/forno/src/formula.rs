@@ -1,48 +1,77 @@
-//! Typst's formulas as MathML. What only MathJax needs to know is in `data-` attributes.
+//! Formulas as Typst sets them on paper, cut where a line may end so that browsers can fit them to the screen.
 
+use std::collections::HashSet;
+use std::fmt::Write;
+use std::iter::successors;
+use std::mem::{replace, take};
 use std::ops::ControlFlow;
+use std::sync::LazyLock;
 
-use maud::html;
-use typst::diag::{SourceResult, bail};
-use typst::ecow::EcoString;
+use ttf_parser::{GlyphId, OutlineBuilder};
+use typst::World;
+use typst::comemo::Tracked;
 use typst::engine::Engine;
-use typst::foundations::{Content, NativeElement, Packed, ShowFn, StyleChain};
-use typst::introspection::{Counter, Locator, TagElem};
-use typst::layout::{Abs, Axis, FixedAlignment, HideElem, Rel};
-use typst::math::ir::{
-    AccentItem, AlignedRow, GlyphItem, MathComponent, MathItem, MathKind, Position, ScriptsItem, TableItem,
-    resolve_equation,
+use typst::foundations::{Content, NativeElement, NativeRuleMap, SequenceElem, ShowFn, StyledElem, SymbolElem, Target};
+use typst::introspection::{Counter, Location, Locator, Tag, TagElem, TagFlags};
+use typst::layout::{
+    Abs, Axes, BlockBody, BlockElem, Em, Frame, FrameItem, HElem, InlineElem, InlineItem, Point, Rect, Region, Rel,
+    Size,
 };
-use typst::math::{AugmentOffsets, EquationElem, LeftRightAlternator, MathSize};
-use typst::routines::Arenas;
-use typst::syntax::Span;
-use typst::text::TextElem;
-use typst::visualize::{Color, Paint};
-use typst_html::{HtmlAttr, HtmlElem, tag};
+use typst::math::{AlignPointElem, AttachElem, ClassElem, EquationElem, LrElem, MidElem};
+use typst::model::LateLinkResolver;
+use typst::syntax::{Span, SyntaxKind, SyntaxNode};
+use typst::text::color::should_outline;
+use typst::text::{Glyph, LinebreakElem, SpaceElem, TextElem, TextItem};
+use typst::utils::{default_math_class, hash128};
+use typst::visualize::{Color, Geometry, Paint, Shape};
+use typst_html::{FrameElem, HtmlAttr, HtmlElem};
 use unicode_math_class::MathClass;
 
 use crate::typeset::is_written;
 
+/// Typst's MathML, followed by the drawing.
 pub const RULE: ShowFn<EquationElem> = |equation, engine, styles| {
-    let (location, block) = (equation.location().unwrap(), equation.block.get(styles));
+    static TYPST: LazyLock<NativeRuleMap> = LazyLock::new(|| {
+        let mut rules = NativeRuleMap::new();
+        typst_html::register(&mut rules);
+        rules
+    });
     let number = match equation.numbering.get_ref(styles) {
-        Some(numbering) if block => {
+        Some(numbering) if equation.block.get(styles) => {
+            let location = equation.location().unwrap();
             Counter::of(EquationElem::ELEM).display_at(engine, location, styles, numbering, equation.span())?
         }
         _ => Content::empty(),
     };
-    let mut scribe = Scribe { engine, tags: Vec::new() };
-    let around = Around { size: if block { MathSize::Display } else { MathSize::Text }, ink: &Color::BLACK };
-    let inside = scribe.nested(&equation.body, styles, Locator::synthesize(location), around)?;
-    let alt = equation.alt.get_cloned(styles);
-    let math = html! { math display=[block.then_some("block")] alttext=[&alt] aria-label=[&alt] {} }.0;
+    let (mut spoken, mut drawn) = (equation.clone(), equation.clone());
+    let (body, alt) = (equation.body.clone().set(LrElem::size, Rel::one()), equation.alt.get_cloned(styles));
+    spoken.body = alt.clone().map_or(body, TextElem::packed);
+    let mut math = TYPST.get(Target::Html, spoken.pack_ref()).unwrap().apply(spoken.pack_ref(), engine, styles)?;
+    if let Some(BlockBody::Content(inside)) = math.to_packed::<BlockElem>().and_then(|it| it.body.get_cloned(styles)) {
+        math = inside;
+    }
+    let math = math.into_packed::<HtmlElem>().unwrap().unpack();
+
+    drawn.body = marked(&equation.body, 0, &mut false) + mark(LINE, 0);
+    drawn.block.set(true);
+    drawn.numbering.set(None);
+    let drawn = InlineElem::layouter(drawn, |drawn, engine, _, styles, room| {
+        let paged = engine.library.rules.get(Target::Paged, drawn.pack_ref()).unwrap();
+        let paged = paged.apply(drawn.pack_ref(), engine, styles)?.into_packed::<BlockElem>().unwrap();
+        let Some(BlockBody::MultiLayouter(layout)) = paged.body.get_ref(styles) else { unreachable!() };
+        // What is in both copies is counted once.
+        let (locator, room) = (Locator::synthesize(drawn.location().unwrap()), Region::new(room, Axes::splat(false)));
+        Ok(vec![InlineItem::Frame(layout.call(engine, locator, styles, room.into())?.into_frame())])
+    });
     // An apostrophe after this is not taken for an opening quote.
-    scribe.tags.push(TextElem::packed('\u{FFFC}'));
-    Ok(HtmlElem::new(tag::mathml::math)
-        .with_attr(HtmlAttr::constant("mathml"), math.replacen("><", &format!(">{inside}<"), 1))
+    let after = FrameElem::new(drawn.pack()).pack() + TextElem::packed('\u{FFFC}');
+    let body = math.body.get_cloned(styles).unwrap_or_default() + after;
+    let source = [equation.span(), equation.body.span()].into_iter().find_map(|span| source(engine, span));
+    Ok(math
         .with_attr(HtmlAttr::constant("number"), number.plain_text())
         .with_attr(HtmlAttr::constant("text"), equation.body.plain_text())
-        .with_body(Some(Content::sequence(scribe.tags)))
+        .with_optional_attr(HtmlAttr::constant("source"), source.map(Into::into).or(alt))
+        .with_body(Some(body))
         .pack()
         .spanned(equation.body.traverse(&mut written).break_value().unwrap_or(Span::detached())))
 };
@@ -51,439 +80,507 @@ fn written(part: Content) -> ControlFlow<Span> {
     if is_written(part.span().id()) { ControlFlow::Break(part.span()) } else { ControlFlow::Continue(()) }
 }
 
-struct Scribe<'a, 'e> {
-    engine: &'a mut Engine<'e>,
-    /// What Typst has to find in the page again.
-    tags: Vec<Content>,
+/// Without its comments, and only if it says all there is to say.
+fn source(engine: &Engine, span: Span) -> Option<String> {
+    use SyntaxKind::*;
+    fn bare(node: &SyntaxNode) -> String {
+        let own = if node.kind().is_trivia() { " " } else { node.leaf_text() };
+        node.children().fold(own.into(), |text, child| text + &bare(child))
+    }
+    let file = engine.world.source(span.id()?).ok()?;
+    let node = file.find(span).filter(|node| node.kind() == Equation)?;
+    let mut around = successors(Some(&node), |node| node.parent());
+    around.all(|node| !matches!(node.kind(), Closure | ForLoop | WhileLoop)).then(|| bare(&node))
 }
 
-/// What an element inherits.
-#[derive(Clone, Copy)]
-struct Around<'a> {
-    size: MathSize,
-    ink: &'a Color,
+// What comes after a mark. Lines end at the first of these that they can.
+const LINE: u8 = 0;
+const SPACE: u8 = 1;
+const COMMA: u8 = 2;
+const ARROW: u8 = 3;
+const WORDS: u8 = 4;
+const LOGIC: u8 = 5;
+const RELATION: u8 = 6;
+const SUM: u8 = 7;
+const PRODUCT: u8 = 8;
+const BRACKET: u8 = 9;
+const OTHER: u8 = 10;
+
+fn mark(kind: u8, depth: u8) -> Content {
+    let flags = TagFlags { introspectable: false, tagged: false };
+    TagElem::packed(Tag::End(Location::new(kind.into()), depth.into(), flags))
 }
 
-impl Around<'_> {
-    fn smaller(self, steps: usize) -> Self {
-        const SIZES: [MathSize; 4] = [MathSize::ScriptScript, MathSize::Script, MathSize::Text, MathSize::Display];
-        Self { size: SIZES[(self.size as usize).saturating_sub(steps)], ..self }
+fn kind(part: &Content) -> u8 {
+    let sign = part.to_packed::<SymbolElem>().and_then(|symbol| symbol.text.chars().next());
+    let base = ["base", "body"].iter().find_map(|field| part.get_by_name(field).ok()?.cast().ok());
+    match part.to_packed::<ClassElem>().map(|given| given.class).or(sign.and_then(default_math_class)) {
+        _ if part.is::<LinebreakElem>() => LINE,
+        _ if part.is::<AlignPointElem>() => SPACE,
+        _ if part.is::<MidElem>() || sign.is_some_and(|sign| "⇐⇒⇔⟸⟹⟺→↔∴".contains(sign)) => ARROW,
+        _ if part.to_packed::<TextElem>().is_some_and(|it| it.text.contains(char::is_alphabetic)) => WORDS,
+        _ if sign.is_some_and(|sign| "∧∨".contains(sign)) => LOGIC,
+        Some(MathClass::Punctuation) => COMMA,
+        Some(MathClass::Relation) => RELATION,
+        Some(MathClass::Vary) => SUM,
+        Some(MathClass::Binary) => PRODUCT,
+        _ => base.map(|base| kind(&base)).filter(|kind| *kind > SPACE).unwrap_or(OTHER),
+    }
+}
+
+fn ends_in_brackets(part: &Content) -> bool {
+    let last = part.to_packed::<SequenceElem>().and_then(|parts| parts.children.last());
+    last.or(part.to_packed::<EquationElem>().map(|it| &it.body)).map_or(part.is::<LrElem>(), ends_in_brackets)
+}
+
+/// With a mark before each part, which the layout carries along.
+fn marked(part: &Content, depth: u8, opening: &mut bool) -> Content {
+    let mut before = |kind| if take(opening) { Content::empty() } else { mark(kind, depth) };
+    if part.label().is_some() {
+        before(OTHER) + part.clone()
+    } else if let Some(parts) = part.to_packed::<SequenceElem>() {
+        Content::sequence(parts.children.iter().map(|part| marked(part, depth, opening)))
+    } else if let Some(styled) = part.to_packed::<StyledElem>() {
+        marked(&styled.child, depth, opening).styled_with_map(styled.styles.clone())
+    } else if let Some(nested) = part.to_packed::<EquationElem>() {
+        marked(&nested.body, depth, opening)
+    } else if let Some(mut brackets) = part.to_packed::<LrElem>().cloned() {
+        brackets.body = marked(&brackets.body, depth.saturating_add(1), &mut true);
+        before(BRACKET) + brackets.pack()
+    } else if let Some(mut raised) = part.to_packed::<AttachElem>().cloned()
+        && ends_in_brackets(&raised.base)
+        && ["tl", "bl", "tr", "br"].iter().all(|corner| part.get_by_name(corner).is_err())
+    {
+        raised.base = marked(&raised.base, depth, &mut true);
+        before(BRACKET) + raised.pack()
+    } else if part.is::<SpaceElem>() || part.to_packed::<HElem>().is_some_and(|space| space.weak.get(<_>::default())) {
+        part.clone()
+    } else {
+        before(kind(part)) + part.clone()
+    }
+}
+
+/// What is between two marks. Lengths are in ems.
+#[derive(Default)]
+struct Atom {
+    kind: u8,
+    depth: u8,
+    items: Vec<(Point, FrameItem)>,
+    baseline: f64,
+    left: f64,
+    right: f64,
+    top: f64,
+    bottom: f64,
+    /// How bad it is for a line to start here, if one can.
+    cut: Option<(u8, u8)>,
+    aligned: bool,
+}
+
+struct Scribe<'a> {
+    em: Abs,
+    displayed: bool,
+    links: Tracked<'a, LateLinkResolver<'a>>,
+    indent: f64,
+    /// How far the pieces go when every line that can end does.
+    reach: f64,
+    html: String,
+}
+
+fn flatten(frame: &Frame, offset: Point, flat: &mut Vec<(Point, FrameItem)>) {
+    for (at, item) in frame.items() {
+        match item {
+            FrameItem::Group(group) if group.transform.is_identity() && group.clip.is_none() => {
+                flatten(&group.frame, offset + *at, flat);
+            }
+            _ => flat.push((offset + *at, item.clone())),
+        }
+    }
+}
+
+fn bounds(item: &FrameItem) -> Option<Rect> {
+    match item {
+        FrameItem::Text(text) => {
+            let last = text.glyphs.iter().rposition(|glyph| !text.text[glyph.range()].trim().is_empty())?;
+            let end = text.glyphs[..=last].iter().map(|glyph| glyph.x_advance.at(text.size)).sum();
+            let Rect { min, max } = text.bbox();
+            Some(Rect::new(Point::with_y(max.y.min(Abs::zero())), Point::new(max.x, min.y).max(Point::with_x(end))))
+        }
+        FrameItem::Shape(shape, _) => Some(shape.bbox(true)),
+        FrameItem::Group(group) => {
+            let inside = group.frame.items().filter_map(|(at, it)| bounds(it).map(|it| (*at + it.min, *at + it.max)));
+            let clip = group.clip.iter().map(|_| (Point::zero(), group.frame.size().to_point()));
+            let corners: Vec<_> = (inside.filter(|_| group.clip.is_none()).chain(clip))
+                .flat_map(|(a, b)| [a, b, Point::new(a.x, b.y), Point::new(b.x, a.y)])
+                .map(|corner| corner.transform(group.transform))
+                .collect();
+            let [min, max] = [Point::min, Point::max].map(|pick| corners.iter().copied().reduce(pick));
+            // The line that cancels a term takes no room from its neighbours.
+            let past = match group.frame.items().as_slice() {
+                [(_, FrameItem::Shape(Shape { geometry: Geometry::Line(_), .. }, _))] => (max?.x - min?.x) / 2.0,
+                _ => Abs::zero(),
+            };
+            Some(Rect::new(min? + Point::with_x(past), max? - Point::with_x(past)))
+        }
+        FrameItem::Image(_, size, _) | FrameItem::Link(_, size) => Some(Rect::from_pos_size(Point::zero(), *size)),
+        FrameItem::Tag(_) => None,
+    }
+}
+
+impl Atom {
+    fn new(kind: u8, depth: u8, baseline: f64, aligned: bool) -> Self {
+        let (left, right, top, bottom) = (f64::MAX, f64::MIN, baseline, baseline);
+        Self { kind, depth, baseline, left, right, top, bottom, aligned, ..<_>::default() }
     }
 
-    fn script(self) -> Self {
-        self.smaller(if self.size == MathSize::Display { 2 } else { 1 })
+    fn push(&mut self, at: Point, item: FrameItem, em: Abs) {
+        let Some(Rect { min, max }) = bounds(&item) else { return };
+        let (min, max) = (at + min, at + max);
+        (self.left, self.top) = (self.left.min(min.x / em), self.top.min(min.y / em));
+        (self.right, self.bottom) = (self.right.max(max.x / em), self.bottom.max(max.y / em));
+        self.items.push((at, item));
+    }
+
+    /// By the word, if words are all that it has.
+    fn words(self, em: Abs) -> Vec<Self> {
+        let mut words = vec![Self::new(WORDS, self.depth, self.baseline, self.aligned)];
+        for &(mut at, ref item) in &self.items {
+            let text = match item {
+                _ if self.kind != WORDS => return vec![self],
+                FrameItem::Text(text) if (at.y / em - self.baseline).abs() < 0.01 => text,
+                _ => return vec![Self { kind: OTHER, ..self }],
+            };
+            let apart = |last: &Glyph, next: &Glyph| {
+                let (before, after) = text.text.split_at(next.range().start);
+                last.range.end == next.range.start && before.ends_with(' ') && after.starts_with(char::is_alphabetic)
+            };
+            for (count, word) in text.glyphs.chunk_by(|last, next| !apart(last, next)).enumerate() {
+                if count > 0 && !words[0].items.is_empty() {
+                    words.push(Self::new(OTHER, self.depth, self.baseline, false));
+                }
+                let word = TextItem { glyphs: word.into(), ..text.clone() };
+                let next = at + Point::with_x(word.width());
+                words.last_mut().unwrap().push(replace(&mut at, next), FrameItem::Text(word), em);
+            }
+        }
+        words.retain(|word| !word.items.is_empty());
+        words
     }
 }
 
-fn element(name: &str, attributes: &str, inside: &str) -> String {
-    format!("<{name}{attributes}>{inside}</{name}>")
+fn lines(frame: &Frame, em: Abs, displayed: bool) -> Vec<Vec<Atom>> {
+    let (mut flat, mut lines, mut atom) = (Vec::new(), vec![Vec::<Atom>::new()], Atom::default());
+    let mut as_marked = true;
+    flatten(frame, Point::zero(), &mut flat);
+    for (at, item) in flat {
+        if let FrameItem::Tag(Tag::End(kind, depth, flags)) = item
+            && !flags.any()
+        {
+            let (line, kind) = (lines.last_mut().unwrap(), kind.hash() as u8);
+            let aligned = atom.items.is_empty() && atom.aligned && kind != LINE || kind == SPACE;
+            for mut atom in replace(&mut atom, Atom::new(kind, depth as u8, at.y / em, aligned)).words(em) {
+                as_marked &=
+                    (at.y / em - atom.baseline).abs() < 0.01 && line.last().is_none_or(|it| it.left < atom.left);
+                atom.cut = line.last().and_then(|last| cut(last, &atom, displayed));
+                line.push(atom);
+            }
+            lines.extend((kind == LINE).then(Vec::new));
+        } else {
+            atom.push(at, item, em);
+        }
+    }
+    lines.retain(|line| !line.is_empty());
+    let whole = !as_marked || lines.is_empty() || lines.len() > 1 && !displayed;
+    if whole {
+        let atoms = lines.into_iter().flatten().chain([atom]);
+        lines = vec![atoms.map(|atom| Atom { cut: None, aligned: false, ..atom }).collect()];
+    }
+    if whole || !displayed {
+        (lines[0][0].left, lines[0].last_mut().unwrap().right) = (0.0, frame.width() / em);
+    }
+    lines
 }
 
-fn token(name: &str, attributes: &str, text: &str) -> String {
-    element(name, attributes, &html!((text)).0)
-}
-
-fn sized(size: MathSize, inside: &str) -> String {
-    let level = 2_usize.saturating_sub(size as usize);
-    element("mstyle", &format!(r#" displaystyle="{}" scriptlevel="{level}""#, size == MathSize::Display), inside)
-}
-
-fn class(class: MathClass) -> String {
-    let name = match class {
-        MathClass::Large => "OP",
-        MathClass::Binary => "BIN",
-        MathClass::Relation => "REL",
-        MathClass::Opening => "OPEN",
-        MathClass::Closing => "CLOSE",
-        MathClass::Punctuation => "PUNCT",
-        _ => "ORD",
+fn cut(last: &Atom, next: &Atom, displayed: bool) -> Option<(u8, u8)> {
+    let joins = |atom: &Atom| matches!(atom.kind, ARROW | LOGIC..=PRODUCT);
+    let (gap, big) = (next.left - last.right, |it: &Atom| it.right - it.left > 3.0 || it.bottom - it.top > 2.0);
+    let kind = match (joins(last), joins(next)) {
+        _ if gap > 3.0 => LINE,
+        _ if gap > 0.7 => SPACE,
+        _ if last.kind == COMMA && gap > 0.1 => COMMA,
+        (true, _) if gap > 0.2 && !displayed => last.kind,
+        (false, true) if gap > 0.2 && displayed => next.kind,
+        (false, false) if gap > 0.2 => next.kind,
+        (false, false) if (last.depth > next.depth || big(last)) && (next.kind == BRACKET || big(next)) => BRACKET,
+        _ => return None,
     };
-    format!(r#" data-mjx-texclass="{name}""#)
+    Some((next.depth, kind))
 }
 
-fn component<'i, 'a>(item: &'i MathItem<'a>) -> Option<&'i MathComponent<'a>> {
-    if let MathItem::Component(component) = item { Some(component) } else { None }
+fn width(atoms: &[Atom]) -> f64 {
+    atoms[atoms.len() - 1].right - atoms[0].left
 }
 
-fn glyph<'i>(item: &'i MathItem) -> Option<&'i GlyphItem> {
-    if let MathKind::Glyph(glyph) = &component(item)?.kind { Some(glyph) } else { None }
+/// A thousand to the em.
+fn units(ems: f64) -> f64 {
+    (ems * 1000.0).round() + 0.0
 }
 
-/// As `sin` and `lim` are.
-fn is_function(item: &MathItem) -> bool {
-    component(item).is_some_and(|component| match &component.kind {
-        MathKind::Scripts(scripts) => is_function(&scripts.base),
-        kind => matches!(kind, MathKind::Text(_)) && component.props.class() == MathClass::Large,
+fn css(ems: f64) -> String {
+    format!("{}em", units(ems) / 1000.0)
+}
+
+#[derive(Default)]
+struct Outline {
+    path: String,
+    pen: [f32; 2],
+}
+
+impl Outline {
+    fn shift(&mut self, [x, y]: [Em; 2]) {
+        self.pen = [self.pen[0] - x.get() as f32, self.pen[1] - y.get() as f32];
+    }
+
+    fn draw(&mut self, command: char, points: &[f32]) {
+        self.path.push(command);
+        for (to, from) in points.iter().zip(self.pen.iter().cycle()) {
+            write!(self.path, "{:+}", (to.round() - from.round()) as i32).unwrap();
+        }
+        self.pen = *points.last_chunk().unwrap();
+    }
+}
+
+impl OutlineBuilder for Outline {
+    fn move_to(&mut self, x: f32, y: f32) {
+        self.draw('m', &[x, y]);
+    }
+
+    fn line_to(&mut self, x: f32, y: f32) {
+        self.draw('l', &[x, y]);
+    }
+
+    fn quad_to(&mut self, a: f32, b: f32, x: f32, y: f32) {
+        self.draw('q', &[a, b, x, y]);
+    }
+
+    fn curve_to(&mut self, a: f32, b: f32, c: f32, d: f32, x: f32, y: f32) {
+        self.draw('c', &[a, b, c, d, x, y]);
+    }
+
+    fn close(&mut self) {}
+}
+
+/// As in the stylesheet.
+const INDENT: f64 = 1.1;
+
+/// Around the shape of a glyph, until the page is put together.
+const SHAPE: &str = "<x-shape>";
+
+impl Scribe<'_> {
+    fn glyphs(&mut self, text: &TextItem, ink: &Color, mut at: Point) {
+        let ink = if *ink == Color::BLACK { String::new() } else { format!(r#" fill="{}""#, ink.to_hex()) };
+        let (scale, grid) = (units(text.size / self.em) / text.font.units_per_em(), text.font.units_per_em());
+        // The parts of a stretched one are drawn together, or the seams would show.
+        for parts in text.glyphs.chunk_by(|a, b| a.range == b.range) {
+            let (mut outline, x, y) = (Outline::default(), units(at.x / self.em), units(at.y / self.em));
+            for part in parts {
+                outline.shift([part.x_offset, part.y_offset].map(|by| by * grid));
+                text.font.ttf().outline_glyph(GlyphId(part.id), &mut outline);
+                outline.shift([part.x_advance - part.x_offset, part.y_advance - part.y_offset].map(|by| by * grid));
+                at += Point::new(part.x_advance.at(text.size), -part.y_advance.at(text.size));
+            }
+            let shape = format!(r#"transform="scale({scale} -{scale})" d="{}""#, outline.path);
+            let id = format!("g{:x}", hash128(&shape) as u32);
+            if !outline.path.is_empty() {
+                write!(self.html, r##"<use href="#{id}" x="{x}" y="{y}"{ink}/>{SHAPE}{id}" {shape}{SHAPE}"##).unwrap();
+            }
+        }
+    }
+
+    /// It starts and ends like a word, so that punctuation stays with it.
+    fn piece(&mut self, atoms: &[Atom]) {
+        let (first, wide, lead) = (&atoms[0], width(atoms).max(0.1), if self.displayed { 0.3 } else { 0.0 });
+        let up = atoms.iter().fold(0.0, |up: f64, atom| up.max(first.baseline - atom.top)) + lead;
+        let down = atoms.iter().fold(0.0, |down: f64, atom| down.max(atom.bottom - first.baseline)) + lead;
+        let style = format!("margin-block:{} {};vertical-align:{}", css(up - 0.5), css(down), css(-down));
+        let size = format!(r#"width="{}" viewBox="0 -500 {} 500""#, css(wide), units(wide));
+        write!(self.html, "<b>\u{2063}<svg {size} style=\"{style}\">").unwrap();
+        let (origin, start) = (Point::new(self.em * first.left, self.em * first.baseline), self.html.len());
+        let mut rest = Frame::soft(Size::new(self.em * wide, self.em));
+        for (at, item) in atoms.iter().flat_map(|atom| &atom.items) {
+            if let FrameItem::Text(text @ TextItem { fill: Paint::Solid(ink), stroke: None, .. }) = item
+                && text.glyphs.iter().all(|glyph| should_outline(&text.font, GlyphId(glyph.id)))
+            {
+                self.glyphs(text, ink, *at - origin);
+            } else {
+                rest.push(*at - origin, item.clone());
+            }
+        }
+        if !rest.is_empty() {
+            let rest = typst_svg::svg_in_html(&rest, self.em, false, None, "", &[], self.links);
+            let rest = rest.split_once('>').unwrap().1.replace("</svg>", "</g>").replace("#000000\"", "currentColor\"");
+            let scale = format!(r#"<g transform="scale({:.3})">"#, Abs::pt(1000.0) / self.em);
+            self.html.insert_str(start, &(scale + &rest.replace("<a ", r#"<a tabindex="-1" "#)));
+        }
+        self.html += "</svg>\u{2063}</b>";
+        self.reach = self.reach.max(self.indent + wide);
+    }
+
+    fn groups<'a>(&mut self, parts: impl Iterator<Item = &'a mut [Atom]>, indent: f64) {
+        let (mut end, around) = (None, self.indent);
+        for part in parts {
+            if let Some(end) = end.replace(part[part.len() - 1].right) {
+                part[0].left = part[0].left.max(end);
+                write!(self.html, r#"<i style="--apart:{}"> </i>"#, css(part[0].left - end)).unwrap();
+            }
+            self.group(part);
+            self.indent = around + indent;
+        }
+        self.indent = around;
+    }
+
+    /// On display, a line only ends inside a group that is too long for one.
+    fn group(&mut self, atoms: &mut [Atom]) {
+        let best = atoms[1..].iter().filter_map(|atom| atom.cut).min();
+        let short = if self.displayed || best < Some((1, 0)) { 6.5 } else { 11.0 };
+        if best.is_none() || width(atoms) < short {
+            return self.piece(atoms);
+        }
+        let first = atoms[1..].iter().position(|atom| atom.cut == best).unwrap() + 1;
+        let apart = self.displayed && atoms[0].cut != best;
+        if apart && width(&atoms[..first]) < 3.0 {
+            atoms[first].cut = None;
+            return self.group(atoms);
+        }
+        self.html += if apart { "<span>" } else { "" };
+        self.groups(atoms.chunk_by_mut(|_, next| next.cut != best), if apart { INDENT } else { 0.0 });
+        self.html += if apart { "</span>" } else { "" };
+    }
+
+    /// Returns how far in the rest of it hangs.
+    fn line(&mut self, atoms: &mut [Atom]) -> f64 {
+        let best = atoms.iter().filter_map(|atom| atom.cut).min().filter(|it| matches!(it, (0, ARROW | RELATION)));
+        let point = atoms.iter().position(|atom| atom.aligned);
+        let point = point.or(atoms.iter().position(|atom| atom.cut == best)).unwrap_or(0);
+        let hang = atoms[point].left;
+        let style = format!("--hang:{};--lead:{}", css(hang), css(hang - atoms[0].left));
+        write!(self.html, r#"<span style="{style}">"#).unwrap();
+        self.groups(<[_; 2]>::from(atoms.split_at_mut(point)).into_iter().filter(|side| !side.is_empty()), 0.0);
+        self.html += "</span>";
+        hang
+    }
+}
+
+pub fn draw<'a>(frame: &Frame, em: Abs, displayed: bool, links: Tracked<'a, LateLinkResolver<'a>>) -> String {
+    let mut scribe = Scribe { em, displayed, links, indent: 0.0, reach: 0.0, html: String::new() };
+    let (mut lines, wide) = (lines(frame, em, displayed), frame.width() / em);
+    if !displayed {
+        scribe.group(&mut lines[0]);
+        return format!(r#"<span aria-hidden="true">{}</span>"#, scribe.html);
+    }
+    let hang = lines.iter_mut().fold(0.0, |hang: f64, line| hang.max(scribe.line(line)));
+    let aligned = lines.iter().all(|line| line[0].left < 0.2 || line.iter().any(|atom| atom.aligned));
+    let fold = if aligned { wide.min((4.0 * hang).max(hang + scribe.reach)) } else { wide };
+    let least = wide.min(hang.min(INDENT) + scribe.reach) + 0.1;
+    let style = format!("--wide:{};--fold:{};--least:{least:.2}", css(wide), css(fold));
+    format!(r#"<span aria-hidden="true" style="{style}">{}</span>"#, scribe.html)
+}
+
+/// A token of MathML, in characters that screen readers know.
+pub fn spoken(text: &str) -> String {
+    let accents = "\u{300}\u{301}\u{302}\u{303}\u{304}\u{305}\u{306}\u{307}\u{308}\u{30A}\u{30C}\u{332}\u{20D7}";
+    let accent = accents.chars().zip("`´^~¯‾˘˙¨˚ˇ_→".chars()).filter(|(accent, _)| text.starts_with(*accent));
+    let italic = ('𝐴'..='𝑧').zip(('A'..='Z').chain('a'..='z'));
+    let greek = ('𝛼'..='𝜛').zip(('α'..='ω').chain("∂ϵϑϰϕϱϖ".chars()));
+    let plain = accent.chain([('ℎ', 'h'), (' ', '\u{A0}')]).chain(italic).chain(greek);
+    text.chars().map(|letter| plain.clone().find(|(from, _)| *from == letter).map_or(letter, |(_, to)| to)).collect()
+}
+
+/// What a class of Typst's stands for, since feeds cannot have its stylesheet.
+pub fn arranged(class: &str, displayed: bool) -> &str {
+    match class {
+        "multiline-equation" if displayed => r#" displaystyle="true""#,
+        "aligned" => r#" columnalign="right left right left" columnspacing="0""#,
+        "cases" | "left-align" => r#" columnalign="left""#,
+        "right-align" => r#" columnalign="right""#,
+        _ => "",
+    }
+}
+
+/// Text that there was no font for.
+pub fn missing(frame: &Frame) -> Option<&str> {
+    frame.items().find_map(|(_, item)| match item {
+        FrameItem::Group(group) => missing(&group.frame),
+        FrameItem::Text(text) => text.glyphs.iter().find(|glyph| glyph.id == 0).map(|glyph| &text.text[glyph.range()]),
+        _ => None,
     })
 }
 
-/// The letter that a styled one was made from, and its style.
-fn unstyle(styled: char) -> Option<(char, &'static str)> {
-    const STYLES: &str = "bold italic bold-italic . . . . . sans-serif bold-sans-serif sans-serif-italic \
-                          sans-serif-bold-italic monospace";
-    let from = |first| (styled as u32 - first as u32) as usize;
-    match styled {
-        'ℎ' => Some(('h', "italic")),
-        '𝐀'..='𝚣' => ('A'..='Z').chain('a'..='z').nth(from('𝐀') % 52).zip(STYLES.split(' ').nth(from('𝐀') / 52)),
-        '𝟎'..='𝟿' => ('0'..='9').nth(from('𝟎') % 10).zip(STYLES.split(' ').nth([0, 3, 8, 9, 12][from('𝟎') / 10])),
-        '𝛼'..='𝜛' => ('α'..='ω').chain("∂ϵϑϰϕϱϖ".chars()).nth(from('𝛼')).zip(Some("italic")),
-        _ => None,
-    }
-    .filter(|(_, style)| *style != ".")
-}
-
-/// In the fonts of the page.
-fn prose(style: &str, text: &str) -> String {
-    let size = if style == "monospace" { r#" mathsize=".8em""# } else { "" };
-    token("mtext", &format!(r#" mathvariant="{style}"{size}"#), text)
-}
-
-fn words(text: &str, function: bool) -> String {
-    let style = text.chars().find_map(unstyle).map_or("normal", |(_, style)| style);
-    let plain: String = text.chars().map(|letter| unstyle(letter).map_or(letter, |(plain, _)| plain)).collect();
-    let [before, after] = [plain.trim_start(), plain.trim_end()].map(|rest| "\u{a0}".repeat(plain.len() - rest.len()));
-    let text = format!("{before}{}{after}", plain.trim());
-    if function || style.contains("sans") || text.contains(|letter| matches!(letter, 'ℂ'..='ⅉ' | '𝐀'..='𝟿')) {
-        let class = class(if function { MathClass::Large } else { MathClass::Normal });
-        return token("mi", &format!(r#"{class} mathvariant="{style}""#), &text);
-    }
-    prose(style, &text)
-}
-
-fn symbol(glyph: &GlyphItem, MathComponent { props, styles, .. }: &MathComponent) -> String {
-    let (text, first) = (glyph.text.as_str(), glyph.text.chars().next().unwrap());
-    let stretch = [Axis::X, Axis::Y].into_iter().find(|axis| glyph.stretch.get().is_explicit(*axis));
-    let mut attributes = match props.class() {
-        MathClass::Normal if "′″‴⁗".contains(first) && props.size < MathSize::Text => {
-            r#" data-mjx-alternate="1""#.into()
-        }
-        MathClass::Normal if "!./′″‴⁗…⋮⋯⋰⋱".contains(first) => String::new(),
-        MathClass::Normal | MathClass::Alphabetic | MathClass::Special if stretch.is_none() => {
-            return match unstyle(first) {
-                Some((plain, "italic")) => token("mi", "", &text.replace(first, &plain.to_string())),
-                Some((_, "monospace")) => words(text, false),
-                _ if text == "∅" => token("mi", r#" data-mjx-alternate="1""#, text),
-                _ => token("mi", r#" mathvariant="normal""#, text),
-            };
-        }
-        // The slash of a fraction.
-        MathClass::Binary if first == '/' => String::new(),
-        other => class(other),
-    };
-    if let Some(axis) = stretch {
-        attributes += r#" stretchy="true" symmetric="true""#;
-        if let Some(size) = glyph.stretch.get().resolve_requested(axis) {
-            let em = styles.resolve(TextElem::size);
-            let least = format!(r#" minsize="{:.3}em""#, size.rel.get() + size.abs.at(em) / em);
-            attributes += &if size.rel.is_zero() { least.replace("min", "max") + &least } else { least };
-            if axis == Axis::X {
-                return element("mover", "", &(token("mo", &attributes, text) + "<mrow></mrow>"));
-            }
-        }
-    } else if matches!(glyph.class, MathClass::Opening | MathClass::Closing | MathClass::Fence)
-        || matches!(first, '←'..='⇿' | '⟰'..='⟿' | '⤀'..='⥿')
-    {
-        attributes += r#" stretchy="false""#;
-    } else if glyph.class == MathClass::Large {
-        attributes += r#" movablelimits="false""#;
-    }
-    token("mo", &attributes, &text.replace(' ', "\u{a0}"))
-}
-
-impl Scribe<'_, '_> {
-    fn nested(&mut self, body: &Content, styles: StyleChain, locator: Locator, around: Around) -> SourceResult<String> {
-        let (arenas, equation) = (Arenas::default(), Packed::new(EquationElem::new(body.clone())));
-        let item = resolve_equation(&equation, self.engine, locator, &arenas, styles)?;
-        self.row(&item, around)
-    }
-
-    /// Any number of elements.
-    fn row(&mut self, item: &MathItem, around: Around) -> SourceResult<String> {
-        let items = item.as_slice();
-        let mut row = String::new();
-        for (at, item) in items.iter().enumerate() {
-            let before = items[..at].last().and_then(component).map_or(MathClass::Normal, |it| it.props.class());
-            row += &match item {
-                MathItem::Component(component) => self.component(item, component, around)?,
-                MathItem::Space => r#"<mspace width=".3em"></mspace>"#.into(),
-                MathItem::Spacing(.., true) if !class(before).contains("ORD") && before != MathClass::Closing => {
-                    continue;
-                }
-                MathItem::Spacing(width, em, _) => {
-                    let width = width.at(*em) / *em;
-                    let glued = if width < 0.3 { r#" linebreak="nobreak""# } else { "" };
-                    format!(r#"<mspace width="{width:.3}em"{glued}></mspace>"#)
-                }
-                MathItem::Tag(tag) => {
-                    self.tags.push(TagElem::packed(tag.clone()));
-                    continue;
-                }
-            };
-            if is_function(item) && at + 1 < items.len() {
-                row += "<mo>\u{2061}</mo>";
-            }
-        }
-        Ok(row)
-    }
-
-    /// Exactly one element.
-    fn one(&mut self, item: &MathItem, around: Around) -> SourceResult<String> {
-        match item {
-            MathItem::Component(component) => self.component(item, component, around),
-            _ => Ok(element("mrow", "", &self.row(item, around)?)),
+/// The page, with the shape of each glyph where it is first used.
+pub fn gather(page: &str) -> String {
+    let (mut parts, mut seen, mut gathered) = (page.split(SHAPE), HashSet::new(), String::new());
+    while let Some(rest) = parts.next() {
+        gathered += rest;
+        if let Some(shape) = parts.next().filter(|shape| seen.insert(*shape)) {
+            write!(gathered, r#"<defs><path id="{shape}/></defs>"#).unwrap();
         }
     }
-
-    fn component(&mut self, item: &MathItem, component: &MathComponent, around: Around) -> SourceResult<String> {
-        let MathComponent { kind, props, styles } = component;
-        let ink = if let Paint::Solid(ink) = styles.get_ref(TextElem::fill) { ink } else { around.ink };
-        let here = Around { size: props.size, ink };
-        // The class that MathJax works out by itself.
-        let mut natural = None;
-        let mut base = |scribe: &mut Self, base| {
-            natural = self::component(base).and_then(|base| base.props.class);
-            scribe.one(base, here)
-        };
-        let mut written = match kind {
-            MathKind::Group(_) => element("mrow", "", &self.row(item, here)?),
-            MathKind::Glyph(glyph) => {
-                natural = props.class;
-                symbol(glyph, component)
-            }
-            MathKind::Text(text) => {
-                natural = Some(if is_function(item) { MathClass::Large } else { MathClass::Alphabetic });
-                words(&text.text, is_function(item))
-            }
-            MathKind::Number(number) if number.text.contains(|digit| digit >= '𝟶') => words(&number.text, false),
-            MathKind::Number(number) => token("mn", "", &number.text),
-            MathKind::Primes(primes) => token("mo", r#" data-mjx-alternate="1""#, &"′".repeat(primes.count)),
-            MathKind::Radical(root) => match &root.index {
-                Some(index) => {
-                    element("mroot", "", &(self.one(&root.radicand, here)? + &self.one(index, here.smaller(3))?))
-                }
-                None => element("msqrt", "", &self.row(&root.radicand, here)?),
-            },
-            MathKind::Fenced(fenced) => {
-                let parts = [fenced.open.as_ref(), Some(&*fenced.body), fenced.close.as_ref()];
-                let inside: String =
-                    parts.iter().flatten().map(|part| self.row(part, here)).collect::<Result<_, _>>()?;
-                let attributes = match fenced.body.as_slice() {
-                    [MathItem::Component(MathComponent { kind: MathKind::Table(_), .. })] => {
-                        r#" data-mjx-texclass="INNER""#
-                    }
-                    // A line of text can end inside a long one.
-                    body if body.len() > 8 => r#" data-semantic-added="true""#,
-                    _ => "",
-                };
-                element("mrow", attributes, &inside)
-            }
-            MathKind::Fraction(it) => {
-                let parts = self.one(&it.numerator, here.smaller(1))? + &self.one(&it.denominator, here.smaller(1))?;
-                element("mfrac", if it.line { "" } else { r#" linethickness="0""# }, &parts)
-            }
-            MathKind::SkewedFraction(it) => {
-                let parts = self.one(&it.numerator, here.smaller(1))? + &self.one(&it.denominator, here.smaller(1))?;
-                element("mfrac", r#" bevelled="true""#, &parts)
-            }
-            MathKind::Scripts(scripts) => {
-                let base = base(self, &scripts.base)?;
-                self.scripts(base, scripts, here.script())?
-            }
-            MathKind::Accent(accent) => accented(base(self, &accent.base)?, accent),
-            MathKind::Line(line) => {
-                let name = if line.position == Position::Above { "mover" } else { "munder" };
-                element(name, "", &(base(self, &line.base)? + r#"<mo accent="true" stretchy="true">―</mo>"#))
-            }
-            MathKind::Cancel(cancel) => {
-                let up = if cancel.invert_first_line { "" } else { "updiagonalstrike " };
-                let down = if cancel.invert_first_line || cancel.cross { "downdiagonalstrike" } else { "" };
-                element("menclose", &format!(r#" notation="{up}{down}""#), &base(self, &cancel.base)?)
-            }
-            MathKind::Multiline(lines) if lines.rows.is_empty() => "<mrow></mrow>".into(),
-            MathKind::Multiline(lines) => {
-                let display = here.size == MathSize::Display;
-                let align = match lines.rows[0].len() {
-                    1 if here.size == MathSize::Text => "left".into(),
-                    1 => "center".into(),
-                    columns => "right left ".repeat(columns),
-                };
-                let apart = if display { ".5em" } else { ".1em" };
-                let layout = format!(
-                    r#" displaystyle="{display}" columnalign="{align}" columnspacing="0em" rowspacing="{apart}""#
-                );
-                element("mtable", &layout, &self.cells(lines.rows.iter().map(std::slice::from_ref), here)?)
-            }
-            MathKind::Table(table) => {
-                let cells = self.cells(table.cells.iter().map(Vec::as_slice), here.smaller(1))?;
-                sized(here.smaller(1).size, &element("mtable", &layout(table, *styles), &cells))
-            }
-            MathKind::Box(boxed) => {
-                let body = boxed.elem.body.get_cloned(*styles).unwrap_or_default();
-                let inside = self.nested(&body, *styles, boxed.locator.relayout(), here)?;
-                let framed = boxed.elem.stroke.get_cloned(*styles).iter().any(|side| matches!(side, Some(Some(_))));
-                if framed { element("menclose", r#" notation="box""#, &inside) } else { element("mrow", "", &inside) }
-            }
-            MathKind::Mathml(mathml) => {
-                let html = mathml.elem.to_packed::<HtmlElem>().unwrap();
-                let pair = |(name, value): &(HtmlAttr, EcoString)| format!(r#" {name}="{}""#, html!((value)).0);
-                let attributes: String = html.attrs.get_cloned(*styles).0.iter().map(pair).collect();
-                match &mathml.body {
-                    Some(body) if !tag::mathml::is_token(html.tag) => {
-                        element(&html.tag.resolve(), &attributes, &self.row(body, here)?)
-                    }
-                    _ => token(&html.tag.resolve(), &attributes, &mathml.elem.plain_text()),
-                }
-            }
-            MathKind::External(other) => {
-                let html = other.content.to_packed::<HtmlElem>();
-                let body = html.and_then(|html| html.body.get_cloned(*styles)).unwrap_or_default();
-                match (html.map(|html| html.tag), other.content.to_packed::<HideElem>()) {
-                    (Some(tag::strong), _) => prose("bold", &body.plain_text()),
-                    (Some(tag::em), _) => prose("italic", &body.plain_text()),
-                    (Some(tag::code), _) => prose("monospace", &body.plain_text()),
-                    (Some(tag::a), _) => {
-                        let attributes = html.unwrap().attrs.get_cloned(*styles);
-                        let href = html!((attributes.get(typst_html::attr::href).map_or("", |href| href))).0;
-                        let inside = self.nested(&body, *styles, other.locator.relayout(), here)?;
-                        element("mrow", &format!(r#" href="{href}""#), &inside)
-                    }
-                    (_, Some(hidden)) => {
-                        element("mphantom", "", &self.nested(&hidden.body, *styles, other.locator.relayout(), here)?)
-                    }
-                    _ => bail!(props.span, "this cannot be part of a formula"; hint: "a `drawing` can hold anything"),
-                }
-            }
-        };
-        if let Some(given) = props.class.filter(|given| Some(*given) != natural) {
-            written = element("mrow", &format!(r#"{} movablelimits="false""#, class(given)), &written);
-        }
-        if ink != around.ink {
-            written = written.replacen('>', &format!(r#" mathcolor="{}">"#, ink.to_hex()), 1);
-        }
-        Ok(if here.size == around.size { written } else { sized(here.size, &written) })
-    }
-
-    fn scripts(&mut self, mut base: String, item: &ScriptsItem, small: Around) -> SourceResult<String> {
-        let mut pair = |low: &Option<MathItem>, high: &Option<MathItem>| -> SourceResult<_> {
-            let mut write =
-                |script: &Option<MathItem>| script.as_ref().map(|script| self.one(script, small)).transpose();
-            Ok([write(low)?, write(high)?])
-        };
-        let attach = |base: String, names: [&str; 3], scripts: [Option<String>; 2]| match scripts {
-            [None, None] => base,
-            [Some(low), None] => element(names[0], "", &(base + &low)),
-            [None, Some(high)] => element(names[1], "", &(base + &high)),
-            [Some(low), Some(high)] => element(names[2], "", &(base + &low + &high)),
-        };
-        let (before, after) = (pair(&item.bottom_left, &item.top_left)?, pair(&item.bottom_right, &item.top_right)?);
-        base = if before == [None, None] {
-            attach(base, ["msub", "msup", "msubsup"], after)
-        } else {
-            let [before, after] =
-                [before, after].map(|pair| pair.map(|it| it.unwrap_or("<mrow></mrow>".into())).concat());
-            element("mmultiscripts", "", &format!("{base}{after}<mprescripts></mprescripts>{before}"))
-        };
-        // An arrow reaches past its label, and one that is itself a label is not an accent.
-        let reaches = glyph(&item.base).is_some_and(|glyph| glyph.stretch.get().is_explicit(Axis::X));
-        let room = if reaches { r#" width="+.8em" lspace=".4em""# } else { "" };
-        let label = |label: String| element("mpadded", room, &format!("<mi></mi>{label}"));
-        let limits = pair(&item.bottom, &item.top)?.map(|limit| limit.map(label));
-        Ok(attach(base, ["munder", "mover", "munderover"], limits))
-    }
-
-    fn cells<'i>(&mut self, rows: impl Iterator<Item = &'i [AlignedRow<'i>]>, around: Around) -> SourceResult<String> {
-        let mut table = String::new();
-        for row in rows {
-            let mut cells = String::new();
-            for cell in row.iter().flat_map(AlignedRow::iter) {
-                // An operator is spaced from what is across the alignment point.
-                let mut inside = cell.as_slice().iter().filter_map(component).map(|component| component.props);
-                let opens = inside.clone().next().is_some_and(|first| first.align_form_infix || first.lspace.is_some());
-                let closes = inside.next_back().is_some_and(|last| last.rspace.is_some());
-                let [before, after] = [opens, closes].map(|spaced| if spaced { "<mi></mi>" } else { "" });
-                cells += &element("mtd", "", &format!("{before}{}{after}", self.row(cell, around)?));
-            }
-            table += &element("mtr", "", &cells);
-        }
-        Ok(table)
-    }
-}
-
-fn accented(mut base: String, accent: &AccentItem) -> String {
-    const SPACING: [(char, char); 13] = [
-        ('\u{300}', '`'),
-        ('\u{301}', '´'),
-        ('\u{302}', '^'),
-        ('\u{303}', '~'),
-        ('\u{304}', '¯'),
-        ('\u{305}', '―'),
-        ('\u{306}', '˘'),
-        ('\u{307}', '˙'),
-        ('\u{308}', '¨'),
-        ('\u{30A}', '˚'),
-        ('\u{30B}', '˝'),
-        ('\u{30C}', 'ˇ'),
-        ('\u{332}', '―'),
-    ];
-    let mark = glyph(&accent.accent).and_then(|glyph| glyph.text.chars().next()).unwrap_or(' ');
-    let mark = SPACING.iter().find(|(combining, _)| *combining == mark).map_or(mark, |(_, spacing)| *spacing);
-    let name = if accent.position == Position::Above { "mover" } else { "munder" };
-    let narrow = glyph(&accent.base).is_some() && !accent.exact_frame_width && mark != '―';
-    if accent.dotless && narrow && name == "mover" {
-        base = base.replace(">i<", ">ı<").replace(">j<", ">ȷ<");
-    }
-    element(name, "", &(base + &token("mo", &format!(r#" accent="true" stretchy="{}""#, !narrow), &mark.to_string())))
-}
-
-fn layout(table: &TableItem, styles: StyleChain) -> String {
-    let (em, cases) = (styles.resolve(TextElem::size), table.alternator == LeftRightAlternator::None);
-    let gap = |gap: Rel<Abs>| format!("{:.3}em ", gap.abs / em);
-    let line = |lines: fn(_) -> _, at: usize, of: usize| {
-        let drawn =
-            |AugmentOffsets(lines): &_| lines.iter().any(|line: &isize| line.rem_euclid(of as isize) == at as isize);
-        if table.augment.as_ref().map(lines).is_some_and(drawn) { "solid " } else { "none " }
-    };
-    let (rows, columns) = (table.cells.len(), table.cells.first().map_or(&[][..], Vec::as_slice));
-    let [mut align, mut spacing, mut lines] = [const { String::new() }; 3];
-    for (column, parts) in columns.iter().map(AlignedRow::len).enumerate() {
-        for part in 0..parts {
-            align += match table.align {
-                _ if parts > 1 && !cases => ["right ", "left "][part % 2],
-                FixedAlignment::Start => "left ",
-                FixedAlignment::Center => "center ",
-                FixedAlignment::End => "right ",
-            };
-            spacing += &gap(if part + 1 == parts { table.gap.x } else { (em * 0.7 * f64::from(cases)).into() });
-            lines += if part + 1 < parts { "none " } else { line(|augment| &augment.vline, column + 1, columns.len()) };
-        }
-    }
-    let across: String = (1..=rows).map(|row| line(|augment| &augment.hline, row, rows)).collect();
-    let drawn =
-        table.augment.as_ref().map_or(String::new(), |_| format!(r#" columnlines="{lines}" rowlines="{across}""#));
-    format!(r#" columnalign="{align}" columnspacing="{spacing}" rowspacing="{}"{drawn}"#, gap(table.gap.y))
+    gathered
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::typeset::tests::set;
 
-    #[test]
-    fn notation_keeps_its_meaning() {
-        for (typst, mathml) in [
-            ("x_1^2", "<msubsup><mi>x</mi><mn>1</mn><mn>2</mn></msubsup>"),
-            ("(a b)/c", "<mfrac><mrow><mi>a</mi><mi>b</mi></mrow><mi>c</mi></mfrac>"),
-            ("-x < RR", r#"ORD">−</mo><mi>x</mi><mo data-mjx-texclass="REL">&lt;</mo><mi mathvariant="normal">ℝ"#),
-            ("sin x", "sin</mi><mo>\u{2061}</mo><mi>x</mi>"),
-            (r#"""_n bold("if ")"#, "<msub><mrow></mrow><mi>n</mi></msub>"),
-            (r#"bold("if ")"#, "<mtext mathvariant=\"bold\">if\u{a0}</mtext>"),
-            (" sum_i ", "<munder>"),
-            ("sum_i", "<msub>"),
-            (r" a &= b \ &= c ", "<mtr><mtd></mtd><mtd><mi></mi><mo"),
-            ("hat(i)", r#"<mover><mi>ı</mi><mo accent="true" stretchy="false">^</mo></mover>"#),
-        ] {
-            let (blocks, _) = set(&format!("${typst}$"));
-            let written = blocks[0].children[0].get("mathml").unwrap();
-            assert!(written.contains(mathml), "{written}");
+    /// The glyphs in each piece, with brackets around what stays on a line for as long as it can.
+    fn sketch(typst: &str) -> String {
+        let (blocks, _) = set(&format!("#let x = $x x x x x x$\n${typst}$"));
+        let (mut sketch, mut glyphs) = (String::new(), 0);
+        for tag in blocks[0].children[0].text.split('<') {
+            match tag.split([' ', '>']).next().unwrap() {
+                "use" => glyphs += 1,
+                "/svg" => sketch += &take(&mut glyphs).to_string(),
+                "i" => sketch += " ",
+                "span" => sketch += "[",
+                "/span" => sketch += "]",
+                _ => {}
+            }
         }
+        sketch
+    }
+
+    #[test]
+    fn lines_end_where_they_should() {
+        for (typst, expected) in [
+            ("a = b", "[3]"),
+            ("#x = -#x + #x", "[7 8 6]"),
+            (" #x = -#x + #x ", "[[6 [8 7]]]"),
+            (" a = #x = #x ", "[[1 7 7]]"),
+            (r" #x &+ #x \ &= 1 ", "[[6 7][2]]"),
+            (" f(#x + #x, #x)^2 ", "[[[[8 8] 8]]]"),
+            (" (#x)(#x) quad #x ", "[[[[8 8] 6]]]"),
+            (" sqrt(#x + #x) ", "[[14]]"),
+            (" cancel(#x) + cancel(#x) ", "[[[6 7]]]"),
+            (r" #x + #context $a \ b$ + #x ", "[[16]]"),
+            (r#" #x "abcdefghi jklmn 1" "#, "[[[6 [9 6]]]]"),
+        ] {
+            assert_eq!(sketch(typst), expected, "{typst}");
+        }
+    }
+
+    #[test]
+    fn glyphs_are_drawn_once() {
+        let page = gather(&set("$a a b$").0[0].children[0].text);
+        assert_eq!(["<use", "<path"].map(|tag| page.matches(tag).count()), [3, 2]);
+    }
+
+    #[test]
+    fn comments_are_not_published() {
+        assert_eq!(set("$a /* b */$").0[0].children[0].get("source"), Some("$a  $"));
+    }
+
+    #[test]
+    fn letters_are_spoken_plainly() {
+        assert_eq!(["𝑥ℎ𝜕ℝ", "\u{305}", "e\u{301} "].map(spoken), ["xh∂ℝ", "‾", "e\u{301}\u{A0}"]);
     }
 }

@@ -29,7 +29,7 @@ return {
   scrolling: all('.lines').filter(l => l.scrollWidth > l.clientWidth).length,
   gutter: code && w.getComputedStyle(code).getPropertyValue('--gutter'),
   picked: picked && [picked.trim().split('\\n').length, picked.slice(0, 40)].join(),
-  views: all('.display').filter(f => [...f.querySelectorAll('[jax]')].filter(v => v.checkVisibility()).length != 1).length,
+  blank: all('.formula use').filter(u => u.closest('svg').checkVisibility() && !r(u).width).length,
   sliding: all('.display > .formula').filter(f => f.scrollWidth > f.clientWidth).length,
   orphans: all('p > .formula, li > .formula').filter(k => /^\\S/.test(k.nextSibling?.data ?? '') && line(k.nextSibling, 0).top > [...k.getClientRects()].at(-1).bottom - 4).length,
   broken: all('p > .formula, li > .formula').filter(k => r(k).height > 45).length,
@@ -53,8 +53,9 @@ if sys.argv[1] == "webkit":
 
     browser = sync_playwright().start().webkit.launch()
     print("webkit", browser.version)
-    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+    page = browser.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=2)
     go, run, shot = page.goto, lambda script: page.evaluate("() => {" + script + "}"), page.screenshot
+    press = lambda key: page.keyboard.press("ControlOrMeta+" + key)
 else:
     driver = subprocess.Popen([*sys.argv[1].split(), "--port=4444"], stdout=subprocess.DEVNULL)
     time.sleep(3)
@@ -65,6 +66,9 @@ else:
     call("POST", session + "/timeouts", {"script": 200000})
     go = lambda url: call("POST", session + "/url", {"url": url})
     run = lambda script: call("POST", session + "/execute/sync", {"script": script, "args": []})
+    held = "\ue03d" if sys.platform == "darwin" else "\ue009"
+    keys = lambda key: [{"type": how, "value": which} for how in ("keyDown", "keyUp") for which in (held, key)]
+    press = lambda key: call("POST", session + "/actions", {"actions": [{"type": "key", "id": "k", "actions": keys(key)}]})
     shot = lambda: base64.b64decode(call("GET", session + "/screenshot"))
 save = lambda name: open(f"shots/{sys.argv[1]}-{name}.png", "wb").write(shot())
 
@@ -93,6 +97,9 @@ for name, path, width, theme, then in [
     ("math", "/posts/notes-on-euclidean-spaces/#gram-matrix", 1440, "light", ""),
     ("tags", "/tags/", 1024, "dark", ""),
     ("about", "/about/", 1440, "light", ""),
+    ("odd", "/posts/zz-odd/", 1440, "light", "d.querySelector('h2').scrollIntoView()"),
+    ("math-night", "/posts/notes-on-euclidean-spaces/#norm-and-the-triangle-inequality", 1440, "dark", ""),
+    ("phone-gram", "/posts/notes-on-euclidean-spaces/#gram-matrix", 320, "light", ""),
     ("phone-norm", "/posts/notes-on-euclidean-spaces/#norm-and-the-triangle-inequality", 340, "light", ""),
     ("phone-home", "/", 390, "light", ""),
     ("phone-math", "/posts/notes-on-euclidean-spaces/#proof-of-the-triangle-inequality", 390, "light", ""),
@@ -110,31 +117,30 @@ for name, path, width, theme, then in [
     time.sleep(1)
     save(name)
 
-SWEEP = """
-const frame = document.querySelector('iframe'), d = frame.contentDocument, found = {};
-const box = (n, at) => { const g = d.createRange(); g.setStart(n, at); g.setEnd(n, at + 1); return g.getBoundingClientRect(); };
-const note = (what, width) => (found[what] ??= []).push(width);
-for (let width = 320; width < 700; width += 7) {
-  frame.style.width = width + 'px';
-  for (const f of d.querySelectorAll('.prose :not(.display) > .formula')) {
-    const parts = [...f.querySelectorAll('mjx-math > :not(mjx-break)')].map(b => b.getBoundingClientRect()).filter(b => b.width);
-    let [a, b] = [f.previousSibling, f.nextSibling];
-    while (a?.matches?.('a, em, strong, sup, code')) a = a.lastChild;
-    while (b?.matches?.('a, em, strong, sup, code')) b = b.firstChild;
-    if (!parts.length) continue;
-    if (/\\S$/.test(a?.data ?? '') && box(a, a.data.length - 1).left > parts[0].left) note('before ' + a.data.slice(-12), width);
-    if (/^\\S/.test(b?.data ?? '') && box(b, 0).left < parts.at(-1).left) note('after ' + b.data.slice(0, 12), width);
-    if (parts.some(p => p.right > f.closest('p, li, td, figcaption, h2, h3, h4, div').getBoundingClientRect().right + 2)) note('spills ' + f.textContent.slice(0, 30), width);
-  }
-}
-return found;
-"""
-OLD = r'.formula { white-space: nowrap } :not(.display) > .formula::after { content: "\\2063" } .formula > [jax]::before, .formula > [jax]::after { content: none !important }'
-for post in "notes-on-euclidean-spaces", "on-leibniz-truth":
-    for name, css in ("new", ""), ("old", OLD):
-        go(SITE + "/colophon/")
-        run(f"document.documentElement.innerHTML = `<iframe src='/posts/{post}/' style='border:0;height:800px'></iframe>`")
-        time.sleep(3)
-        run(f"document.querySelector('iframe').contentDocument.head.insertAdjacentHTML('beforeend', '<style>{css}</style>')")
-        print("sweep", post, name, json.dumps(run(SWEEP), ensure_ascii=False), flush=True)
+for post in "notes-on-euclidean-spaces", "on-leibniz-truth", "specimen", "zz-math", "zz-odd":
+    go(SITE + "/colophon/")
+    run(f"document.documentElement.innerHTML = `<iframe src='/posts/{post}/' style='border:0;height:800px'></iframe>`")
+    time.sleep(3)
+    print("sweep", post, json.dumps(run(open(".github/verify/sweep.js").read()), ensure_ascii=False), flush=True)
+
+go(SITE + "/posts/specimen/#mathematics")
+run("getSelection().selectAllChildren(document.querySelector('#mathematics + p'))")
+time.sleep(1)
+save("picked")
+press("c")
+time.sleep(1)
+run("document.body.prepend(document.createElement('textarea')); document.body.firstChild.focus()")
+press("v")
+print("copied", json.dumps(run("return [document.body.firstChild.value, document.querySelectorAll('.copied').length]")))
+
+for theme in "light", "dark":
+    print("themes", theme, run(f"""const root = document.documentElement; root.dataset.theme = '{theme}';
+        return ['', 'light', 'dark'].map(forced => {{ root.style.colorScheme = forced; const s = getComputedStyle(document.body);
+            return s.color + ' on ' + s.backgroundImage.match(/day|night/); }}).join(', ')"""))
+
+go(SITE + "/posts/notes-on-euclidean-spaces/")
+run("""document.querySelectorAll('[aria-hidden], link, .figure').forEach(e => e.remove());
+    document.body.style.cssText = 'font: 20px serif; max-width: 40em'; document.querySelector('#gram-matrix-1, #gram-matrix').scrollIntoView()""")
+time.sleep(1)
+save("plain")
 os._exit(0)

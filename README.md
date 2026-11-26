@@ -33,7 +33,7 @@ to the number of its issue.
 | `#note[…]`, `#tip`, `#warning` or `#caution`  | An aside                    |
 | `#important[…]`                               | A statement set apart       |
 | `$x$` or `$ x $`                              | A formula                   |
-| ``#tex(`…`)``                                 | A formula written in TeX    |
+| `#math.equation(alt: "…", $…$)`               | One that has a drawing      |
 | `<label>` after a formula or a figure         | A number, for `@label`      |
 | `- [x]` or `- [ ]`                            | A task                      |
 | `#divider()`                                  | A break                     |
@@ -81,7 +81,7 @@ Each file in `crates/explainers/src/bin` is an interactive figure. Start from
 | `crates/forno`      | The generator                                        |
 | `crates/mural`      | Fires `assets/valley.svg` into tiles                 |
 | `crates/collision`  | Turns writing into particle tracks                   |
-| `nix/vendor.nix`    | Graphviz, MathJax, fonts and Typst packages          |
+| `nix/vendor.nix`    | Graphviz, fonts and Typst packages                   |
 
 `nix build` makes the site. `.cache` can be deleted at any time.
 

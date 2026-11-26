@@ -61,7 +61,7 @@ feel of macOS, especially Mojave with its comfortable Dark Mode.
 
 Another thing that I really liked was having the Numbers/Pages/Keynote software
 suit, it really does feel much better than LibreOffice. I wouldn't normally care
-much for Pages or Keynote, but I found that my usual #tex(`\LaTeX`) (and beamer)
+much for Pages or Keynote, but I found that my usual LaTeX (and beamer)
 workflow didn't work so well on macOS. Numbers is what I liked the most, not
 having to use LibreOffice Calc was great. Overall the suite felt polished and
 easy to use, except for the eventual annoying warnings about missing fonts on

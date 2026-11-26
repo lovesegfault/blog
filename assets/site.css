@@ -18,9 +18,15 @@
   initial-value: 0px;
 }
 
-:root {
-  color-scheme: light dark;
+/* Some browsers darken pages by force, and this is how the tiles can tell. */
+@property --sky {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: white;
+}
 
+:root {
+  --sky: light-dark(white, black);
   --paper: light-dark(#f3f0e6, #1e1612);
   --ink: light-dark(#241712, #ece1cc);
   --dim: light-dark(#6b5c50, #ae9e90);
@@ -47,8 +53,8 @@
   --edge-right: max(1rem, env(safe-area-inset-right));
   --left: max(var(--edge-left), (100vw - var(--measure)) / 2);
 }
-:root[data-theme="light"] { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }
+/* The ink has to suit the tiles, whatever a browser or an extension would like. */
+:root, body { color-scheme: var(--scheme) !important; }
 
 *, ::before, ::after { box-sizing: border-box; }
 html { background: var(--paper); font-size: clamp(125%, .55rem + .625vw, 160%); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
@@ -67,7 +73,7 @@ button { padding: 0; border: 0; background: none; color: inherit; font: inherit;
 h1, h2, h3, h4 { text-wrap: balance; }
 code { font-family: var(--mono); font-style: normal; font-variant: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
-::selection { background: light-dark(#e2a93a73, #c9701c80); }
+::selection, .picked > [aria-hidden] { background: light-dark(#e2a93a73, #c9701c80); }
 
 .voice { font: italic .925rem/1.36 var(--voice); color: var(--cobalt); }
 .skip { position: absolute; z-index: 3; left: var(--left); top: .4rem; padding: .3rem .6rem; background: var(--paper); }
@@ -249,14 +255,36 @@ footer { --u: max(100vw / 1440, .5px); --ink: var(--foam); --dim: #b4c0ec; --cob
 mark { border-radius: 2px; background: var(--wash); color: inherit; }
 
 .formula { position: relative; }
-/* It starts and ends like a word, so that punctuation stays with it. Firefox breaks none that opens a line. */
-:not(.display) > .formula { &::before, > [jax]::before, > [jax]::after { content: "\2063"; } }
+.formula b { font-weight: inherit; white-space: nowrap; }
+.formula svg { height: .5em; overflow: visible; fill: currentColor; }
+.formula i { font: 1em/0 var(--text); letter-spacing: calc(min(var(--apart), var(--most, 9em)) - .25em); }
+.formula use { pointer-events: none; }
+.formula ::selection { background: none; }
+.formula.copied > * { display: none !important; }
+s .formula b { background: linear-gradient(currentColor 0 0) 0 53% / 100% .06em no-repeat; }
+.formula:has(:focus-visible) { outline: 2px solid var(--accent); }
 .display { display: flex; align-items: center; gap: .6em; margin: 1em 0; font-style: normal; font-weight: 400; }
-.display > .formula { flex: 1; min-width: 0; padding-block: .3em; overflow: auto hidden; }
-.display > :has(> [jax] + [jax]) { container-type: inline-size; }
-td .display > :has(> [jax] + [jax]) { min-width: 13em; }
-.display mjx-container { display: grid; gap: .5em; justify-content: safe center; }
-.spoken { position: absolute; inset: 0; overflow: hidden; clip-path: inset(50%); -webkit-user-select: none; user-select: none; }
+.display > .formula { flex: 1; min-width: 0; padding-inline: .1em; overflow: auto hidden; container-type: inline-size; }
+:is(th, td, [style*=inline-block]) .display > .formula { container-type: normal; }
+/* As room runs out, spaces shrink, then lines stop being aligned, and then everything gets smaller. */
+.display [aria-hidden] {
+  --most: max(1.1em, (100cqw - var(--wide)) * 999);
+  --inset: clamp(0px, 100cqw - var(--least) * 1em, var(--back, 0px) - var(--most));
+  --room: max(1.1em, (100cqw - var(--inset) - var(--fold)) * 999);
+  display: block;
+  max-width: calc(var(--wide) + .1em);
+  margin-inline: auto;
+  padding-left: var(--inset);
+  font-size: clamp(.75em, 100cqw / var(--least), 1em);
+  text-align: left;
+  text-indent: 0;
+  text-wrap: balance;
+  span { display: block; padding-left: min(var(--hang), var(--room)); }
+  span span { --hang: 1.1em; display: inline-table; border-collapse: separate; border-spacing: 0; }
+  span > :first-child { margin-left: calc(-1 * min(var(--lead), var(--room)) - .01em); }
+  span span > :first-child { margin-left: -1.1em; }
+}
+.spoken { position: absolute; inset: 0; overflow: hidden; clip-path: inset(50%); }
 
 .table { margin: 1.8em 0; overflow-x: auto; }
 table { min-width: 100%; border-collapse: collapse; font-size: .9em; line-height: 1.4; font-variant-numeric: lining-nums tabular-nums; }
@@ -414,8 +442,9 @@ summary::-webkit-details-marker { display: none; }
 
 @media (min-width: 47.5em) {
   :root { --edge-right: calc(2rem + env(safe-area-inset-right)); }
-  .prose > p .display { margin-inline: -1.8rem; }
-  .prose > p .display:has(.number) { margin-inline: 1.8em 0; }
+  .prose > p .display { --back: 4rem; margin-inline: -1.8rem; }
+  .prose > p .display:has(.number) { --back: 0px; margin-inline: 1.8em 0; }
+  .prose > p [style*=inline-block] .display { --back: 0px; margin-inline: 0; }
   .quote { --mark: 3rem; }
   .quote::before { left: -.35rem; top: -.35rem; }
   .code { --rim: .6rem; margin: 1.6rem -1.5rem 1.6rem calc(-1 * (var(--gutter) + var(--rim))); padding-block: 1.25rem; font-size: .7rem; line-height: 1.66; font-stretch: 95%; }
@@ -469,7 +498,7 @@ summary::-webkit-details-marker { display: none; }
   .notes.live em { font-size: .94em; font-style: normal; }
   .notes.live strong { font-family: var(--text); font-size: .92em; }
   .notes.live :not(pre) > code { padding: 0; background: none; }
-  .notes.live [jax] { justify-content: start; }
+  .notes.live .display [aria-hidden] { margin-left: 0; }
   .notes.live .code { margin: .4rem -.5rem; }
   .notes.live .back { display: none; }
 }
@@ -480,8 +509,12 @@ summary::-webkit-details-marker { display: none; }
   @keyframes appear { from { opacity: 0; } }
 }
 
+@media (forced-colors: active) {
+  body { background-image: none; }
+}
+
 @media print {
-  :root { color-scheme: light !important; font-size: 12pt; }
+  :root { --scheme: light !important; font-size: 12pt; }
   *, ::before { background: none !important; }
   .prose ul { list-style: square; }
   .prose hr { height: 0; border-top: 1px solid; }

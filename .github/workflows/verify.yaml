@@ -57,13 +57,14 @@ jobs:
           nix build -L
           nix copy --to "file://$HOME/built" .#forno .#programs
       - run: nix flake check -L
-      - run: mkdir shots && tar -czhf shots/site.tar.gz --exclude '*.xz' --exclude '*.pdf' --exclude images result
+      - run: mkdir shots && tar -czhf shots/site.tar.gz --exclude '*.xz' --exclude '*.pdf' --exclude images --exclude '*.woff2' result
       - if: always() && runner.os == 'macOS'
         run: sudo safaridriver --enable
       - if: always()
         run: |
           perl -pi -e 's/^  date: /  comments: false,\n  date: /' content/posts/*.typ content/posts/*/index.typ
           nix develop -c tinymist compile --root . content/drafts/specimen/index.typ shots/specimen.pdf || echo tinymist failed
+          cp .github/verify/*.typ content/drafts
           nix build .#forno .#programs
           FORNO_WASM=result-1 nix develop -c result/bin/forno serve &
           curl --retry 60 --retry-connrefused --retry-delay 1 -so /dev/null http://127.0.0.1:1313/

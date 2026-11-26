@@ -9,6 +9,7 @@ use mural::{HOME, LABELS, POST};
 use crate::article::{Article, Section};
 use crate::content::{Comments, NOT_FOUND, Page, address};
 use crate::figure::{card, figure};
+use crate::formula::gather;
 use crate::links::encode;
 use crate::site::{Build, Taxonomy, Term};
 
@@ -57,12 +58,11 @@ fn layout(build: &Build, head: &Head, body: Markup) -> Markup {
                 @for font in &style.fonts[..if head.title.is_some() { 3 } else { 2 }] {
                     link rel="preload" as="font" type="font/woff2" href=(font) crossorigin;
                 }
-                @if body.0.contains("<mjx-math") { link rel="stylesheet" href=[build.math_sheet.get()]; }
                 link rel="stylesheet" href=(style.sheet);
                 script { (PreEscaped(BEFORE_PAINT)) }
                 script type="module" src=(style.script) {}
             }
-            body { (body) }
+            body { (PreEscaped(gather(&body.0))) }
         }
     }
 }
@@ -286,7 +286,7 @@ pub fn feed(build: &Build, name: Option<&str>, url: &str, posts: &[&Article]) ->
     let config = build.config;
     let date =
         |post: &Article| post.page.date.as_ref().map(|date| date.strftime("%a, %d %b %Y %H:%M:%S %z").to_string());
-    html! {
+    let feed = html! {
         (XML)
         rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" {
             channel {
@@ -307,7 +307,9 @@ pub fn feed(build: &Build, name: Option<&str>, url: &str, posts: &[&Article]) ->
                 } }
             }
         }
-    }
+    };
+    // XML has no way of writing these.
+    PreEscaped(feed.0.replace(|it: char| it < ' ' && !"\t\n\r".contains(it), ""))
 }
 
 pub fn sitemap(build: &Build, urls: &[(&str, Option<&Zoned>)]) -> Markup {

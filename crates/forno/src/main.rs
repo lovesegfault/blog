@@ -5,7 +5,6 @@ mod figure;
 mod formula;
 mod highlight;
 mod links;
-mod math;
 mod output;
 mod pages;
 mod photo;
@@ -53,7 +52,7 @@ fn main() -> Result<()> {
     let here = env::current_dir()?;
     let root = here.ancestors().find(|folder| folder.join("site.toml").exists());
     env::set_current_dir(root.context("there is no site.toml here")?)?;
-    // Typst and MathJax both go deep.
+    // Typst goes deep.
     rayon::ThreadPoolBuilder::new().stack_size(16 << 20).build_global()?;
 
     match command {

@@ -1,4 +1,4 @@
-# Other people's work that the site is made with: Graphviz, MathJax, Typst packages, and fonts.
+# Other people's work that the site is made with: Graphviz, Typst packages, and fonts.
 {
   lib,
   fetchurl,
@@ -11,13 +11,6 @@
 let
   # What posts can import from `@preview`.
   packages = with typstPackages; [ cetz_0_5_2 ];
-
-  mathjax =
-    name: hash:
-    fetchurl {
-      url = "https://registry.npmjs.org/${name}/-/${baseNameOf name}-4.1.3.tgz";
-      inherit hash;
-    };
 
   fetch =
     path: hash:
@@ -52,7 +45,7 @@ runCommand "vendor"
     ];
   }
   ''
-    mkdir -p $out/fonts $out/mathjax/font $out/ruler $out/typst/preview
+    mkdir -p $out/fonts $out/ruler $out/typst/preview
     cd $out
 
     # Graphviz measures labels with whatever font it finds, so it is left the one that they are set in.
@@ -61,10 +54,6 @@ runCommand "vendor"
     echo "<fontconfig><dir>$out/ruler</dir></fontconfig>" > ruler/fonts.conf
     makeWrapper ${graphviz}/bin/dot dot --set FONTCONFIG_FILE $out/ruler/fonts.conf
 
-    tar -xf ${mathjax "mathjax" "sha512-BN/8Pkgn7G1pIDYJqd9md+JHsE/jydSYbyOZnSdSA0WziuVO8mRxdYiWFumkVVly/8U+hm9DpIIoWuvySverzw=="} \
-      -C mathjax --strip-components=1
-    tar -xf ${mathjax "@mathjax/mathjax-newcm-font" "sha512-gzAB3dFHilHX1l5x2xUqRL+1jDQt3Fyza1DkEMVXWC4E8SvsGdlgEza47HYi2WhVcgfkvf4zgUGzuhbq3Pjlew=="} \
-      -C mathjax/font --strip-components=1 package/chtml package/chtml.js
     for package in ${toString (lib.closePropagation packages)}; do
       cp -r --no-preserve=mode $package/lib/typst-packages/* typst/preview
     done

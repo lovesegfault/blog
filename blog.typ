@@ -13,6 +13,11 @@
   numbering(pattern, query(selector(it.func()).before(here())).filter(other => kind(other) == kind(it)).len())
 }
 
+/// For formulas and drawings. These follow the theme, as do black and white.
+#let warm = rgb("#a83a10")
+#let cool = rgb("#17389c")
+#let faint = rgb("#6b5c50")
+
 /// Starts every page: `#show: post.with(title: [A Title])`.
 #let post(
   title: none,
@@ -35,9 +40,26 @@
   set math.equation(numbering: labelled("(1)"), supplement: none)
   set math.mat(row-gap: .4em, column-gap: 1em)
   set math.vec(gap: .4em)
+  set math.lr(size: 100% - .2em)
 
   // Typst also ends a paragraph at a displayed formula, which forno mends.
   show parbreak: it => it + metadata(none)
+  show math.equation: it => {
+    let font = text.font
+    show text: it => {
+      let words = text.font == font and it.text.contains(regex("[^\d.]"))
+      set text(font: ("Spectral", font).flatten(), weight: "regular") if words
+      it
+    }
+    show selector.or(link, ref): set text(cool)
+    // What Typst would leave out for screen readers and feeds.
+    show math.overline: web(it => math.accent(it.body, "\u{305}"))
+    show math.underline: web(it => math.accent(it.body, "\u{332}"))
+    show math.cancel: web(it => html.elem("mrow", attrs: (notation: "updiagonalstrike"), it.body))
+    show math.frac.where(style: "skewed"): web(it => math.frac(it.num, it.denom, style: "vertical"))
+    show hide: web(it => html.elem("mphantom", it.body))
+    it
+  }
   show figure.where(kind: raw): set figure(kind: image)
   show figure: it => {
     show figure.caption: caption => if it.has("label") { caption } else { web(it => html.figcaption(it))(caption.body) }
@@ -91,11 +113,8 @@
 /// One of the programs in `crates/explainers/src/bin`.
 #let explainer(name, options: "", description) = block(apart("explainer", description, name: name, options: options))
 
-/// Anything that Typst can draw. Black, white and these colours follow the theme.
+/// Anything that Typst can draw.
 #let drawing(alt: none, body) = context web(it => block(part("drawing", html.frame(it), alt: alt)))(body)
-#let warm = rgb("#a83a10")
-#let cool = rgb("#17389c")
-#let faint = rgb("#6b5c50")
 
 /// A block of code, or the path of a file. After it, `/ name: …` is a note on the line that ends in `<name>`.
 #let code(
@@ -142,9 +161,3 @@
     run: if run == true { "" } else if run != false { run },
   ))
 }
-
-/// A formula in TeX, for what only MathJax can set.
-#let tex(source) = math.equation(block: source.block, {
-  show raw: web(it => html.elem("mi", attrs: (tex: it.text)))
-  source
-})

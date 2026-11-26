@@ -47,8 +47,9 @@ jobs:
           nix build -o specimen ".#checks.$system.specimen"
           FORNO_WASM="$(nix eval --raw .#programs)" nix develop -c "$(nix eval --raw .#forno)/bin/forno" build --drafts
           find -L result specimen public -type f -exec shasum -a 256 {} + | sort -k 2 > out/files
-          nix develop -c tinymist compile --root . content/drafts/specimen/index.typ specimen.pdf
-          nix shell --inputs-from . nixpkgs#poppler-utils -c pdffonts specimen.pdf > out/fonts
+          nix develop -c tinymist compile --root . content/drafts/specimen/index.typ editor.pdf
+          nix shell --inputs-from . nixpkgs#poppler-utils -c pdffonts editor.pdf > out/fonts
+          wc -c editor.pdf >> out/fonts
           for it in "packages.$system.default" "devShells.$system.default"; do
             nix path-info -Sh "$(nix build --no-link --print-out-paths ".#$it.inputDerivation")" >> out/sizes
           done

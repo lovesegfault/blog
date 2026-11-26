@@ -12,8 +12,16 @@ updates:
   schedule:
     interval: monthly
   groups:
+    typst:
+      patterns: ["typst*"]
+    arborium:
+      patterns: ["arborium*"]
     crates:
       patterns: ["*"]
+      update-types: ["patch"]
+  ignore:
+  - dependency-name: ttf-parser
+  - dependency-name: unicode-math-class
   commit-message:
       prefix: "chore"
       include: "scope"

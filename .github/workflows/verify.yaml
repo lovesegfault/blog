@@ -19,6 +19,12 @@ jobs:
       - if: always()
         run: nix shell --inputs-from . nixpkgs#{cargo,rustfmt} -c cargo fmt --all --check
       - if: always()
+        run: nix develop -c cargo fmt --all --check
+      - if: always()
+        run: SKIP=clippy,scrub nix develop -c pre-commit run --all-files --show-diff-on-failure
+      - if: always()
+        run: ls .git/hooks | grep -v sample
+      - if: always()
         run: nix run --inputs-from . nixpkgs#nixfmt -- flake.nix nix/*.nix && git diff --exit-code
       - if: always()
         run: nix run --inputs-from . nixpkgs#statix -- check
@@ -65,6 +71,8 @@ jobs:
           perl -pi -e 's/^  date: /  comments: false,\n  date: /' content/posts/*.typ content/posts/*/index.typ
           nix develop -c tinymist compile --root . content/drafts/specimen/index.typ shots/specimen.pdf || echo tinymist failed
           cp .github/verify/*.typ content/drafts
+          cp .github/verify/themed.txt static/themed.svg
+          sed s/currentColor/black/ .github/verify/themed.txt > static/lines.svg
           nix build .#forno .#programs
           FORNO_WASM=result-1 nix develop -c result/bin/forno serve &
           curl --retry 60 --retry-connrefused --retry-delay 1 -so /dev/null http://127.0.0.1:1313/

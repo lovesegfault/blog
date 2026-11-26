@@ -254,7 +254,7 @@ footer { --u: max(100vw / 1440, .5px); --ink: var(--foam); --dim: #b4c0ec; --cob
 .prose :is(sub, sup) { line-height: 0; }
 mark { border-radius: 2px; background: var(--wash); color: inherit; }
 
-.formula { position: relative; direction: ltr; unicode-bidi: isolate; }
+.formula { position: relative; direction: ltr; }
 .formula > [hidden] { display: inline; }
 .formula b { font-weight: inherit; white-space: nowrap; }
 .formula svg { height: .5em; overflow: visible; fill: currentColor; }

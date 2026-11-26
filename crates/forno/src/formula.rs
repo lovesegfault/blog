@@ -404,14 +404,14 @@ impl Scribe<'_> {
         }
     }
 
-    /// It starts and ends like a word, so that punctuation stays with it.
+    /// It starts and ends like an English word, so that it keeps its punctuation and its place.
     fn piece(&mut self, atoms: &[Atom]) {
         let (first, wide, lead) = (&atoms[0], width(atoms).max(0.1), if self.displayed { 0.3 } else { 0.0 });
         let up = atoms.iter().fold(0.0, |up: f64, atom| up.max(first.baseline - atom.top)) + lead;
         let down = atoms.iter().fold(0.0, |down: f64, atom| down.max(atom.bottom - first.baseline)) + lead;
         let style = format!("margin-block:{} {};vertical-align:{}", css(up - 0.5), css(down), css(-down));
         let size = format!(r#"width="{}" viewBox="0 -500 {} 500""#, css(wide), units(wide));
-        write!(self.html, "<b>\u{2063}<svg {size} style=\"{style}\">").unwrap();
+        write!(self.html, "<b>\u{2063}\u{200E}<svg {size} style=\"{style}\">").unwrap();
         let (origin, start) = (Point::new(self.em * first.left, self.em * first.baseline), self.html.len());
         let mut rest = Frame::soft(Size::new(self.em * wide, self.em));
         for (at, item) in atoms.iter().flat_map(|atom| &atom.items) {
@@ -429,7 +429,7 @@ impl Scribe<'_> {
             let scale = format!(r#"<g transform="scale({:.3})">"#, Abs::pt(1000.0) / self.em);
             self.html.insert_str(start, &(scale + &rest.replace("<a ", r#"<a tabindex="-1" "#)));
         }
-        self.html += "</svg>\u{2063}</b>";
+        self.html += "</svg>\u{2063}\u{200E}</b>";
         self.reach = self.reach.max(self.indent + wide);
     }
 

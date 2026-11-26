@@ -41,7 +41,8 @@ pub struct Farm {
 
 /// What lasts from one build to the next.
 pub struct Tools {
-    pub vendor: PathBuf,
+    pub dot: PathBuf,
+    pub fonts: PathBuf,
     pub cache: Cache,
     typst: Typst,
     /// Each page, as it was when it last made sense.
@@ -81,8 +82,10 @@ pub const SOURCES: [&str; 5] = ["assets", "blog.typ", "content", "site.toml", "s
 
 impl Tools {
     pub fn new() -> Result<Self> {
-        let vendor: PathBuf = env::var_os("FORNO_VENDOR").context("run this inside `nix develop`")?.into();
-        Ok(Self { typst: Typst::new(&vendor)?, vendor, cache: Cache(".cache/forno".into()), pages: Mutex::default() })
+        let path = |name| env::var_os(name).map(PathBuf::from).context("run this inside `nix develop`");
+        let (dot, fonts) = (path("GRAPHVIZ_DOT")?, path("TYPST_FONT_PATHS")?);
+        let typst = Typst::new(&fonts, &path("TYPST_PACKAGE_CACHE_PATH")?)?;
+        Ok(Self { dot, fonts, typst, cache: Cache(".cache/forno".into()), pages: Mutex::default() })
     }
 }
 

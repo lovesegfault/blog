@@ -49,7 +49,23 @@
           installPhase = "install -Dm444 -t $out target/wasm32-unknown-unknown/wasm/*.wasm";
         };
 
-        vendor = pkgs.callPackage ./nix/vendor.nix { };
+        fonts = pkgs.callPackage ./nix/fonts.nix { };
+
+        # What posts can import from `@preview`.
+        typst = pkgs.typst.withPackages (it: [ it.cetz_0_5_2 ]);
+
+        # Graphviz measures labels with whatever font it finds, so it is left the one that they are set in.
+        dot = pkgs.writeShellScript "dot" ''
+          export FONTCONFIG_FILE=${pkgs.writeText "fonts.conf" "<fontconfig><dir>${fonts}/mono</dir></fontconfig>"}
+          exec ${pkgs.graphviz}/bin/dot "$@"
+        '';
+
+        # For forno, which takes one path from each, and for tinymist.
+        env = {
+          GRAPHVIZ_DOT = dot;
+          TYPST_FONT_PATHS = fonts;
+          TYPST_PACKAGE_CACHE_PATH = "${typst}/lib/typst/packages";
+        };
 
         site =
           drafts:
@@ -63,8 +79,9 @@
                 (difference ./content ./content/drafts)
                 (unions drafts)
               ];
-              env.FORNO_VENDOR = vendor;
-              env.FORNO_WASM = programs;
+              env = env // {
+                FORNO_WASM = programs;
+              };
             }
             ''
               ln -s $src/* .
@@ -80,11 +97,7 @@
         checks.specimen = site [ ./content/drafts/specimen ];
 
         devShells.default = pkgs.mkShell {
-          env = {
-            FORNO_VENDOR = vendor;
-            TYPST_FONT_PATHS = "${vendor}/fonts";
-            TYPST_PACKAGE_CACHE_PATH = "${vendor}/typst";
-          };
+          inherit env;
           shellHook = "[ ! -e site.toml ] || pre-commit install > /dev/null";
           packages = with pkgs; [
             (writeShellScriptBin "forno" ''exec cargo run --package forno -- "$@"'')

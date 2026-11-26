@@ -1,0 +1,44 @@
+# Temporary: looks at where the fonts can come from. Goes away before merging.
+name: verify
+on:
+  push:
+    branches-ignore: [master, "dependabot/**", "update-*"]
+
+permissions: {}
+
+jobs:
+  fonts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - name: spectral
+        run: |
+          nix build --inputs-from . nixpkgs#spectral
+          find -L result -type f | sort
+          for face in Light LightItalic Regular Italic SemiBold SemiBoldItalic; do
+            hash="$(nix hash file "result/share/fonts/truetype/Spectral-$face.ttf")"
+            echo "SPECTRAL $face $hash $(grep -cF "$hash" nix/vendor.nix)"
+          done
+      - name: bona-nova
+        run: |
+          time nix build -L --impure --expr '
+            with import (builtins.getFlake (toString ./.)).inputs.nixpkgs { };
+            fetchFromGitHub {
+              owner = "google";
+              repo = "fonts";
+              rev = "6ebe737e44fd64ee736bbc6feed6136a6dbfd222";
+              rootDir = "ofl/bonanova";
+              hash = lib.fakeHash;
+            }' || true
+      - name: typst
+        run: |
+          time nix build --impure --expr '
+            with import (builtins.getFlake (toString ./.)).inputs.nixpkgs { };
+            typst.withPackages (it: [ it.cetz_0_5_2 ])'
+          ls -lR result/lib
+          nix path-info -Sh ./result

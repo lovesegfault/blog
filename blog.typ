@@ -127,7 +127,9 @@
 )
 
 // What takes all the room it is given gets the column.
-#let fitted(it) = context if measure(it, width: 32.5em).width > measure(it).width { block(width: 32.5em, it) } else { it }
+#let fitted(it) = context {
+  if measure(it, width: 32.5em).width > measure(it).width { block(width: 32.5em, it) } else { it }
+}
 
 /// Anything that Typst can draw.
 #let drawing(alt: none, body) = context web(it => block(part("drawing", html.frame(fitted(it)), alt: alt)))(

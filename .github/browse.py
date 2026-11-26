@@ -159,6 +159,7 @@ print("themes toggled", run("""const root = document.documentElement; root.datas
 
 go(SITE + "/colophon/")
 print("feed", json.dumps(run(open(".github/verify/feed.js").read()), ensure_ascii=False), flush=True)
+save("feed")
 
 for theme in "light", "dark":
     go(SITE + "/colophon/")

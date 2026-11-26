@@ -129,18 +129,25 @@ for name, ends in [
     ("back to the formula", "f.nextSibling, 9, b.lastChild, 0"),
     ("up to the formula", "p.firstChild, 0, b.firstChild, 1"),
     ("the formula", "b.firstChild, 0, b.lastChild, 1"),
+    ("a displayed one", "p.querySelector('.display b').lastChild, 0, p.querySelector('.display b:last-child').firstChild, 1"),
+    ("everything", "p, 0, p, 0"),
 ]:
     go(SITE + "/colophon/")
     go(SITE + "/posts/specimen/#mathematics")
     time.sleep(1)
     run(f"const p = document.querySelector('#mathematics + p'), f = p.querySelector('.formula'), b = f.querySelector('b'); getSelection().setBaseAndExtent({ends})")
+    if name == "everything":
+        press("a")
     time.sleep(1)
+    state = "return [document.querySelectorAll('.picked').length, getSelection().rangeCount, scrollY].join()"
+    before = run(state)
     press("c")
     time.sleep(1)
+    name += f" ({before} then {run(state)})"
     run("document.body.prepend(document.createElement('textarea')); document.body.firstChild.focus()")
     press("v")
     time.sleep(1)
-    print("copied", name, json.dumps(run("return [document.body.firstChild.value, document.querySelectorAll('.copied').length]")))
+    print("copied", name, json.dumps(run("const it = document.body.firstChild.value; return [it.length, it.split('$').length, it.slice(-240)]")))
 
 for theme in "light", "dark":
     print("themes", theme, run(f"""const root = document.documentElement; root.dataset.theme = '{theme}';

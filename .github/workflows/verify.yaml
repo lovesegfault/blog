@@ -1,4 +1,4 @@
-# Temporary: builds the site on both systems and tries what depends on dates and cards. Goes away before merging.
+# Temporary: draws the valley again, from the survey and from the maps. Goes away before merging.
 name: verify
 on:
   push:
@@ -7,16 +7,7 @@ on:
 permissions: {}
 
 jobs:
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: DeterminateSystems/nix-installer-action@v23
-      - run: SKIP=scrub nix develop -c pre-commit run --all-files --show-diff-on-failure
-      - name: behind
-        if: always()
-        run: nix develop -c cargo update --dry-run --verbose
-  site:
+  valley:
     strategy:
       fail-fast: false
       matrix:
@@ -24,36 +15,26 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          lfs: true
       - uses: DeterminateSystems/nix-installer-action@v23
-      - run: nix build -L
-      - run: nix flake check -L
-      - name: look
+      - name: draw
         run: |
-          mkdir out
-          system="$(nix eval --impure --raw --expr builtins.currentSystem)"
-          nix build -o specimen ".#checks.$system.specimen"
-          FORNO_WASM="$(nix eval --raw .#programs)"
-          forno="nix develop -c $(nix eval --raw .#forno)/bin/forno"
-          export FORNO_WASM
-          $forno build --drafts
-          find -L result specimen public -type f -exec shasum -a 256 {} + | sort -k 2 > out/files
-          cp -R public/cards public/cards.jpg out
-          {
-            TZ=America/Sao_Paulo $forno new "Today"
-            TZ=America/Sao_Paulo $forno publish today
-            grep date content/posts/today/index.typ
-            for date in 2020-02-29 2020-02-29T23:30:00-03:00 2020-02-29T23:30:00Z 2020-02-30 '2020-02-29T10:00[America/Sao_Paulo]' 2999-01-01; do
-              printf '#import "/blog.typ": *\n#show: post.with(title: [🦀], date: "%s")\na\n' "$date" > content/posts/crab.typ
-              echo "-- $date"
-              $forno build && grep -o '<time[^/]*/time>' public/posts/crab/index.html && grep -o 'crab/</link><pubDate>[^<]*' public/index.xml && grep -o 'crab/</loc><lastmod>[^<]*' public/sitemap.xml
-              cp public/cards/posts/crab.jpg out
-            done
-          } > out/dates 2>&1 || true
-      - if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: site-${{ runner.os }}
-          path: out
-          retention-days: 1
+          time nix develop .#valley -c python valley/draw.py
+          git status --short
+          git diff --stat --exit-code
+      - name: survey
+        if: always() && runner.os == 'Linux'
+        run: |
+          cp valley/survey.npz kept.npz
+          time nix develop .#valley -c python valley/survey.py
+          nix develop .#valley -c python -c '
+          import numpy as np
+          a, b = np.load("kept.npz"), np.load("valley/survey.npz")
+          print("SAME", {k: (str(b[k].dtype), bool(np.array_equal(a[k], b[k]))) for k in a})'
+          git status --short
+          git checkout valley
+      - name: style
+        if: always() && runner.os == 'Linux'
+        run: |
+          SKIP=clippy,scrub nix develop -c pre-commit run --all-files --show-diff-on-failure
+          nix run --inputs-from . nixpkgs#ruff -- format --line-length 120 --diff valley || true
+          nix run --inputs-from . nixpkgs#ruff -- check valley || true

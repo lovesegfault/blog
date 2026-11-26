@@ -157,6 +157,28 @@ for theme in "light", "dark":
 print("themes toggled", run("""const root = document.documentElement; root.dataset.theme = '';
     return [1, 2, 3].map(() => (document.querySelector('.dusk').click(), root.dataset.theme || '-')).join()"""), flush=True)
 
+go(SITE + "/colophon/")
+print("feed", json.dumps(run(open(".github/verify/feed.js").read()), ensure_ascii=False), flush=True)
+
+for theme in "light", "dark":
+    go(SITE + "/colophon/")
+    run(f"localStorage.theme = '{theme}'; document.documentElement.innerHTML = `<body style='margin:0'><iframe src='/posts/zz-more/' style='border:0;width:390px;height:900px'></iframe>`")
+    time.sleep(3)
+    start = "const w = document.querySelector('iframe').contentWindow, d = w.document, marks = d.querySelectorAll('p > .ref a'), peek = d.querySelector('.peek');"
+    state = start + "return [peek.matches(':popover-open'), peek.textContent.slice(0, 12), [...d.querySelectorAll('.notes li')].map(it => it.textContent.slice(0, 5)).join(), d.activeElement.className || d.activeElement.hash, d.documentElement.scrollHeight].join(' | ')"
+    print("paint", theme, run(start + """const paint = (it, ...names) => names.map(name => w.getComputedStyle(it)[name]).join();
+        const inside = d.querySelector('.drawing:has(> img)');
+        return [paint(d.querySelector('[fill^=color-mix]'), 'fill', 'stroke'), paint(d.querySelector('.formula [fill^=color-mix]'), 'fill'),
+            paint(inside.shadowRoot.querySelector('path'), 'stroke'), inside.shadowRoot.querySelector('svg').getBoundingClientRect().width,
+            paint(d.querySelector('.diagram text'), 'fill'), paint(d.querySelector('figure > .photo img, figure > img'), 'backgroundImage')].join(' | ')"""))
+    save("more-" + theme)
+    for name, act in [("shut", ""), ("first", "marks[0].focus(); marks[0].click()"), ("second", "marks[1].focus(); marks[1].click()"),
+                      ("inner", "peek.querySelector('.ref a').click()"), ("hidden", "peek.hidePopover()"), ("again", "marks[0].click(); marks[0].click()"),
+                      ("scrolled", "w.scrollBy(0, 30)")]:
+        run(start + act)
+        time.sleep(1)
+        print("peek", name, run(state), flush=True)
+
 go(SITE + "/posts/notes-on-euclidean-spaces/")
 run("""document.querySelectorAll('link, .figure').forEach(e => e.remove());
     document.body.style.cssText = 'font: 20px serif; max-width: 40em'; document.querySelector('#gram-matrix-1, #gram-matrix').scrollIntoView()""")

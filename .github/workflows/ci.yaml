@@ -27,7 +27,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('flake.*', 'Cargo.*', '.cargo/**', 'crates/**') }}
       - name: nix-build
         run: |
-          nix copy --all --no-check-sigs --from "file://$HOME/built"
+          nix copy --no-check-sigs --from "file://$HOME/built" "$(nix eval --raw .#forno)" "$(nix eval --raw .#programs)" || true
           nix build -L
           nix copy --to "file://$HOME/built" .#forno .#programs
       - name: nix-flake-check

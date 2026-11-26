@@ -9,7 +9,9 @@ for (let width = 320; width < 1500; width += width < 700 ? 7 : 61) {
     if (!parts.length || !f.checkVisibility()) continue;
     if (parts.some((p, i) => i && (p.bottom < parts[i - 1].bottom - 1 || (p.bottom < parts[i - 1].bottom + 1 && p.left < parts[i - 1].right - 1)))) note('disorder', f, width);
     if (f.parentElement.matches('.display')) {
-      const lines = new Set(parts.map(p => Math.round(p.bottom))).size, fits = parseFloat(set.style.getPropertyValue('--wide')) * em + 3 < f.clientWidth;
+      const steps = parts.slice(1).map((p, i) => Math.abs(p.bottom - parts[i].bottom)), lines = 1 + steps.filter(it => it > 4).length;
+      const fits = (parseFloat(set.style.getPropertyValue('--wide')) + .3) * em + 1 < f.clientWidth;
+      if (steps.some(it => it > .3 && it <= 4)) note('uneven by ' + Math.max(...steps.filter(it => it <= 4)).toFixed(1), f, width);
       if (fits && lines > set.children.length) note('needless', f, width);
       if (f.scrollWidth > f.clientWidth) note('scrolls', f, width);
       if (parts.some(p => p.left < r(f).left - 1)) note('cut off', f, width);

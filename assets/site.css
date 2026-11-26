@@ -254,13 +254,14 @@ footer { --u: max(100vw / 1440, .5px); --ink: var(--foam); --dim: #b4c0ec; --cob
 .prose :is(sub, sup) { line-height: 0; }
 mark { border-radius: 2px; background: var(--wash); color: inherit; }
 
-.formula { position: relative; }
+.formula { position: relative; direction: ltr; unicode-bidi: isolate; }
+.formula > [hidden] { display: inline; }
 .formula b { font-weight: inherit; white-space: nowrap; }
 .formula svg { height: .5em; overflow: visible; fill: currentColor; }
 .formula i { font: 1em/0 var(--text); letter-spacing: calc(min(var(--apart), var(--most, 9em)) - .25em); }
 .formula use { pointer-events: none; }
 .formula ::selection { background: none; }
-.formula.copied > * { display: none !important; }
+.formula.copied { white-space: pre-wrap; > * { display: none !important; } }
 s .formula b { background: linear-gradient(currentColor 0 0) 0 53% / 100% .06em no-repeat; }
 .formula:has(:focus-visible) { outline: 2px solid var(--accent); }
 .display { display: flex; align-items: center; gap: .6em; margin: 1em 0; font-style: normal; font-weight: 400; }
@@ -272,7 +273,8 @@ s .formula b { background: linear-gradient(currentColor 0 0) 0 53% / 100% .06em 
   --inset: clamp(0px, 100cqw - var(--least) * 1em, var(--back, 0px) - var(--most));
   --room: max(1.1em, (100cqw - var(--inset) - var(--fold)) * 999);
   display: block;
-  max-width: calc(var(--wide) + .1em);
+  width: fit-content;
+  min-width: min(100%, var(--wide) + .1em);
   margin-inline: auto;
   padding-left: var(--inset);
   font-size: clamp(.75em, 100cqw / var(--least), 1em);
@@ -511,10 +513,12 @@ summary::-webkit-details-marker { display: none; }
 
 @media (forced-colors: active) {
   body { background-image: none; }
+  .picked > [aria-hidden] { background: Highlight; color: HighlightText; forced-color-adjust: none; }
 }
 
 @media print {
-  :root { --scheme: light !important; font-size: 12pt; }
+  :root { font-size: 12pt; }
+  :root, body { --scheme: light !important; }
   *, ::before { background: none !important; }
   .prose ul { list-style: square; }
   .prose hr { height: 0; border-top: 1px solid; }

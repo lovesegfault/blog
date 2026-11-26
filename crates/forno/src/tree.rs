@@ -134,6 +134,9 @@ impl Tree {
                         inside = spoken;
                     }
                     new.children = self.grow(document, inside, new.span);
+                    if new.tag == "math" {
+                        formula::arrange(&mut new, false);
+                    }
                     new.span = own.or(new.children.first().map(|first| first.span)).unwrap_or(around);
                     if let Some(HtmlNode::Tag(Tag::Start(first, _))) = element.children.first()
                         && let Some(Value::Dict(options)) = data(first)

@@ -14,8 +14,8 @@ use typst::engine::Engine;
 use typst::foundations::{Content, NativeElement, NativeRuleMap, SequenceElem, ShowFn, StyledElem, SymbolElem, Target};
 use typst::introspection::{Counter, Location, Locator, Tag, TagElem, TagFlags};
 use typst::layout::{
-    Abs, Axes, BlockBody, BlockElem, Em, Frame, FrameItem, HElem, InlineElem, InlineItem, Point, Rect, Region, Rel,
-    Size,
+    Abs, Axes, BlockBody, BlockElem, BoxElem, Em, Frame, FrameItem, HElem, InlineElem, InlineItem, Point, Rect, Region,
+    Rel, Size,
 };
 use typst::math::{AlignPointElem, AttachElem, ClassElem, EquationElem, LrElem, MidElem};
 use typst::model::LateLinkResolver;
@@ -27,6 +27,7 @@ use typst::visualize::{Color, Geometry, Paint, Shape};
 use typst_html::{FrameElem, HtmlAttr, HtmlElem};
 use unicode_math_class::MathClass;
 
+use crate::tree::Node;
 use crate::typeset::is_written;
 
 /// Typst's MathML, followed by the drawing.
@@ -70,7 +71,7 @@ pub const RULE: ShowFn<EquationElem> = |equation, engine, styles| {
     Ok(math
         .with_attr(HtmlAttr::constant("number"), number.plain_text())
         .with_attr(HtmlAttr::constant("text"), equation.body.plain_text())
-        .with_optional_attr(HtmlAttr::constant("source"), source.map(Into::into).or(alt))
+        .with_attr(HtmlAttr::constant("source"), source.map(Into::into).or(alt).unwrap_or(equation.body.plain_text()))
         .with_body(Some(body))
         .pack()
         .spanned(equation.body.traverse(&mut written).break_value().unwrap_or(Span::detached())))
@@ -83,14 +84,15 @@ fn written(part: Content) -> ControlFlow<Span> {
 /// Without its comments, and only if it says all there is to say.
 fn source(engine: &Engine, span: Span) -> Option<String> {
     use SyntaxKind::*;
-    fn bare(node: &SyntaxNode) -> String {
-        let own = if node.kind().is_trivia() { " " } else { node.leaf_text() };
-        node.children().fold(own.into(), |text, child| text + &bare(child))
+    fn bare(node: &SyntaxNode, around: SyntaxKind) -> String {
+        let blank = node.kind().is_trivia() && (around, node.kind()) != (Code, Space);
+        let own = if blank { " " } else { node.leaf_text() };
+        node.children().fold(own.into(), |text, child| text + &bare(child, node.kind()))
     }
     let file = engine.world.source(span.id()?).ok()?;
     let node = file.find(span).filter(|node| node.kind() == Equation)?;
     let mut around = successors(Some(&node), |node| node.parent());
-    around.all(|node| !matches!(node.kind(), Closure | ForLoop | WhileLoop)).then(|| bare(&node))
+    around.all(|node| !matches!(node.kind(), Closure | ForLoop | WhileLoop)).then(|| bare(&node, Markup))
 }
 
 // What comes after a mark. Lines end at the first of these that they can.
@@ -117,6 +119,7 @@ fn kind(part: &Content) -> u8 {
     match part.to_packed::<ClassElem>().map(|given| given.class).or(sign.and_then(default_math_class)) {
         _ if part.is::<LinebreakElem>() => LINE,
         _ if part.is::<AlignPointElem>() => SPACE,
+        _ if part.is::<BoxElem>() => OTHER,
         _ if part.is::<MidElem>() || sign.is_some_and(|sign| "⇐⇒⇔⟸⟹⟺→↔∴".contains(sign)) => ARROW,
         _ if part.to_packed::<TextElem>().is_some_and(|it| it.text.contains(char::is_alphabetic)) => WORDS,
         _ if sign.is_some_and(|sign| "∧∨".contains(sign)) => LOGIC,
@@ -183,6 +186,8 @@ struct Scribe<'a> {
     indent: f64,
     /// How far the pieces go when every line that can end does.
     reach: f64,
+    /// Of the line before.
+    bottom: f64,
     html: String,
 }
 
@@ -372,6 +377,9 @@ impl OutlineBuilder for Outline {
 /// As in the stylesheet.
 const INDENT: f64 = 1.1;
 
+/// What Typst leaves between lines, unless it is told otherwise.
+const LEADING: f64 = 0.65;
+
 /// Around the shape of a glyph, until the page is put together.
 const SHAPE: &str = "<x-shape>";
 
@@ -462,7 +470,9 @@ impl Scribe<'_> {
         let point = atoms.iter().position(|atom| atom.aligned);
         let point = point.or(atoms.iter().position(|atom| atom.cut == best)).unwrap_or(0);
         let hang = atoms[point].left;
-        let style = format!("--hang:{};--lead:{}", css(hang), css(hang - atoms[0].left));
+        let (top, bottom) = atoms.iter().fold((f64::MAX, f64::MIN), |(a, b), it| (a.min(it.top), b.max(it.bottom)));
+        let above = (top - replace(&mut self.bottom, bottom) - LEADING).max(0.0);
+        let style = format!("--hang:{};--lead:{};margin-top:{}", css(hang), css(hang - atoms[0].left), css(above));
         write!(self.html, r#"<span style="{style}">"#).unwrap();
         self.groups(<[_; 2]>::from(atoms.split_at_mut(point)).into_iter().filter(|side| !side.is_empty()), 0.0);
         self.html += "</span>";
@@ -470,19 +480,20 @@ impl Scribe<'_> {
     }
 }
 
+/// It takes the stylesheet to make sense of this, and to show it.
 pub fn draw<'a>(frame: &Frame, em: Abs, displayed: bool, links: Tracked<'a, LateLinkResolver<'a>>) -> String {
-    let mut scribe = Scribe { em, displayed, links, indent: 0.0, reach: 0.0, html: String::new() };
+    let mut scribe = Scribe { em, displayed, links, indent: 0.0, reach: 0.0, bottom: f64::MAX, html: String::new() };
     let (mut lines, wide) = (lines(frame, em, displayed), frame.width() / em);
     if !displayed {
         scribe.group(&mut lines[0]);
-        return format!(r#"<span aria-hidden="true">{}</span>"#, scribe.html);
+        return format!(r#"<span hidden aria-hidden="true">{}</span>"#, scribe.html);
     }
     let hang = lines.iter_mut().fold(0.0, |hang: f64, line| hang.max(scribe.line(line)));
     let aligned = lines.iter().all(|line| line[0].left < 0.2 || line.iter().any(|atom| atom.aligned));
     let fold = if aligned { wide.min((4.0 * hang).max(hang + scribe.reach)) } else { wide };
     let least = wide.min(hang.min(INDENT) + scribe.reach) + 0.1;
     let style = format!("--wide:{};--fold:{};--least:{least:.2}", css(wide), css(fold));
-    format!(r#"<span aria-hidden="true" style="{style}">{}</span>"#, scribe.html)
+    format!(r#"<span hidden aria-hidden="true" style="{style}">{}</span>"#, scribe.html)
 }
 
 /// A token of MathML, in characters that screen readers know.
@@ -495,14 +506,27 @@ pub fn spoken(text: &str) -> String {
     text.chars().map(|letter| plain.clone().find(|(from, _)| *from == letter).map_or(letter, |(_, to)| to)).collect()
 }
 
-/// What a class of Typst's stands for, since feeds cannot have its stylesheet.
-pub fn arranged(class: &str, displayed: bool) -> &str {
-    match class {
-        "multiline-equation" if displayed => r#" displaystyle="true""#,
-        "aligned" => r#" columnalign="right left right left" columnspacing="0""#,
-        "cases" | "left-align" => r#" columnalign="left""#,
-        "right-align" => r#" columnalign="right""#,
-        _ => "",
+/// Spells out what Typst leaves to a stylesheet, which feeds cannot have.
+pub fn arrange(node: &mut Node, displayed: bool) {
+    let inside = node.is_displayed();
+    node.children.iter_mut().for_each(|part| arrange(part, inside));
+    let class = |it: &mut Node| Some(it.attributes.extract_if(.., |(name, _)| name == "class").next()?.1);
+    if node.tag != "mtable" {
+        return;
+    }
+    let table = class(node).unwrap_or_default();
+    if displayed && table.starts_with("multiline") && node.get("displaystyle").is_none() {
+        node.attributes.push(("displaystyle".into(), "true".into()));
+    }
+    for (column, cell) in node.children.iter_mut().flat_map(|row| row.children.iter_mut().enumerate()) {
+        let side = match class(cell).as_ref().unwrap_or(&table).split('-').next() {
+            _ if table.ends_with("aligned") => ["right", "left"][column % 2],
+            Some("cases" | "left") => "left",
+            Some("right") => "right",
+            _ => continue,
+        };
+        let style = format!("text-align:{side};justify-items:{side};padding-{side}:0");
+        cell.attributes.extend([("columnalign".into(), side.into()), ("style".into(), style)]);
     }
 }
 

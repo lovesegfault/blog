@@ -5,7 +5,7 @@ use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail, ensure};
-use jiff::Zoned;
+use jiff::ZonedDateTime;
 use jiff::fmt::temporal::Pieces;
 use jiff::tz::Offset;
 use typst::foundations::OneOrMultiple;
@@ -34,8 +34,8 @@ pub struct Page {
     pub slug: String,
     pub url: String,
     /// Only posts have one.
-    pub date: Option<Zoned>,
-    pub updated: Option<Zoned>,
+    pub date: Option<ZonedDateTime>,
+    pub updated: Option<ZonedDateTime>,
     pub draft: bool,
     pub categories: Vec<String>,
     pub tags: Vec<String>,
@@ -49,11 +49,11 @@ pub struct Page {
 
 pub const NOT_FOUND: &str = "/404.html";
 
-fn zoned(when: String) -> Result<Zoned> {
+fn zoned(when: String) -> Result<ZonedDateTime> {
     let when = Pieces::parse(&when)?;
     ensure!(when.time_zone_annotation().is_none(), "a date takes an offset, as in `-03:00`");
     let zone = when.to_numeric_offset().unwrap_or(Offset::UTC).to_time_zone();
-    Ok(when.date().to_datetime(when.time().unwrap_or_default()).to_zoned(zone)?)
+    Ok(when.date().to_datetime(when.time().unwrap_or_default()).to_zoned_datetime(zone)?)
 }
 
 /// As GitHub and Hugo name their anchors.
@@ -144,7 +144,7 @@ pub fn sources(drafts: bool) -> Vec<PathBuf> {
 }
 
 fn now() -> String {
-    Zoned::now().strftime("\"%Y-%m-%dT%H:%M:%S%:z\"").to_string()
+    ZonedDateTime::now().strftime("\"%Y-%m-%dT%H:%M:%S%:z\"").to_string()
 }
 
 fn named(folder: &str, slug: &str) -> Option<PathBuf> {

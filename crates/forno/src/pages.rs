@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use collision::{Kind, Source};
-use jiff::Zoned;
+use jiff::ZonedDateTime;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 use mural::{HOME, LABELS, POST};
 
@@ -20,7 +20,7 @@ struct Head<'a> {
     description: &'a str,
     card: &'a str,
     feed: &'a str,
-    published: Option<&'a Zoned>,
+    published: Option<&'a ZonedDateTime>,
 }
 
 const BEFORE_PAINT: &str = r#"document.documentElement.classList.add("js");
@@ -78,12 +78,12 @@ fn links() -> Markup {
     }
 }
 
-fn day(date: &Zoned) -> Markup {
+fn day(date: &ZonedDateTime) -> Markup {
     html! { time datetime=(date.date()) { (date.strftime("%-d %B %Y")) } }
 }
 
 fn list(posts: &[&Article]) -> Markup {
-    let year = |post: &Article| post.page.date.as_ref().map(Zoned::year);
+    let year = |post: &Article| post.page.date.as_ref().map(ZonedDateTime::year);
     html! {
         ol.posts {
             @for group in posts.chunk_by(|a, b| year(a) == year(b)) {
@@ -312,7 +312,7 @@ pub fn feed(build: &Build, name: Option<&str>, url: &str, posts: &[&Article]) ->
     PreEscaped(feed.0.replace(|it| it < ' ' && !"\t\n\r".contains(it) || "\u{FFFE}\u{FFFF}".contains(it), ""))
 }
 
-pub fn sitemap(build: &Build, urls: &[(&str, Option<&Zoned>)]) -> Markup {
+pub fn sitemap(build: &Build, urls: &[(&str, Option<&ZonedDateTime>)]) -> Markup {
     html! {
         (XML)
         urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" {

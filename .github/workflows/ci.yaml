@@ -21,7 +21,7 @@ jobs:
         with:
           lfs: true
       - uses: DeterminateSystems/nix-installer-action@v23
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/built
           key: ${{ runner.os }}-${{ hashFiles('flake.*', 'Cargo.*', '.cargo/**', 'crates/**') }}

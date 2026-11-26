@@ -1,30 +1,31 @@
-+++
-title = "DRM Is Anti-Copyright"
-date = 2017-12-22T13:34:17Z
-draft = false
-tags = [ "drm", "intellectual", "property", "copyright", "law" ]
-categories = [ "essay" ]
-+++
+#import "/blog.typ": *
+
+#show: post.with(
+  title: [DRM Is Anti-Copyright],
+  date: "2017-12-22T13:34:17Z",
+  categories: "essay",
+  tags: ("drm", "intellectual", "property", "copyright", "law"),
+)
 
 In the Digital Era, copyright has become harder to enforce than ever before.
 Digital works are subject to copying without any quality degradation, which
-encourages piracy and can lead to market failure [[1, p.118]](#favale). While
-some optimists [[2, p.236]](#goldstein) claim that digital rights management
-(DRM) is a successful technology, protecting copyrights in the digital world,
-and safeguarding markets and creators alike, the truth is quite the opposite.
-Since current implementations of DRM unjustly and broadly harden access to
-copyrighted works, they represent a disconnect with the fundamental concepts of
-copyright, breaking with the Lockean principles for appropriation which are the
-bedrock for property rights. DRM should be an instrument to defend copyright,
-not hinder it, and therefore it should either be implemented such that it
-respects the rights of users and owners, or not at all.
+encourages piracy and can lead to market failure #link(<favale>)[[1, p.118]].
+While some optimists #link(<goldstein>)[[2, p.236]] claim that digital rights
+management (DRM) is a successful technology, protecting copyrights in the
+digital world, and safeguarding markets and creators alike, the truth is quite
+the opposite. Since current implementations of DRM unjustly and broadly harden
+access to copyrighted works, they represent a disconnect with the fundamental
+concepts of copyright, breaking with the Lockean principles for appropriation
+which are the bedrock for property rights. DRM should be an instrument to defend
+copyright, not hinder it, and therefore it should either be implemented such
+that it respects the rights of users and owners, or not at all.
 
 Intellectual works have always been bound to a physical medium. The Digital Era
 began when this changed, and copyrighted works transitioned into the virtual,
 making it possible for them to be copied freely and without degradation, which
-represents a grave threat to the rights of creators and to market stability [[1,
-p.117]](#favale). In response to this threat, and in an attempt to halt
-unwarranted copying of copyrighted material, copyright holders created DRM.
+represents a grave threat to the rights of creators and to market stability
+#link(<favale>)[[1, p.117]]. In response to this threat, and in an attempt to
+halt unwarranted copying of copyrighted material, copyright holders created DRM.
 Digital Rights Management aims to guarantee that certain digital content can
 only be used by someone insofar as the copyright owner allows them to.
 Practically, this means that DRM attempts to guarantee that the video being
@@ -50,32 +51,32 @@ with a reliable implementation of DRM after over 20 years of constant
 development, then DRM, at least as intended by them, is not achievable.
 
 According to John Locke, "The Labor of one's Body and the Work of his Hands, we
-may say, are properly his" [[3, p.287]](#locke). From this notion, that one
-appropriates something from the common by applying labor onto it, common law
+may say, are properly his" #link(<locke>)[[3, p.287]]. From this notion, that
+one appropriates something from the common by applying labor onto it, common law
 established the concept of property and the rights that come with it. Lockean
 property rights, however, don't protect just the laborer, be it an author or a
 hunter, but also the remaining public. While Locke grants the owner, and him
 alone, the rights of use, transfer, and exclusion of his property, it also gives
-the public rights to the remaining common so that the community can thrive [[1,
-p.119]](#favale). This falls from the idea that, according to Locke,
-appropriation is only valid insofar as it leaves "enough, and as good" [[3,
-p.291]](#locke) of the common to the community. As an example of this principle,
-we can imagine a gatherer who is nourished by the apples he picked in the woods.
-Nobody can deny that the apples are his, and yet when did they become his?
-According to Locke, if the first gathering did not make them the man's property,
-then nothing could; labor put a distinction between them (the apples) and the
-common [[3, p.288]](#locke).
+the public rights to the remaining common so that the community can thrive
+#link(<favale>)[[1, p.119]]. This falls from the idea that, according to Locke,
+appropriation is only valid insofar as it leaves "enough, and as good"
+#link(<locke>)[[3, p.291]] of the common to the community. As an example of this
+principle, we can imagine a gatherer who is nourished by the apples he picked in
+the woods. Nobody can deny that the apples are his, and yet when did they become
+his? According to Locke, if the first gathering did not make them the man's
+property, then nothing could; labor put a distinction between them (the apples)
+and the common #link(<locke>)[[3, p.288]].
 
 Intellectual property has a peculiar characteristic, unlike material property;
 it lacks extension (it is physically inexhaustible). Because of this, in order
 to apply Lockean principles to intellectual property, and show copying as being
 analogue to stealing, we must appeal to Hegel. In his work "Elements of the
 Philosophy of Right," Hegel will argue that property is fundamentally more than
-the result of one's labor; it is rather the expression of Man's personality [[4,
-p.84-88]](#hegel). It is unquestionable that when one composes a song or writes
-a book, he is expressing his personality; not only in the will to do the work
-(as would be the case of the gatherer) but also in the resulting work itself.
-This is to say that when Shakespeare writes a piece, his personality is
+the result of one's labor; it is rather the expression of Man's personality
+#link(<hegel>)[[4, p.84-88]]. It is unquestionable that when one composes a song
+or writes a book, he is expressing his personality; not only in the will to do
+the work (as would be the case of the gatherer) but also in the resulting work
+itself. This is to say that when Shakespeare writes a piece, his personality is
 expressed not only in the exercise of his will while writing, but also in the
 piece itself. With this, and drawing a parallel between Lockean and Hegelian
 philosophy, one can firmly state that intellectual property is just another form
@@ -87,7 +88,7 @@ creation, can harm him. Take, for example, a musician who composes not only for
 the sake of her own listening and pleasure, but also with the purpose of feeding
 herself by means of the royalties to her work. A bootleg copyist will
 undoubtedly harm her just as severely as if he had taken the physical sheet
-music from her, or stole the food she had bought [[5, p.1548]](#gordon).
+music from her, or stole the food she had bought #link(<gordon>)[[5, p.1548]].
 Therefore, in the same way, one could not eat of the gatherer's apples, for they
 were his property, one also cannot copy from others' intellectual creations, for
 they are also solely theirs. From this follows that there must be some form of
@@ -101,36 +102,36 @@ capitalism. Property rights grant the holder a range of privileges (transfer,
 use, and so on), but it also grants the public a set of complementary rights,
 namely some protection from a malicious party, as a rights holder can only
 constrain others from using his property insofar as that does not impair a
-community's ability to thrive [[5, p.1555-1560]](#gordon). Hence an individual's
-property should not harm the publics access to the common. Moreover, in Lockean
-theory the interests of the community must prevail over those of the individual
-when they clash [[1, p.120]](#favale), this reveals something fundamental, and
-often overlooked, about copyright, as Neil Netanel points out, "while copyright
-may operate in the market, copyright's fundamental goals are not of the market"
-[[6, p.341]](#netanel). Copyright, therefore, has goals which go beyond the
-market itself; in other words, it hopes to achieve things other than market
-safety and profit protection. Natanel goes on to claim that copyright is a
-vehicle of democracy, pointing once more towards interpreting copyright as
-protecting the public first, and the author second. Furthermore, the first
-copyright legislation, the Copyright Act 1710, had as its subtitle "An Act for
-the Encouragement of Learning ..." [[7]](#wortley), meaning that since its
-beginning copyright had the publics interest in mind above all else. With this
-it becomes clear that copyright goes far beyond both markets and authors,
-enlightening the fundamental flaw of DRM, which is its ignorance towards the
-rights of the remaining public.
+community's ability to thrive #link(<gordon>)[[5, p.1555-1560]]. Hence an
+individual's property should not harm the publics access to the common.
+Moreover, in Lockean theory the interests of the community must prevail over
+those of the individual when they clash #link(<favale>)[[1, p.120]], this
+reveals something fundamental, and often overlooked, about copyright, as Neil
+Netanel points out, "while copyright may operate in the market, copyright's
+fundamental goals are not of the market" #link(<netanel>)[[6, p.341]].
+Copyright, therefore, has goals which go beyond the market itself; in other
+words, it hopes to achieve things other than market safety and profit
+protection. Natanel goes on to claim that copyright is a vehicle of democracy,
+pointing once more towards interpreting copyright as protecting the public
+first, and the author second. Furthermore, the first copyright legislation, the
+Copyright Act 1710, had as its subtitle "An Act for the Encouragement of
+Learning ..." #link(<wortley>)[[7]], meaning that since its beginning copyright
+had the publics interest in mind above all else. With this it becomes clear that
+copyright goes far beyond both markets and authors, enlightening the fundamental
+flaw of DRM, which is its ignorance towards the rights of the remaining public.
 
 As previously outlined, Lockean philosophy constrains one's property to leave
-"enough and as good" [[3, p.291]](#locke) to the public. While here, "enough and
-as good" is referring to the common, by which Locke meant that which Nature
-provides us, this concept can easily be generalized to apply to the immaterial
-as well. Fundamentally, this means that in the same way there is a common of
-things, given to us by Nature, there is also a common of intangibles, ideas,
-that every individual must be able to use freely. As Gordon points out, "Our
-common encompasses not only our physical country but our culture as well" [[5,
-p.1555]](#gordon). An example of a non-physical common of ideas is public
-domain, which is composed of works that never were, or that no longer are,
-protected by copyright. It follows from this that no appropriation can be made
-of that which is in the common of ideas, and therefore no copyright can be
+"enough and as good" #link(<locke>)[[3, p.291]] to the public. While here,
+"enough and as good" is referring to the common, by which Locke meant that which
+Nature provides us, this concept can easily be generalized to apply to the
+immaterial as well. Fundamentally, this means that in the same way there is a
+common of things, given to us by Nature, there is also a common of intangibles,
+ideas, that every individual must be able to use freely. As Gordon points out,
+"Our common encompasses not only our physical country but our culture as well"
+#link(<gordon>)[[5, p.1555]]. An example of a non-physical common of ideas is
+public domain, which is composed of works that never were, or that no longer
+are, protected by copyright. It follows from this that no appropriation can be
+made of that which is in the common of ideas, and therefore no copyright can be
 claimed. Consider, for example, the happy birthday song. It is absurd to imagine
 that someone today could rightfully claim ownership of the melody and proceed to
 receive royalties from its use; the song is an integral part of American culture
@@ -175,7 +176,7 @@ who include anti-circumvention clauses, must be kept from damaging research and
 public discourse, and this protection must be guaranteed by law. Finally, and
 perhaps most importantly, any policy with the intent of reinforcing copyright
 should be limited to use cases where copyright interests are actually at stake
-[[8]](#felten).
+#link(<felten>)[[8]].
 
 The dawn of the Digital Era did not change the fundament of copyright law. As
 shown, both Lockean and Hegelian philosophies agree that copyright has first and
@@ -195,43 +196,44 @@ and change it as times change, truly are powerless, because they cannot
 think new thoughts," and no technology, no matter how lucrative, should take
 this power away from us, the people.
 
----
+#divider()
 
-<a name="favale"></a> 1. Favale, Marcella. "Death and Resurrection of copyright
-between Law and Technology." *Information & Communications Technology Law*, vol.
-23, no. 2, Apr. 2014, pp. 117–135., doi:10.1080/13600834.2014.925631.
++ Favale, Marcella. <favale> "Death and Resurrection of copyright between Law
+  and Technology." _Information & Communications Technology Law_, vol. 23, no.
+  2, Apr. 2014, pp. 117–135., doi:10.1080/13600834.2014.925631.
 
-<a name="goldstein"></a>2. Goldstein, Paul. "The Future of Copyright in a
-Digital Environment: Summary of Discussion," in *The Future of Copyright in a
-Digital Environment: Proceedings of the Royal Academy Colloquium* (Amsterdam,
-6-7 July 1995), Kluwer Law International, 1996.
++ Goldstein, Paul. <goldstein> "The Future of Copyright in a Digital
+  Environment: Summary of Discussion," in _The Future of Copyright in a Digital
+  Environment: Proceedings of the Royal Academy Colloquium_ (Amsterdam, 6-7 July
+  1995), Kluwer Law International, 1996.
 
-<a name="locke"></a>3. Locke, John. "Second Treatise." *Locke: Two Treatises of
-Government*, edited by Peter Laslett, Cambridge University Press, Cambridge,
-1988, pp. 265–428. Cambridge Texts in the History of Political Thought.
++ Locke, John. <locke> "Second Treatise." _Locke: Two Treatises of Government_,
+  edited by Peter Laslett, Cambridge University Press, Cambridge, 1988, pp.
+  265–428. Cambridge Texts in the History of Political Thought.
 
-<a name="hegel"></a>4. Hegel, Georg Wilhelm Friedrich. "Elements of the
-Philosophy of Right." Edited by Allen W. Wood. Translated by Hugh Barr Nisbet,
-Cambridge University Press, 2012.
++ Hegel, Georg Wilhelm Friedrich. <hegel> "Elements of the Philosophy of Right."
+  Edited by Allen W. Wood. Translated by Hugh Barr Nisbet, Cambridge University
+  Press, 2012.
 
-<a name="gordon"></a>5. Gordon, Wendy J. "A Property Right in Self-Expression:
-Equality and Individualism in the Natural Law of Intellectual Property." *The
-Yale Law Journal*, vol. 102, no. 7, 1993, pp. 1533–1609. JSTOR,
-[www.jstor.org/stable/796826](http://www.jstor.org/stable/796826).
++ Gordon, Wendy J. <gordon> "A Property Right in Self-Expression: Equality and
+  Individualism in the Natural Law of Intellectual Property." _The Yale Law
+  Journal_, vol. 102, no. 7, 1993, pp. 1533–1609. JSTOR,
+  #link("http://www.jstor.org/stable/796826")[www.jstor.org/stable/796826].
 
-<a name="netanel"></a>6. Netanel, Neil Weinstock, "Locating Copyright Within the
-First Amendment" Skein. *Stanford Law Review*, Vol. 54, October 2001. Available
-at SSRN: [www.ssrn.com/abstract=267848](http://www.ssrn.com/abstract=267848) or
-[www.dx.doi.org/10.2139/ssrn.267848](http://www.dx.doi.org/10.2139/ssrn.267848)
++ Netanel, Neil Weinstock, <netanel> "Locating Copyright Within the First
+  Amendment" Skein. _Stanford Law Review_, Vol. 54, October 2001. Available at
+  SSRN:
+  #link("http://www.ssrn.com/abstract=267848")[www.ssrn.com/abstract=267848] or
+  #link("http://www.dx.doi.org/10.2139/ssrn.267848")[www.dx.doi.org/10.2139/ssrn.267848]
 
-<a name="wortley"></a>7. Wortley, Edward. "Statute of Anne." *The Avalon
-Project: The Statute of Anne*; April 10, 1710,
-[avalon.law.yale.edu/18th_century/anne_1710.asp](http://avalon.law.yale.edu/18th_century/anne_1710.asp).
++ Wortley, Edward. <wortley> "Statute of Anne." _The Avalon Project: The Statute
+  of Anne_; April 10, 1710,
+  #link("http://avalon.law.yale.edu/18th_century/anne_1710.asp")[avalon.law.yale.edu/18th_century/anne_1710.asp].
 
-<a name="felten"></a>8. Felten, Edward W. "DRM and Public Policy."
-*Communications of the ACM*, vol. 48, no. 7, July 2005, p. 112. EBSCOhost,
-doi:10.1145/1070838.1070871.
++ Felten, Edward W. <felten> "DRM and Public Policy." _Communications of the
+  ACM_, vol. 48, no. 7, July 2005, p. 112. EBSCOhost,
+  doi:10.1145/1070838.1070871.
 
-<a name="rushdie"></a>9. Rushdie, Salman. "Excerpts From Rushdie's Address:
-1,000 Days 'Trapped Inside a Metaphor'." *The New York Times*, 12 Dec. 1991,
-[www.nytimes.com/books/99/04/18/specials/rushdie-address.html](http://www.nytimes.com/books/99/04/18/specials/rushdie-address.html).
++ #[Rushdie, Salman.] <rushdie> "Excerpts From Rushdie's Address: 1,000 Days
+  'Trapped Inside a Metaphor'." _The New York Times_, 12 Dec. 1991,
+  #link("http://www.nytimes.com/books/99/04/18/specials/rushdie-address.html")[www.nytimes.com/books/99/04/18/specials/rushdie-address.html].

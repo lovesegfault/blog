@@ -1,19 +1,20 @@
 //! Puts the site together.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::env;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use serde::Deserialize;
 
 use crate::article::Article;
-use crate::content::{self, Front, NOT_FOUND, address};
-use crate::math::{Macros, Math};
+use crate::content::{self, NOT_FOUND, Page, address};
+use crate::math::Math;
 use crate::output::{Cache, File, Files, Output, read, read_text, walk};
-use crate::style::Style;
+use crate::style::{self, Style};
+use crate::typeset::{Desk, Typst};
 use crate::{links, pages, photo};
 
 #[derive(Deserialize)]
@@ -27,7 +28,6 @@ pub struct Config {
     pub twitter: String,
     pub comments: String,
     pub farm: Farm,
-    pub macros: Macros,
     redirects: BTreeMap<String, String>,
 }
 
@@ -43,6 +43,9 @@ pub struct Tools {
     pub vendor: PathBuf,
     pub cache: Cache,
     pub math: Math,
+    typst: Typst,
+    /// Each page, as it was when it last made sense.
+    pages: Mutex<HashMap<PathBuf, Page>>,
 }
 
 pub struct Build<'a> {
@@ -51,6 +54,10 @@ pub struct Build<'a> {
     pub style: &'a Style,
     pub programs: &'a Path,
     pub output: Output,
+    pub desk: Desk<'a>,
+    /// The styles that formulas have asked for, and then the sheet that has them.
+    pub math: Mutex<BTreeSet<String>>,
+    pub math_sheet: OnceLock<String>,
     problems: Mutex<BTreeSet<String>>,
 }
 
@@ -76,15 +83,15 @@ pub struct Term<'a> {
 impl Tools {
     pub fn new() -> Result<Self> {
         let vendor: PathBuf = env::var_os("FORNO_VENDOR").context("run this inside `nix develop`")?.into();
-        let math = Math::new(read_text(&vendor.join("katex/katex.min.js"))?);
-        Ok(Self { vendor, cache: Cache(".cache/forno".into()), math })
+        let (math, typst) = (Math::new(&vendor), Typst::new(&vendor)?);
+        Ok(Self { vendor, cache: Cache(".cache/forno".into()), math, typst, pages: Mutex::default() })
     }
 }
 
 impl<'a> Taxonomy<'a> {
-    fn new([url, title, one]: [&'static str; 3], posts: &[&'a Article], of: fn(&Front) -> &[String]) -> Self {
+    fn new([url, title, one]: [&'static str; 3], posts: &[&'a Article], of: fn(&Page) -> &[String]) -> Self {
         let mut terms = BTreeMap::new();
-        for (post, name) in posts.iter().flat_map(|post| of(&post.page.front).iter().map(move |name| (*post, name))) {
+        for (post, name) in posts.iter().flat_map(|post| of(post.page).iter().map(move |name| (*post, name))) {
             let new = |slug: &String| Term { name, url: format!("{url}{slug}/"), posts: Vec::new() };
             terms.entry(address(name)).or_insert_with_key(new).posts.push(post);
         }
@@ -97,19 +104,27 @@ impl Build<'_> {
         self.problems.lock().unwrap().insert(problem);
     }
 
+    fn page(&self, path: &Path) -> Option<Page> {
+        let page = self.desk.set(path).and_then(|(document, problems)| {
+            self.problems.lock().unwrap().extend(problems);
+            document.map(|document| Page::new(path, &document)).transpose()
+        });
+        let page = page.inspect_err(|error| self.report(format!("{}: {error:#}", path.display())));
+        let mut pages = self.tools.pages.lock().unwrap();
+        pages.extend(page.ok().flatten().map(|page| (path.into(), page)));
+        pages.get(path).cloned()
+    }
+
     /// Publishes the files in `folder` as they are, but for what photos give away.
     fn copy(&self, folder: &Path, url: &str) -> Result<()> {
         for path in walk(folder)? {
             let name = path.strip_prefix(folder)?.to_string_lossy().into_owned();
-            let file = if name == "index.md" {
+            let file = if content::is_source(&path) {
                 continue;
             } else if photo::is_photo(&path) {
                 File::Made(photo::scrub(&read(&path)?).with_context(|| path.display().to_string())?)
             } else {
-                if photo::gives_away(&path)? {
-                    let how = "`exiftool -all=` or `ffmpeg -map_metadata -1`";
-                    self.report(format!("{}: this may say where it was made. Clean it with {how}", path.display()));
-                }
+                photo::discreet(&path).unwrap_or_else(|error| self.report(error.to_string()));
                 File::Copied(path)
             };
             self.output.add(&(links::resolve(url, "") + &name), file)?;
@@ -129,11 +144,16 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
     let config: Config = toml::from_str(&read_text(Path::new("site.toml"))?).context("site.toml")?;
     let output = Output::default();
     let style = Style::new(tools, programs, &output)?;
-    let build = Build { config: &config, tools, style: &style, programs, output, problems: Mutex::default() };
+    let (desk, (math, math_sheet, problems)) = (tools.typst.desk(), Default::default());
+    let build = Build { config: &config, tools, style: &style, programs, output, desk, math, math_sheet, problems };
     let add = |url: &str, page: maud::Markup| build.output.add(url, File::Made(page.0.into_bytes()));
 
-    let sources = content::load(drafts)?;
+    // Posts, newest first, and then the other pages.
+    let paths = content::sources(drafts);
+    let mut sources: Vec<Page> = paths.par_iter().filter_map(|path| build.page(path)).collect();
+    sources.sort_by(|a, b| (&b.date, &a.slug).cmp(&(&a.date, &b.slug)));
     let articles: Vec<Article> = sources.par_iter().map(|page| Article::new(&build, page)).collect();
+    build.math_sheet.set(style::math(&build)?).unwrap();
     let posts: Vec<&Article> = articles.iter().take_while(|article| article.page.date.is_some()).collect();
     let card = pages::site_card(&build, &posts)?;
 
@@ -150,8 +170,8 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
     let mut listed = vec![("/", None)];
     let found = sources.iter().filter(|page| page.url != NOT_FOUND);
     listed.extend(found.map(|page| (page.url.as_str(), page.updated.as_ref().or(page.date.as_ref()))));
-    let tags = Taxonomy::new(["/tags/", "Tags", "tag"], &posts, |front| &front.tags);
-    let categories = Taxonomy::new(["/categories/", "Categories", "category"], &posts, |front| &front.categories);
+    let tags = Taxonomy::new(["/tags/", "Tags", "tag"], &posts, |page| &page.tags);
+    let categories = Taxonomy::new(["/categories/", "Categories", "category"], &posts, |page| &page.categories);
     for (taxonomy, other) in [(&tags, &categories), (&categories, &tags)] {
         add(taxonomy.url, pages::terms(&build, taxonomy, other, &posts, &card)?)?;
         listed.push((taxonomy.url, None));
@@ -170,6 +190,8 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
 
     let files = build.output.into_files();
     let mut problems = build.problems.into_inner().unwrap();
-    problems.extend(links::check(&files));
+    if sources.len() == paths.len() {
+        problems.extend(links::check(&files));
+    }
     Ok(Site { files, problems })
 }

@@ -57,6 +57,7 @@
             {
               src = source [
                 ./assets
+                ./blog.typ
                 ./site.toml
                 ./static
                 (difference ./content ./content/drafts)
@@ -71,12 +72,19 @@
             '';
       in
       {
-        packages.default = site [ ];
+        packages = {
+          inherit forno programs;
+          default = site [ ];
+        };
 
         checks.specimen = site [ ./content/drafts/specimen ];
 
         devShells.default = pkgs.mkShell {
-          env.FORNO_VENDOR = vendor;
+          env = {
+            FORNO_VENDOR = vendor;
+            TYPST_FONT_PATHS = "${vendor}/fonts";
+            TYPST_PACKAGE_CACHE_PATH = "${vendor}/typst";
+          };
           packages = with pkgs; [
             (writeShellScriptBin "forno" ''exec cargo run --package forno -- "$@"'')
             cargo
@@ -84,7 +92,6 @@
             git-lfs
             lld
             ltex-ls-plus
-            markdownlint-cli
             nil
             nixfmt
             pre-commit
@@ -93,6 +100,8 @@
             rustc
             rustfmt
             statix
+            tinymist
+            typstyle
           ];
         };
       }

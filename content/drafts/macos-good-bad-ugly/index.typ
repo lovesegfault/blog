@@ -1,12 +1,19 @@
-+++
-title = "macOS: The Good, The Bad, and The Ugly"
-date = 2021-04-01T22:10:05-07:00
-tags = [ "macos", "linux", "macbook", "opinion" ]
-categories = [ "essay" ]
-draft = true
-+++
+#import "/blog.typ": *
 
-## Introduction
+#show: post.with(
+  title: [macOS: The Good, The Bad, and The Ugly],
+  date: "2021-04-01T22:10:05-07:00",
+  categories: "essay",
+  tags: ("macos", "linux", "macbook", "opinion"),
+)
+
+#let chunkwm = link.with("https://koekeishiya.github.io/chunkwm")
+#let portage = link.with("https://wiki.gentoo.org/wiki/Portage")
+#let thinkpad = link.with(
+  "https://www.lenovo.com/us/en/laptops/thinkpad/thinkpad-p/ThinkPad-P1/p/22WS2WPP101",
+)
+
+= Introduction
 
 As far as people's usual interaction with computers go, I think I've had a
 fairly unusual story, even for someone who works in the industry.
@@ -16,8 +23,10 @@ how much they hated computers. Unsurprisingly, then, I grew up with a desktop
 that was all-around garbage and running Windows on it, from XP to 7, was a
 painful endeavor.
 
-![A red Ubuntu 5.10 install CD](images/ubuntu-cd.jpg)
-Back in the day!
+#picture(
+  "images/ubuntu-cd.jpg",
+  alt: "A red Ubuntu 5.10 install CD",
+)[Back in the day!]
 
 Luckily, when I was around 7 we had Bring Your Father to School Day, and one of my
 classmates' father worked at Canonical and gave us all Ubuntu CDs. I installed
@@ -33,15 +42,17 @@ become quite comfortable with the Linux ecosystem over the years. About six
 months ago I started a new job and was given a MacBook Pro, and so this story
 began.
 
-## The Good
+= The Good
 
-I've always wanted to give macOS[^1] a try, it always looked beautiful and
-polished to me. On top of that, there were certain applications that I had been
-interested in trying for a while, and that only ran on macOS. Moreover, the
-MacBook Pro's always seemed to me like the golden standard in hardware, they
-were gorgeous and seemed to always work smoothly when I saw others use them.
-Over the years I had grown to like the MacBooks so much I almost fantasized
-about owning one.
+I've always wanted to give macOS#footnote[
+  Note that I am specifically referring to my experience using macOS High Sierra
+  and Mojave.
+] a try, it always looked beautiful and polished to me. On top of that, there
+were certain applications that I had been interested in trying for a while, and
+that only ran on macOS. Moreover, the MacBook Pro's always seemed to me like the
+golden standard in hardware, they were gorgeous and seemed to always work
+smoothly when I saw others use them. Over the years I had grown to like the
+MacBooks so much I almost fantasized about owning one.
 
 Six months in, I can say that some of my admiration was well deserved. Overall I
 find that the graphical experience on macOS is beautifully consistent, the
@@ -50,7 +61,7 @@ feel of macOS, especially Mojave with its comfortable Dark Mode.
 
 Another thing that I really liked was having the Numbers/Pages/Keynote software
 suit, it really does feel much better than LibreOffice. I wouldn't normally care
-much for Pages or Keynote, but I found that my usual $\LaTeX$ (and beamer)
+much for Pages or Keynote, but I found that my usual #tex(`\LaTeX`) (and beamer)
 workflow didn't work so well on macOS. Numbers is what I liked the most, not
 having to use LibreOffice Calc was great. Overall the suite felt polished and
 easy to use, except for the eventual annoying warnings about missing fonts on
@@ -78,16 +89,17 @@ nothing is perfect. Secondly Xcode; I barely used Xcode during my time with the
 MacBook, mostly because IDEs just aren't my thing, but the few times I tried it
 to test things out it seemed fine.
 
-Now to the hardware: it's fantastic. The MacBook Pro[^2] feels absolutely
-amazing when you hold it, and looks beautiful. I can confidently say this laptop
-has the best look & feel of anything I've ever owned or used, period. The
-keyboard, despite all the heavy criticism on the internet, was rather good in my
-opinion, even though the ultra-short travel distance does make typing over long
-periods of time a little exhausting. The backlight on the keyboard is nice, and
-the brightness levels are appropriate, and I find that they often hit the
-sweet-spot I needed for a variety of situations. The touchpad is truly
-phenomenal, and miles ahead of anything anyone else has to offer; I never
-thought a touchpad could feel this good. The screen is OK.
+Now to the hardware: it's fantastic. The MacBook Pro#footnote[Late 2017 model,
+13", no touch bar.] feels absolutely amazing when you hold it, and looks
+beautiful. I can confidently say this laptop has the best look & feel of
+anything I've ever owned or used, period. The keyboard, despite all the heavy
+criticism on the internet, was rather good in my opinion, even though the
+ultra-short travel distance does make typing over long periods of time a little
+exhausting. The backlight on the keyboard is nice, and the brightness levels are
+appropriate, and I find that they often hit the sweet-spot I needed for a
+variety of situations. The touchpad is truly phenomenal, and miles ahead of
+anything anyone else has to offer; I never thought a touchpad could feel this
+good. The screen is OK.
 
 Another note on hardware that I really feel deserves its own section is audio,
 because it's phenomenal. It is absolutely amazing to me that a laptop this thin
@@ -98,7 +110,7 @@ To close up this section, I hope I've made it clear that the MacBook isn't a
 'steaming pile of garbage' as many on the Internet claim, there's a lot to love
 here.
 
-## The Bad
+= The Bad
 
 Unfortunately, the MacBook Pro, and macOS, are far from perfect, and there are a
 few reasons I ultimately chose to leave it for a different machine.
@@ -111,7 +123,11 @@ share (with FTP) and it just did not work at all, and so many other small things
 just felt clunky and bothersome that I've grown to dread it. On that note, what
 is this absolute madness of having Finder always open and making it impossible
 to close? I probably need Finder about 1% of the time, why should I have it
-constantly open and cluttering my application switcher?[^3]
+constantly open and cluttering my application switcher?#footnote[
+  I know I can disable that and make it closable, and I have, but still it's
+  hidden in some obscure setting that must be enabled through some terminal
+  command, what is this, GNOME?
+]
 
 This brings me to application management on macOS, which is by far the thing I
 hate the most about it, it's trash; full stop. macOS is the clunkiest, slowest,
@@ -158,9 +174,9 @@ that I don't get.
 Back to our scheduled program, let's talk about window management in macOS; it's
 also trash. I don't know what happened at Apple that caused them to have a
 deathly fear of "snapping" windows, but this much needed feature is all but
-missing from it, even Windows gets this right! I had to buy a $0.99 app called
+missing from it, even Windows gets this right! I had to buy a \$0.99 app called
 Magnet (which is great) to get a minimally usable environment out of macOS.
-Coming from a tiling window manager (Sway) I tried to use [chunkwm][chunkwm] for
+Coming from a tiling window manager (Sway) I tried to use #chunkwm[chunkwm] for
 a while but found it way too buggy and weird.
 
 This leads us to package management on macOS, there are basically two kosher
@@ -170,7 +186,7 @@ a clunky UX. HomeBrew is macOS' third-party CLI package manager and I rate it a
 solid 'meh.' I find that building the packages yourself, as opposed to
 downloading them from the binary cache, is a bit of a second class citizen, as
 well as the (in)ability to customize packages. It's written in Ruby, it's a bit
-slow, but still faster than [Portage][portage]. Mostly, I just find having to
+slow, but still faster than #portage[Portage]. Mostly, I just find having to
 use two distinct package management solutions pretty awkward, and I found myself
 multiple times wondering whether I installed something through Brew or through
 some DMG.
@@ -236,7 +252,7 @@ months I've owned this machine, it has made me absolutely hate using my computer
 for the most part. It got to a point where I would have macOS solely running
 VMWare with Linux on it.
 
-## The Ugly
+= The Ugly
 
 Honestly there is not much to say here, one thing the MacBook Pro and macOS get
 right is looks. Most of the OS looks great, except for some minor exceptions I
@@ -247,7 +263,7 @@ Where other laptops struggle to make thin, beautiful laptops that look modern,
 Apple succeeds. While Linux desktop environments lag behind on their look &
 feel, macOS succeeds.
 
-## Conclusion
+= Conclusion
 
 If not for the major flaws I outlined, the MacBook Pro would be an absolutely
 killer offering in the "pro-market." I find it to be a tremendous shame that
@@ -257,12 +273,14 @@ deterrent of the MacBook's potential, I find that it's just unusable for me, and
 the inability to just switch to Linux makes the entire laptop kind of useless.
 
 As for me, I am about to end my adventure through the world of Macs and going to
-a [Thinkpad P1][thinkpad][^4]. I think it's a much better suited machine for my
-needs both software (Linux) and hardware (compiling) wise. I am a bit sad to let
-go off the MacBook however, I did like a lot about it, but it just wasn't for
-me.
+a #thinkpad[Thinkpad P1]#footnote[
+  With a Xeon E-2176M, Quadro P2000, 4K screen, 32GB of DDR4, and a 1TB NVME
+  SSD.
+]. I think it's a much better suited machine for my needs both software (Linux)
+and hardware (compiling) wise. I am a bit sad to let go off the MacBook however,
+I did like a lot about it, but it just wasn't for me.
 
-## Afterthoughts
+= Afterthoughts
 
 I wonder whether my criticisms are perhaps ill-founded or unwarranted, since I
 made the unusual switch of a highly customized and comfortable Linux environment
@@ -271,16 +289,3 @@ some of the points I raised are independent of that and valid regardless of it.
 
 Also, I hope I do not come off as an Apple or MacBook hater, I really wanted to
 love this machine and to love macOS, I just couldn't.
-
-[^1]: Note that I am specifically referring to my experience using macOS High
-    Sierra and Mojave.
-[^2]: Late 2017 model, 13", no touch bar.
-[^3]: I know I can disable that and make it closable, and I have, but still it's
-    hidden in some obscure setting that must be enabled through some terminal
-    command, what is this, GNOME?
-[^4]: With a Xeon E-2176M, Quadro P2000, 4K screen, 32GB of DDR4, and a 1TB NVME
-    SSD.
-
-[chunkwm]: https://koekeishiya.github.io/chunkwm
-[portage]: https://wiki.gentoo.org/wiki/Portage
-[thinkpad]: https://www.lenovo.com/us/en/laptops/thinkpad/thinkpad-p/ThinkPad-P1/p/22WS2WPP101

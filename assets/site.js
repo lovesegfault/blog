@@ -328,4 +328,4 @@ const scrollers = new ResizeObserver((entries) => {
     else target.removeAttribute("tabindex");
   }
 });
-$$(".lines, .katex-display, .table, .diagram").forEach((scroller) => scrollers.observe(scroller));
+$$(".lines, .display > .formula, .table").forEach((scroller) => scrollers.observe(scroller));

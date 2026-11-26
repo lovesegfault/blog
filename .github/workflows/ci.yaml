@@ -12,8 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: DeterminateSystems/nix-installer-action@v23
-      - name: markdownlint
-        run: nix run --inputs-from . nixpkgs#markdownlint-cli -- README.md content
       - name: rustfmt
         run: nix shell --inputs-from . nixpkgs#{cargo,rustfmt} -c cargo fmt --all --check
   build:
@@ -23,8 +21,14 @@ jobs:
         with:
           lfs: true
       - uses: DeterminateSystems/nix-installer-action@v23
-      - uses: DeterminateSystems/magic-nix-cache-action@v15
+      - uses: actions/cache@v5
+        with:
+          path: ~/built
+          key: ${{ runner.os }}-${{ hashFiles('flake.*', 'Cargo.*', '.cargo/**', 'crates/**') }}
       - name: nix-build
-        run: nix build -L
+        run: |
+          nix copy --all --no-check-sigs --from "file://$HOME/built"
+          nix build -L
+          nix copy --to "file://$HOME/built" .#forno .#programs
       - name: nix-flake-check
         run: nix flake check -L

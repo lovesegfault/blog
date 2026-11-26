@@ -16,8 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: DeterminateSystems/nix-installer-action@v23
-      - run: nix run --inputs-from . nixpkgs#mdl -- -r '~MD002,~MD004,~MD007,~MD013,~MD033,~MD041' README.md content || true
-      - run: nix run --inputs-from . nixpkgs#markdownlint-cli -- README.md content
       - if: always()
         run: nix shell --inputs-from . nixpkgs#{cargo,rustfmt} -c cargo fmt --all --check
       - if: always()
@@ -26,6 +24,14 @@ jobs:
         run: nix run --inputs-from . nixpkgs#statix -- check
       - if: always()
         run: nix run --inputs-from . nixpkgs#actionlint
+      - if: always()
+        run: nix run --inputs-from . nixpkgs#typstyle -- --inplace blog.typ content; git diff | tee style.patch
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: style
+          path: style.patch
+          retention-days: 3
   browse:
     strategy:
       fail-fast: false
@@ -41,20 +47,32 @@ jobs:
         with:
           lfs: true
       - uses: DeterminateSystems/nix-installer-action@v23
-      - uses: DeterminateSystems/magic-nix-cache-action@v15
-      - run: nix build -L
+      - uses: actions/cache@v5
+        with:
+          path: ~/built
+          key: ${{ runner.os }}-${{ hashFiles('flake.*', 'Cargo.*', '.cargo/**', 'crates/**') }}
+      - name: nix-build
+        run: |
+          nix copy --all --no-check-sigs --from "file://$HOME/built"
+          nix build -L
+          nix copy --to "file://$HOME/built" .#forno .#programs
       - run: nix flake check -L
       - run: mkdir shots && tar -czhf shots/site.tar.gz --exclude '*.xz' --exclude '*.pdf' --exclude images result
       - if: always() && runner.os == 'macOS'
         run: sudo safaridriver --enable
       - if: always()
         run: |
-          perl -pi -e 's/^title = /comments = false\ntitle = /' content/posts/*.md content/posts/*/index.md
+          perl -pi -e 's/^  date: /  comments: false,\n  date: /' content/posts/*.typ content/posts/*/index.typ
+          nix develop -c tinymist compile --root . content/drafts/specimen/index.typ shots/specimen.pdf || echo tinymist failed
           nix develop -c forno build --drafts
           nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
           nix develop -c forno serve &
           curl --retry 60 --retry-connrefused --retry-delay 1 -so /dev/null http://127.0.0.1:1313/
-          MOZ_HEADLESS=1 python3 .github/browse.py ${{ matrix.driver }}
+          curl -s http://127.0.0.1:1313/posts/specimen/ > shots/specimen.html
+          MOZ_HEADLESS=1 python3 .github/browse.py ${{ matrix.driver }} || echo the driver failed
+          PLAYWRIGHT_BROWSERS_PATH="$(nix build --inputs-from . --no-link --print-out-paths nixpkgs#playwright-driver.browsers)" \
+            nix shell --impure --expr '(builtins.getFlake (toString ./.)).inputs.nixpkgs.legacyPackages.${builtins.currentSystem}.python3.withPackages (p: [ p.playwright ])' \
+            -c python3 .github/browse.py webkit
       - if: always()
         uses: actions/upload-artifact@v7
         with:

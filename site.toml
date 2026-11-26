@@ -12,9 +12,6 @@ comments = "lovesegfault/blog"
 at = "22° 02′ 46.2″ S 43° 02′ 38.2″ W"
 story = "/posts/home/"
 
-# TeX macros for every page. A page can add its own in the same way.
-[macros]
-
 [redirects]
 "/posts/" = "/"
 "/drafts/" = "/"

@@ -1,22 +1,29 @@
-+++
-title = "My New iPhone Sucks"
-date = 2017-12-20T11:12:17Z
-tags = [ "iphone", "apple", "opinion" ]
-categories = [ "essay" ]
-+++
+#import "/blog.typ": *
 
-![Half an apple, going brown](images/rotten-apple.jpg)
+#show: post.with(
+  title: [My New iPhone Sucks],
+  date: "2017-12-20T11:12:17Z",
+  categories: "essay",
+  tags: ("iphone", "apple", "opinion"),
+)
+
+#let oxygen-os = link.with("https://en.wikipedia.org/wiki/OxygenOS")
+#let macos-flaw = link.with(
+  "https://www.wired.com/story/macos-high-sierra-hack-root/",
+)
+
+#image("images/rotten-apple.jpg", alt: "Half an apple, going brown")
 
 I have always been a proud and happy iPhone user. My first smartphone was an
 iPhone 3G and, although I had owned a couple Motorola flip-phones before that, I
-consider it to be the first phone I *really* used. I had no complaints; from
+consider it to be the first phone I _really_ used. I had no complaints; from
 when I first got it circa 2008 to when I decommissioned it in favor of the
 iPhone 5, some 4 years later, it worked fairly well. Sure, towards the end of
 its term the battery life sucked, I couldn't run some of the newer apps, and the
-camera looked like a disabled potato; but it worked. The apps that I *could*
+camera looked like a disabled potato; but it worked. The apps that I _could_
 run, a combination of Skype, Google Maps (back than a built-in), Music, and
 believe it or not, Phone, ran fairly well despite the age of the device. The
-point is, I had, at a point, a 3-4 year old phone that *worked*, I only ever
+point is, I had, at a point, a 3-4 year old phone that _worked_, I only ever
 replaced it when it fatefully died after being mistaken for a shoyu tray in a
 dimly lit Japanese restaurant.
 
@@ -26,8 +33,8 @@ worked great in that period, it was well built and I enjoyed using it. Although
 I never really owned other Apple products if not the iPhone, I had grown a
 passive admiration for them. Their products were inarguably more expensive than
 most competitors' (as is still the case), but they looked, both in software and
-hardware, great and they *lasted*. Also, in 2012, and dramatically more so in
-2008, the Android contenders were, in my opinion *absolutely hideous*. I hated
+hardware, great and they _lasted_. Also, in 2012, and dramatically more so in
+2008, the Android contenders were, in my opinion _absolutely hideous_. I hated
 the Android UI/UX and I hated the looks of the phones even more. This all made
 the choice of the iPhone 5 a nobrainer, specially since I had the money (not a
 factor to be overlooked).
@@ -46,8 +53,10 @@ made the picture quality simply horrible. The battery life absolutely sucked
 about 3-4 years in, and around that time too the lightning connector became
 really finicky.
 
-![Papers on a desk, with dark specks scattered over the picture](images/bad-image.jpg)
-Look at that dirt!
+#picture(
+  "images/bad-image.jpg",
+  alt: "Papers on a desk, with dark specks scattered over the picture",
+)[Look at that dirt!]
 
 Despite all that, the phone worked. I carried a powerbank around to make up for
 the short battery life and, since I was never much of a phone photographer
@@ -66,9 +75,9 @@ expensive than some similar options, but the quality paid off. That happiness
 didn't last though.
 
 Fast forward to today, a mere 8 months after buying the iPhone 7, and I find it
-borderline unusable. The phone is slow, I mean *really* slow. The apps I use
+borderline unusable. The phone is slow, I mean _really_ slow. The apps I use
 most frequently, Whatsapp and Snapchat, are so buggy and slow it drives me
-insane. It's almost as if doing virtually *anything* equates to running Crysis
+insane. It's almost as if doing virtually _anything_ equates to running Crysis
 in the background, the animations are choppy, input has high latency, it's truly
 dreadful. Now, just to reiterate, I'm not doing 4K video editing and
 complaining, I'm sending messages and pictures of my dog, and even that is just
@@ -80,17 +89,14 @@ this week and try and get it replaced, because it has really begun to annoy me.
 This is, to me, the break of a trust relationship between me and Apple. In this
 relationship, I agreed to pay a premium for the iPhone, and Apple agreed to
 provide me with a great experience; they clearly have not held their part of the
-bargain, and neither will I from hereon after. Android phones have come a *long*
+bargain, and neither will I from hereon after. Android phones have come a _long_
 way. They look great, and the UI is now extremely beautiful, specially some
-variants like One Plus' [*Oxygen OS*][oxygen-os].
+variants like One Plus' #oxygen-os[_Oxygen OS_].
 Moreover, the recent FaceID flop (Unrelated Chinese coworkers being able to
 unlock the others' phone, masks fooling it, and other dramatic flaws), together
-with the absolutely staggering [macOS root-flaw][macos-flaw] have made
+with the absolutely staggering #macos-flaw[macOS root-flaw] have made
 me lose faith in Apple as a company, at least for now. I'm not happy to be
 leaving the iPhone and iOS behind, when they worked it was an absolutely dreamy
 user experience, nor am I to settling on not getting a nice MacBook for work;
 alas there's not much else to be done when the quality of Apple's products has
 sunk so low.
-
-[oxygen-os]: https://en.wikipedia.org/wiki/OxygenOS
-[macos-flaw]: https://www.wired.com/story/macos-high-sierra-hack-root/

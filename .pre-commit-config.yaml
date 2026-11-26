@@ -26,12 +26,11 @@ repos:
     pass_filenames: false
     description: Nix code linter
     id: statix
-  - id: markdownlint
-    name: Markdownlint
-    description: Run markdownlint on your Markdown files
-    entry: markdownlint
+  - id: typstyle
+    name: typstyle
+    entry: typstyle --inplace
     language: system
-    files: \.(md|mdown|markdown)$
+    files: \.typ$
   - id: rustfmt
     name: rustfmt
     entry: cargo fmt --all

@@ -120,7 +120,7 @@ fn letters(fonts: &Options, line: &str) -> Markup {
 fn wrap(fonts: &Options, title: &str) -> (usize, Vec<String>) {
     let fits = |size, line: &str| {
         let text = drawing(fonts, html! { text style=(roman(size)) { (letters(fonts, line)) } });
-        text.is_ok_and(|text| text.root().abs_bounding_box().width() <= 560.0)
+        text.is_ok_and(|text| text.root().abs_bounding_box().is_none_or(|it| it.width() <= 560.0))
     };
     let set = |size| {
         let mut lines: Vec<String> = Vec::new();

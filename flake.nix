@@ -118,6 +118,15 @@
             typstyle
           ];
         };
+
+        devShells.valley = pkgs.mkShellNoCC {
+          packages = [
+            (pkgs.python3.withPackages (it: [
+              it.numpy
+              it.rasterio
+            ]))
+          ];
+        };
       }
     );
 }

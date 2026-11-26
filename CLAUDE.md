@@ -65,6 +65,8 @@ These are written in two places, and change together:
 | What the site is made of | `SOURCES` in `site.rs` and `site` in `flake.nix`        |
 | What it is made with     | `Tools::new` in `site.rs` and `env` in `flake.nix`      |
 | The names of font files  | `nix/fonts.nix`, `style.rs` and `figure.rs`             |
+| Where the maps were cut  | `survey.py` and `draw.py`                               |
+| The farm and the glazes  | `draw.py`, and `site.toml` or `glaze.rs`                |
 | What posts can use       | `blog.typ`, the README and the specimen                 |
 
 ## The stylesheet and the script
@@ -98,6 +100,10 @@ ids and `index.xml` should only differ where that was the point.
 - **A language.** Its `arborium-*` crate in `crates/forno/Cargo.toml`, and a line
   in `highlight.rs`.
 - **A Typst package or a font.** `typst` in `flake.nix`, or `nix/fonts.nix`.
+- **The valley.** `nix develop .#valley -c python valley/draw.py` writes
+  `assets/valley.svg`. Run it untouched first: if the beds move, numpy changed
+  its numbers, and an older `flake.lock` has them. `survey.py` says where the
+  maps came from. A larger area takes more of them, and moves the beds too.
 - **Large files.** `.gitattributes` sends pictures, videos and whatever is under
   `images` or `files` to LFS. `assets` stays out of it.
 

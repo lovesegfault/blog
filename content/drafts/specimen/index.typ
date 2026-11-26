@@ -17,8 +17,8 @@ Everything a post can have, to copy from and to check the design against. This
 page is a draft on purpose.#footnote[
   Anything under `content/drafts` is only ever seen in the preview.
 ] Text can be _slanted_, *strong*, #strike[struck], #highlight[marked] or
-`code`. It can link to #link("/about/")[a page], to #typst[an address that was
-given a name], or to a section such as @pictures.
+`code`. It can link to #link("/about/")[a page], to #typst[a named address], or
+to a section such as @pictures.
 
 = Code
 

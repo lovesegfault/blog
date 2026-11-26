@@ -58,9 +58,10 @@ The IO of the Nspire is poor. As you can see in the image above, the TI has one
 mini USB port (left) and one non-standard connector (right) used for their
 Wi-Fi add-on. Since the calculator's keyboard is painful to type on, I
 recommend you get a #hub[USB hub] to connect a keyboard and the USB drive.
-Since the calculator solely has mini B, you will need a #miniotg[Mini-B OTG USB
-cable] to connect your hub to the calculator. You'll also need a USB
-drive, since the internal 100MB isn't enough to store Debian's filesystem.
+Since the calculator solely has mini B, you will need a
+#miniotg[Mini-B OTG USB cable] to connect your hub to the calculator. You'll
+also need a USB drive, since the internal 100MB isn't enough to store Debian's
+filesystem.
 
 = Setting up the drive
 

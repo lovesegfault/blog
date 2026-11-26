@@ -16,10 +16,11 @@ procrastination, I'm also on a 5 hour flight with no Wi-Fi, so this will at
 least provide me with some form of entertainment!
 
 Since I'm blessed enough to work full-time using Rust I end up having two
-separate sets of goals for Rust, one from the point of view of #stcg[Standard
-Cognition] (Sc) as a company that is committed to Rust, and another as
-someone who likes to work on projects in Rust in his free time. I'll separate
-both, and try to not jumble my wishes for Standard and my personal ones.
+separate sets of goals for Rust, one from the point of view of
+#stcg[Standard Cognition] (Sc) as a company that is committed to Rust, and
+another as someone who likes to work on projects in Rust in his free time. I'll
+separate both, and try to not jumble my wishes for Standard and my personal
+ones.
 
 = Standard Cognition & Rust in 2020
 

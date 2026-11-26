@@ -24,8 +24,8 @@ $RR^n$:
 
 Let $V$ be a real vector space. A form or real function
 $
-  inner(dot, dot) colon V times V &-> RR \
-  (x, y) &|-> inner(x, y)
+  inner(dot, dot) colon V times V & -> RR \
+                           (x, y) & |-> inner(x, y)
 $
 is said to be an _inner product_ if, for all $x, y, z in V$ and all
 $alpha in RR$,
@@ -43,16 +43,16 @@ A real linear space $V$ equipped with an inner product is called an (real)
 + Usual inner product in $RR^n$
   - $RR^2$
     $
-      inner(x, y) &= norm(x) norm(y) cos theta \
-      &= x_1 y_1 + x_2 y_2 quad "in" RR^2
+      inner(x, y) & = norm(x) norm(y) cos theta \
+                  & = x_1 y_1 + x_2 y_2 quad "in" RR^2
     $
     where $theta in [0, pi]$ is the angle between the vectors $x$ and $y$. Note
     that the norm of the vector $x$ satisfies
     $ norm(x)^2 = inner(x, x) $
   - $RR^n$
     $
-      inner(x, y) &= x_1 y_1 + x_2 y_2 + dots.c + x_n y_n \
-      inner(x, y) &= y^T x = x^T y
+      inner(x, y) & = x_1 y_1 + x_2 y_2 + dots.c + x_n y_n \
+      inner(x, y) & = y^T x = x^T y
     $
 + Another inner product in $RR^2$
   - *Exercise.* Determine the circumference $C$ of radius $1$ and centered at
@@ -105,8 +105,8 @@ An inner product in $MM_(2 times 2) (RR)$.
 
 For all matrices $A, B in MM_(2 times 2) (RR)$ we define
 $
-  inner(A, B) &= tr(B^T A) \
-  &= sum_(i, j = 1)^2 a_(i j) b_(i j)
+  inner(A, B) & = tr(B^T A) \
+              & = sum_(i, j = 1)^2 a_(i j) b_(i j)
 $
 with $A = [a_(i j)]$ and $B = [b_(i j)]$#footnote[
   Note that $tr(B^T A) = tr(A^T B)$, which allows us to define
@@ -121,14 +121,14 @@ $A |-> (A)_(B_c)$ between $MM_(2 times 2) (RR)$ and $RR^4$
 == Proof of the triangle inequality
 
 $
-  norm(x + y)^2 &= inner(x + y, x + y) \
-  &= inner(x, x) + 2 inner(x, y) + inner(y, y) \
-  &= norm(x)^2 + 2 inner(x, y) + norm(y)^2
-  wide ("Inner product in terms of the norm") \
-  &<= norm(x)^2 + 2 abs(inner(x, y)) + norm(y)^2 \
-  &<= norm(x)^2 + 2 norm(x) norm(y) + norm(y)^2
-  wide ("Cauchy-Schwartz inequality") \
-  &= (norm(x) + norm(y))^2
+  norm(x + y)^2 & = inner(x + y, x + y) \
+                & = inner(x, x) + 2 inner(x, y) + inner(y, y) \
+                & = norm(x)^2 + 2 inner(x, y) + norm(y)^2
+                  wide ("Inner product in terms of the norm") \
+                & <= norm(x)^2 + 2 abs(inner(x, y)) + norm(y)^2 \
+                & <= norm(x)^2 + 2 norm(x) norm(y) + norm(y)^2
+                  wide ("Cauchy-Schwartz inequality") \
+                & = (norm(x) + norm(y))^2
 $
 
 Where
@@ -142,21 +142,21 @@ Let $V$ be a real euclidean space, and $B = (b_1, b_2, dots, b_n)$ a basis of
 $V$. With $x, y in V$ such that $x_B = (alpha_1, alpha_2, dots, alpha_n)$ and
 $y_B = beta_1, beta_2, dots, beta_n$, we have
 $
-  inner(x, y) &= inner(
-    alpha_1 b_1 + alpha_2 b_2 + dots.c + alpha_n b_n,
-    beta_1 b_1 + beta_2 b_2 + dots.c + beta_n b_n
-  ) \
-  &= mat(beta_1, beta_2, dots, beta_n)
-  underbrace(
-    mat(
-      inner(b_1, b_1), inner(b_2, b_1), dots, inner(b_n, b_1);
-      inner(b_1, b_2), inner(b_2, b_2), dots, inner(b_n, b_2);
-      dots.v;
-      inner(b_1, b_n), inner(b_2, b_n), dots, inner(b_n, b_n);
-    ),
-    G
-  )
-  vec(alpha_1, alpha_2, dots.v, alpha_n)
+  inner(x, y) & = inner(
+                  alpha_1 b_1 + alpha_2 b_2 + dots.c + alpha_n b_n,
+                  beta_1 b_1 + beta_2 b_2 + dots.c + beta_n b_n
+                ) \
+              & = mat(beta_1, beta_2, dots, beta_n)
+                underbrace(
+                  mat(
+                    inner(b_1, b_1), inner(b_2, b_1), dots, inner(b_n, b_1);
+                    inner(b_1, b_2), inner(b_2, b_2), dots, inner(b_n, b_2);
+                    dots.v;
+                    inner(b_1, b_n), inner(b_2, b_n), dots, inner(b_n, b_n);
+                  ),
+                  G
+                )
+                vec(alpha_1, alpha_2, dots.v, alpha_n)
 $
 
 Therefore, given an inner product in $V$ and a basis $B$, it is possible to
@@ -202,8 +202,8 @@ Example of complex euclidean space: usual inner product in $CC^n$.
 
 Let $V$ be a complex vector space. A complex function or form
 $
-  inner(dot, dot) colon V times V &-> CC \
-  (x, y) &|-> inner(x, y)
+  inner(dot, dot) colon V times V & -> CC \
+                           (x, y) & |-> inner(x, y)
 $
 is said to be an *inner product* if, for all $x, y, z in V$ and all
 $alpha in CC$
@@ -251,21 +251,21 @@ basis of $V$. With $x, y in V$ such that
 $x_B = (alpha_1, alpha_2, dots, alpha_n)$ and
 $y_B = (beta_1, beta_2, dots, beta_n)$, we have
 $
-  inner(x, y) &= inner(
-    alpha_1 b_1 + alpha_2 b_2 + dots.c + alpha_n b_n,
-    beta_1 b_1 + beta_2 b_2 + dots.c + beta_n b_n
-  ) \
-  &= mat(overline(beta)_1, overline(beta)_2, dots, overline(beta)_n)
-  underbrace(
-    mat(
-      inner(b_1, b_1), inner(b_2, b_1), dots, inner(b_n, b_1);
-      inner(b_1, b_2), inner(b_2, b_2), dots, inner(b_n, b_2);
-      dots.v;
-      inner(b_1, b_n), inner(b_2, b_n), dots, inner(b_n, b_n);
-    ),
-    G
-  )
-  vec(alpha_1, alpha_2, dots.v, alpha_n)
+  inner(x, y) & = inner(
+                  alpha_1 b_1 + alpha_2 b_2 + dots.c + alpha_n b_n,
+                  beta_1 b_1 + beta_2 b_2 + dots.c + beta_n b_n
+                ) \
+              & = mat(overline(beta)_1, overline(beta)_2, dots, overline(beta)_n)
+                underbrace(
+                  mat(
+                    inner(b_1, b_1), inner(b_2, b_1), dots, inner(b_n, b_1);
+                    inner(b_1, b_2), inner(b_2, b_2), dots, inner(b_n, b_2);
+                    dots.v;
+                    inner(b_1, b_n), inner(b_2, b_n), dots, inner(b_n, b_n);
+                  ),
+                  G
+                )
+                vec(alpha_1, alpha_2, dots.v, alpha_n)
 $
 
 Therefore, given an inner product in $V$ and a basis $B$, it is possible to
@@ -440,8 +440,8 @@ $ alpha_j = inner(x, b_j) $
 
 We define the *orthogonal projection of $x$ over $b_j$* as the vector
 $
-  proj_(b_j) x &= inner(x, b_j) / norm(b_j)^2 b_j \
-  &= alpha_j b_j
+  proj_(b_j) x & = inner(x, b_j) / norm(b_j)^2 b_j \
+               & = alpha_j b_j
 $
 
 In a more general sense, given two vectors $u$ and $v$ from an euclidean space
@@ -451,8 +451,8 @@ $ proj_v u = frac(inner(u, v), norm(v))^2 v $
 *Example.* Considering that $RR^2$ is equipped with the canonical basis
 $cal(E)_2 = (e_1, e_2)$, any vector $u in RR^2$ can be expressed as a sum
 $
-  u &= proj_(e_1) u + proj_(e_2) u \
-  &= u_W + u_(W^perp)
+  u & = proj_(e_1) u + proj_(e_2) u \
+    & = u_W + u_(W^perp)
 $
 Where $W$ is the $x$ axis.
 
@@ -488,8 +488,9 @@ $ proj_(W^perp) u = proj_(b'_1) u + proj_(b'_2) u + dots.c + proj_(b'_l) u $
 
 *Answer.* Assuming that $V$ has dimension $n$, we have $l = n - k$ since
 
-+ $cal(B) union cal(B)'$ is linearly independent.#footnote[Because it is
-  orthogonal.]
++ $cal(B) union cal(B)'$ is linearly independent.#footnote[
+    Because it is orthogonal.
+  ]
 + Theorem 5 guarantees that $cal(B) union cal(B)'$ generates $V$.
 
 Therefore $cal(B) union cal(B)'$ is a basis of $V$ and the solution becomes
@@ -509,9 +510,10 @@ question:
 ]
 
 $
-  d(u, x)^2 = norm(u - x)^2 &= norm((u - proj_W u) + (proj_W u - x))^2 \
-  &= norm(u - proj_W u)^2 + norm(proj_W u - x)^2 wide "(Pythagoras)" \
-  &= norm(proj_(W^perp) u)^2 + norm(proj_W u - x)^2
+  d(u, x)^2 = norm(u - x)^2 & = norm((u - proj_W u) + (proj_W u - x))^2 \
+                            & = norm(u - proj_W u)^2 + norm(proj_W u - x)^2
+                              wide "(Pythagoras)" \
+                            & = norm(proj_(W^perp) u)^2 + norm(proj_W u - x)^2
 $
 
 Whereby we conclude that
@@ -538,8 +540,9 @@ $RR^n$. Depending on the dimension of $W$, we have the following nomenclature:
 - If $k = 0$, $S$ is said to be a *point*.
 - If $k = 1$, $S$ is said to be a *line*.
 - If $k = 2$, $S$ is said to be a *plane*.
-- If $k = n - 1$, $S$ is said to be a *hyperplane*.#footnote[If $k = n$,
-  $S = RR^n$.]
+- If $k = n - 1$, $S$ is said to be a *hyperplane*.#footnote[
+    If $k = n$, $S = RR^n$.
+  ]
 
 Let $x = (x_1, x_2, dots, x_n)$ be an elements of $S$, there exists $y$ in $W$
 such that
@@ -583,10 +586,10 @@ $n = (5, 1, -2)$
 Let $S = W + p$ and consider a point $q in RR^n$. Given $x$ in $S$,
 
 $
-  d(q, x) &= norm(q - x) \
-  &= class("opening", ||) (q - p) + (p - x) \
-  &= norm((q - p) - y) \
-  &= d(q - p, y)
+  d(q, x) & = norm(q - x) \
+          & = class("opening", ||) (q - p) + (p - x) \
+          & = norm((q - p) - y) \
+          & = d(q - p, y)
 $
 
 The minimal value for this distance can be obtained for $y = proj_W (q - p)$, as
@@ -594,8 +597,8 @@ previously described. We then define the *distance from point $q$ to the plane
 $S$* as
 
 $
-  d(q, S) &= d(q - p, W) \
-  &= norm(proj_(W^perp) (q - p))
+  d(q, S) & = d(q - p, W) \
+          & = norm(proj_(W^perp) (q - p))
 $
 
 *Exercise.* Compute the distance from $(3, 2, -1)$ to the plane $S$ from the

@@ -248,9 +248,9 @@ footer { --u: max(100vw / 1440, .5px); --ink: var(--foam); --dim: #b4c0ec; --cob
 .prose :is(sub, sup) { line-height: 0; }
 mark { border-radius: 2px; background: var(--wash); color: inherit; }
 
-.formula { position: relative; white-space: nowrap; }
-/* It starts and ends like a word, so that punctuation stays with it. */
-:not(.display) > .formula { &::before, &::after { content: "\2063"; } }
+.formula { position: relative; }
+/* It starts and ends like a word, so that punctuation stays with it. Firefox breaks none that opens a line. */
+:not(.display) > .formula { &::before, > [jax]::before, > [jax]::after { content: "\2063"; } }
 .display { display: flex; align-items: center; gap: .6em; margin: 1em 0; font-style: normal; font-weight: 400; }
 .display > .formula { flex: 1; min-width: 0; padding-block: .3em; overflow: auto hidden; }
 .display > :has(> [jax] + [jax]) { container-type: inline-size; }
@@ -422,6 +422,7 @@ summary::-webkit-details-marker { display: none; }
   .tools { top: .75rem; }
   .comments.live { margin-inline: -1.5rem; padding: .7rem 1.3rem 1.1rem; }
   [data-page="about"] > ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :where([data-page="about"]) > .margin { float: right; max-width: 36%; margin: .35em 0 1rem var(--gap); }
 }
 
 @media screen and (min-width: 40em) and (min-aspect-ratio: 23 / 20) {

@@ -44,8 +44,8 @@ int main(void) {
 }
 ```
 
-First, let's understand what `sizeof()` is _supposed_ to do, from the #cstd[ISO
-C Standard]:
+First, let's understand what `sizeof()` is _supposed_ to do, from the
+#cstd[ISO C Standard]:
 
 #quote(attribution: [6.5.3.4, item 2])[
   The `sizeof` operator  yields  the  size  (in  bytes)  of  its  operand,
@@ -327,9 +327,10 @@ function that takes a pointer as argument and one that takes an array. There are
 different expectations in place.
 
 There is a lot more to be said about provenance beyond the shallow point I'm
-making here, I recommend anyone interest take a look at #ptrprov["n2263:
-Clarifying Pointer Provenance v4"] for an in-depth analysis of the issues that
-arise from pointer provenance and the proposed changes to the standard.
+making here, I recommend anyone interest take a look at
+#ptrprov["n2263: Clarifying Pointer Provenance v4"] for an in-depth analysis of
+the issues that arise from pointer provenance and the proposed changes to the
+standard.
 
 = Conclusion
 

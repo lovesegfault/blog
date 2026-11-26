@@ -28,7 +28,7 @@ repos:
     id: statix
   - id: typstyle
     name: typstyle
-    entry: typstyle --inplace
+    entry: typstyle --inplace --line-width 120
     language: system
     files: \.typ$
   - id: rustfmt

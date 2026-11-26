@@ -89,8 +89,9 @@ nothing is perfect. Secondly Xcode; I barely used Xcode during my time with the
 MacBook, mostly because IDEs just aren't my thing, but the few times I tried it
 to test things out it seemed fine.
 
-Now to the hardware: it's fantastic. The MacBook Pro#footnote[Late 2017 model,
-13", no touch bar.] feels absolutely amazing when you hold it, and looks
+Now to the hardware: it's fantastic. The MacBook Pro#footnote[
+  Late 2017 model, 13", no touch bar.
+] feels absolutely amazing when you hold it, and looks
 beautiful. I can confidently say this laptop has the best look & feel of
 anything I've ever owned or used, period. The keyboard, despite all the heavy
 criticism on the internet, was rather good in my opinion, even though the

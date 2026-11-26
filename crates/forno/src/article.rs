@@ -48,7 +48,7 @@ struct Writer<'a> {
     in_link: bool,
     verse: bool,
     in_figure: bool,
-    /// For pictures.
+    /// For pictures, in rem.
     room: f32,
     /// Each note, and how many times it was referred to.
     notes: Vec<(&'a Node, usize, String)>,
@@ -56,9 +56,9 @@ struct Writer<'a> {
     contents: Vec<Section>,
 }
 
-const COLUMN: f32 = 650.0;
-const WIDE: f32 = 924.0;
-const MARGIN: f32 = 230.0;
+const COLUMN: f32 = 32.5;
+const WIDE: f32 = 46.2;
+const MARGIN: f32 = 11.5;
 
 impl<'a> Article<'a> {
     pub fn new(build: &Build, page: &'a Page) -> Self {
@@ -227,10 +227,7 @@ impl<'a> Writer<'a> {
                 html! { figure id=[id] { (self.write(node)?) } }
             }
             "x-picture" => self.picture(node, true)?,
-            "x-row" => {
-                self.room /= 1.5;
-                html! { div.row { (self.inside(node)) } }
-            }
+            "x-row" => html! { div.row { (self.inside(node)) } },
             "x-video" => self.video(&node.option::<String>("source")?, plain(&node.children).trim()),
             "x-explainer" => self.explainer(node, plain(&node.children).trim())?,
             "x-drawing" => {
@@ -250,7 +247,7 @@ impl<'a> Writer<'a> {
         if index == self.notes.len() {
             // Notes can have notes.
             self.notes.push((note, 0, String::new()));
-            (self.verse, self.in_figure, self.room) = (false, false, MARGIN);
+            (self.verse, self.in_figure, self.room) = (false, false, COLUMN);
             let text = self.inside(note);
             self.notes[index].2 =
                 if note.children.iter().all(Node::is_inline) { html! { p { (text) } }.0 } else { text.0 };
@@ -369,8 +366,7 @@ impl<'a> Writer<'a> {
         }
         let (_, usual) = prints.iter().rfind(|(width, _)| *width <= 1300).unwrap();
         let choices: Vec<_> = prints.iter().map(|(width, url)| format!("{url} {width}w")).collect();
-        let sizes =
-            format!("(min-width: 1800px) {:.0}px, (min-width: 700px) {:.0}px, 90vw", self.room * 1.28, self.room);
+        let sizes = format!("(min-width: 112em) {:.1}em, min({:.1}em, 90vw)", self.room * 1.6, self.room * 1.25);
         let picture = html! {
             img src=(usual) srcset=(choices.join(", ")) sizes=(sizes) width=(photo.width) height=(photo.height)
                 alt=(alt) style=[given(&[height, if framed { "" } else { width }].concat())] loading="lazy" decoding="async";

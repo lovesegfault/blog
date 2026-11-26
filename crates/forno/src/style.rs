@@ -158,9 +158,9 @@ impl Style {
         for scene in [HOME, POST, NARROW] {
             own = own.replace(&format!("--scene: {};", scene.name), &measurements(&scene));
         }
-        let fonts = sheet(read_text(&tools.vendor.join("fonts.css"))?, &tools.vendor, output)?;
+        let fonts = sheet(read_text(&tools.fonts.join("fonts.css"))?, &tools.fonts, output)?;
         let css = fonts + &tiles(&fired, output)? + &own + &lowered(&own);
-        let font = |name| asset(output, tools.vendor.join(format!("fonts/{name}-common.woff2")));
+        let font = |name| asset(output, tools.fonts.join(format!("{name}-common.woff2")));
         Ok(Self {
             sheet: output.asset("site.css", File::Made(css.into_bytes()))?,
             script: asset(output, "assets/site.js".into())?,

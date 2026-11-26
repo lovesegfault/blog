@@ -63,6 +63,8 @@ These are written in two places, and change together:
 | How tracks are drawn     | `site.js` and `tracks` in `figure.rs`                   |
 | Talking to programs      | `site.js`, `programs.rs` and the `extern "C"` functions |
 | What the site is made of | `SOURCES` in `site.rs` and `site` in `flake.nix`        |
+| What it is made with     | `Tools::new` in `site.rs` and `env` in `flake.nix`      |
+| The names of font files  | `nix/fonts.nix`, `style.rs` and `figure.rs`             |
 | What posts can use       | `blog.typ`, the README and the specimen                 |
 
 ## The stylesheet and the script
@@ -94,7 +96,7 @@ ids and `index.xml` should only differ where that was the point.
   `unicode-math-class`, whose types cross over. Check the formulas by eye.
 - **A language.** Its `arborium-*` crate in `crates/forno/Cargo.toml`, and a line
   in `highlight.rs`.
-- **A Typst package or a font.** `nix/vendor.nix`.
+- **A Typst package or a font.** `typst` in `flake.nix`, or `nix/fonts.nix`.
 - **Large files.** `.gitattributes` sends pictures, videos and whatever is under
   `images` or `files` to LFS. `assets` stays out of it.
 

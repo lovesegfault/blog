@@ -140,12 +140,12 @@ fn wrap(fonts: &Options, title: &str) -> (usize, Vec<String>) {
 pub fn card(build: &Build, source: &Source, title: Option<&str>, page: &str) -> Result<String> {
     let (config, fired) = (build.config, &build.style.fired);
     let tracks = tracks(source, &[], HOME.radius, if title.is_some() { 2.4 } else { 1.8 });
-    let words = format!("{title:?} {} {} {fired:?} {:?}", config.title, config.subtitle, build.tools.vendor);
+    let words = format!("{title:?} {} {} {fired:?} {:?}", config.title, config.subtitle, build.tools.fonts);
     let inputs = [include_bytes!("figure.rs"), tracks.0.as_bytes(), words.as_bytes()];
     let folder = build.tools.cache.entry(&inputs, |folder| {
         let mut fonts = Options::default();
-        for font in ["Spectral-Light", "BonaNova-Italic"] {
-            fonts.fontdb_mut().load_font_data(read(&build.tools.vendor.join(format!("fonts/{font}.ttf")))?);
+        for font in ["Spectral-Light.ttf", "BonaNova-Italic.ttf"] {
+            fonts.fontdb_mut().load_font_data(read(&build.tools.fonts.join(font))?);
         }
         embedded().for_each(|(font, _)| fonts.fontdb_mut().load_font_data(font.data().to_vec()));
         fonts.font_resolver.select_fallback = Box::new(|_, _, _| None);

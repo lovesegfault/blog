@@ -76,18 +76,18 @@ const PICTURE: ShowFn<ImageElem> = |image, engine, styles| {
 };
 
 impl Typst {
-    pub fn new(vendor: &Path) -> Result<Self> {
+    pub fn new(faces: &Path, packages: &Path) -> Result<Self> {
         let mut library = Library::builder().with_features([Feature::Html].into_iter().collect()).build();
         library.rules.replace(Target::Html, formula::RULE);
         library.rules.replace(Target::Html, PICTURE);
         library.rules.replace::<FootnoteContainer>(Target::Html, |_, _, _| Ok(Content::empty()));
         library.styles.set(RawElem::theme, Smart::Custom(None));
         let mut fonts = FontStore::new();
-        for path in walk(&vendor.join("fonts"))? {
+        for path in walk(faces)? {
             fonts.extend(Font::iter(Bytes::new(read(&path)?)).map(|font| (font.clone(), font.info().clone())));
         }
         fonts.extend(embedded());
-        Ok(Self { library: library.into(), fonts, packages: FsPackages::new(vendor.join("typst")) })
+        Ok(Self { library: library.into(), fonts, packages: FsPackages::new(packages) })
     }
 
     pub fn desk(&self) -> Desk<'_> {
@@ -99,7 +99,7 @@ impl Typst {
 impl FileLoader for &Typst {
     fn load(&self, file: FileId) -> FileResult<Bytes> {
         if let VirtualRoot::Package(package) = file.root() {
-            let missing = || PackageError::Other(Some("add it to nix/vendor.nix".into()));
+            let missing = || PackageError::Other(Some("add it to flake.nix".into()));
             return self.packages.obtain(package).ok_or_else(missing)?.load(file.vpath());
         }
         // Drawings have the pictures in them whole.
@@ -244,7 +244,7 @@ pub mod tests {
             .and(env::set_current_dir(&folder))
             .and(fs::write(&name, source))
             .unwrap();
-        let (document, problems) = Typst::new(&folder).unwrap().desk().set(Path::new(&name)).unwrap();
+        let (document, problems) = Typst::new("fonts".as_ref(), &folder).unwrap().desk().set(name.as_ref()).unwrap();
         (document.map_or(Vec::new(), |document| Tree::new(&document).nodes), problems)
     }
 

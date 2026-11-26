@@ -62,14 +62,14 @@ fn opening(graph: &str) -> Option<usize> {
 
 /// Lays out a Graphviz graph, in the colour of the text around it.
 pub fn diagram(tools: &Tools, graph: &str) -> Result<String> {
-    let asked = format!("{graph} {:?}", tools.vendor);
+    let asked = format!("{graph} {:?}", tools.dot);
     let folder = tools.cache.entry(&[include_bytes!("programs.rs"), asked.as_bytes()], |folder| {
         // What is not a flag, the graph can change.
         let usual = "bgcolor=transparent fontsize=11 nodesep=0.4 ranksep=0.45 edge[fontsize=11 arrowsize=0.7] \
                      node[fontsize=11 shape=box style=rounded height=0.4] ";
         let (head, rest) = graph.split_at(opening(graph).context("a graph is written between braces")?);
         // Courier is as wide as the font the stylesheet puts in its place.
-        let mut dot = Command::new(tools.vendor.join("dot"))
+        let mut dot = Command::new(&tools.dot)
             .args(["-Tsvg", "-Gfontname=Courier", "-Nfontname=Courier", "-Efontname=Courier"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

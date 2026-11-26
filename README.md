@@ -83,7 +83,8 @@ Each file in `crates/explainers/src/bin` is an interactive figure. Start from
 | `crates/forno`      | The generator                                        |
 | `crates/mural`      | Fires `assets/valley.svg` into tiles                 |
 | `crates/collision`  | Turns writing into particle tracks                   |
-| `nix/vendor.nix`    | Graphviz, fonts and Typst packages                   |
+| `flake.nix`         | The tools, and the Typst packages that posts import  |
+| `nix/fonts.nix`     | The fonts                                            |
 
 `nix build` makes the site. `.cache` can be deleted at any time.
 

@@ -1,10 +1,11 @@
-+++
-title = "The Lost Ark"
-date = 2019-04-22T00:54:01Z
-draft = false
-tags = [ "vinyl", "records", "lisbon", "lost" ]
-categories = [ "essay" ]
-+++
+#import "/blog.typ": *
+
+#show: post.with(
+  title: [The Lost Ark],
+  date: "2019-04-22T00:54:01Z",
+  categories: "essay",
+  tags: ("vinyl", "records", "lisbon", "lost"),
+)
 
 I was 18 when I moved to Lisbon. I wasn't really sure who I wanted to be, and I
 mean that quite literally. I was aware that, having just left my home country, I
@@ -13,31 +14,43 @@ throw away all my baggage and persona, a lot of it was going to be part of who I
 was no matter what, but somehow it felt like a chance to pick new hobbies, new
 habits, things like that. I'm not entirely sure how I chose to collect vinyl
 records and make audio a hobby, in hindsight it was the union of a lot of things
-that I loved deeply: music, analog circuitry, DIY[^1], woodworking, collecting,
-and on it goes.
+that I loved deeply: music, analog circuitry, DIY#footnote[
+  This might be surprising to the uninitiated, but there is a lot of DIY
+  projects around audio amplifiers and speakers.
+], woodworking, collecting, and on it goes.
 
 I quickly fell in love with the hobby, I'd spend my weekends going to record
-stores in Lisbon looking for whatever record I was obsessed with that week[^2],
-and most of my free time during the week went into reading about amplifier
+stores in Lisbon looking for whatever record I was obsessed with that
+week#footnote[
+  I once went to every single record store within 100 miles looking for a
+  Stockhausen record, eventually surrendering to getting it on Discogs.
+], and most of my free time during the week went into reading about amplifier
 design and things like that. Being a software developer I quickly turned those
 projects into increasingly large amounts of analog-digital Frankenstein madness.
 It was a whole lot of fun, and I look back at that time with a deep sense of
 nostalgia.
 
-![A turntable on a shelf of records, between two speakers](images/turntable.jpg)
-My initial setup
+#picture(
+  "images/turntable.jpg",
+  alt: "A turntable on a shelf of records, between two speakers",
+)[My initial setup]
 
 Sadly all good things must end, and that was definitely true for my time in
 Lisbon. I had grown increasingly frustrated with the university I was attending,
 and I had slowly become completely intolerant to the racism I had directed
-towards me by many Portuguese[^3]. I was depressed, because school was deeply
-unfulfilling, and because I felt that I had to work hard at hiding my
-nationality and culture in order to be respected or liked by a large portion of
-my peers. I was done with all that, and it was time to go somewhere else, so I
-did.
+towards me by many Portuguese#footnote[
+  I am Brazilian, and a portion of the Portuguese population holds a deep grudge
+  against us that I have a hard time comprehending. It's a weird form of
+  xenophobia.
+]. I was depressed, because school was deeply unfulfilling, and because I felt
+that I had to work hard at hiding my nationality and culture in order to be
+respected or liked by a large portion of my peers. I was done with all that, and
+it was time to go somewhere else, so I did.
 
-![Open suitcases on the floor of a bedroom](images/packing-up.jpg)
-Packing up
+#picture(
+  "images/packing-up.jpg",
+  alt: "Open suitcases on the floor of a bedroom",
+)[Packing up]
 
 I decided to move to the US, to Santa Barbara in particular, and with the help
 of many friends I had set up my move fairly quickly. One question, however,
@@ -77,29 +90,35 @@ start, I missed the freedom I had had all my life; being 20 in America feels
 like being 13 in Brazil, and I swiftly discovered that the maturity of my peers
 mirrored that, for the most part.
 
-![Tiled buildings and red roofs under a pink sky](images/balcony.jpg)
-My beloved balcony view
+#picture(
+  "images/balcony.jpg",
+  alt: "Tiled buildings and red roofs under a pink sky",
+)[My beloved balcony view]
 
-I tried setting up my turntable in my room, even though I only had one record
-in my new collection[^4], but it wasn't possible. The vibrations from the
-highway were so pronounced that it caused the needle to move around, it would
-skip grooves, or just sounds like garbage whenever a truck or the train passed
-by. I was so frustrated I packaged everything back in their respective boxes and
-placed it in a remote corner of the house where I would positively forget about
-their existence. That never quite happen, the amplifier box that I hid under the
-sofa created a pronounced bump on the cushion, a mildly annoying reminder of the
-passion I had left behind. Much like my equipment, the sofa quickly felt into
-disuse.
+I tried setting up my turntable in my room, even though I only had one record in
+my new collection#footnote[
+  I bought Yusef Lateef's "Eastern Sounds" at Amoeba in LA.
+], but it wasn't possible. The vibrations from the highway were so pronounced
+that it caused the needle to move around, it would skip grooves, or just sounds
+like garbage whenever a truck or the train passed by. I was so frustrated I
+packaged everything back in their respective boxes and placed it in a remote
+corner of the house where I would positively forget about their existence. That
+never quite happen, the amplifier box that I hid under the sofa created a
+pronounced bump on the cushion, a mildly annoying reminder of the passion I had
+left behind. Much like my equipment, the sofa quickly felt into disuse.
 
 This was all about two years ago, and now I find myself in a similar situation
 that I did in Lisbon. I've been utterly unable to form meaningful relationships
-here in the US[^5], and I'm convinced my concept of a friend is somehow
-incompatible with its American counterpart. I am, again, disappointed in my
-studies as well. I thought Computer Science was the right major for me, given
-that's what I do in my day job and I love it, but I couldn't have been more
-wrong about that, it's a remarkably boring major. I can't help but wonder where
-exactly did I go wrong to end up back where I started, and I do not know the
-answer.
+here in the US#footnote[
+  With the exception of my girlfriend. I find that it is not uncommon for
+  expatriates in the US to feel like Americans do not have friends, there is
+  something really peculiar about how Americans deal with friendship.
+], and I'm convinced my concept of a friend is somehow incompatible with its
+American counterpart. I am, again, disappointed in my studies as well. I thought
+Computer Science was the right major for me, given that's what I do in my day
+job and I love it, but I couldn't have been more wrong about that, it's a
+remarkably boring major. I can't help but wonder where exactly did I go wrong to
+end up back where I started, and I do not know the answer.
 
 Amid all this, my mother and her husband took a trip to Europe, they were going
 to Spain, Morocco, and finally Portugal. I had been so frustrated in my attempts
@@ -115,7 +134,9 @@ into a Maelstrom that was slowly engulfing me, like a lion desperately confused
 chasing after zebras in the savannah. Suddenly I knew which direction to swim
 in, I had zeroed in on my prey and I was ready to conquer it. It was the first
 time in months I had felt centered, with a clear goal. I had to get them back,
-sit down, and listen to my favorite record[^6].
+sit down, and listen to my favorite record#footnote[
+  If you are wondering, it's Quarteto Novo's self titled album.
+].
 
 I haven't achieved that goal yet, but somehow just having this mundane victory
 to look forward to helped me climb out of the hole that I had dug myself into. I
@@ -123,21 +144,3 @@ can't help but feel that the records rescued me more than I rescued them.
 Somehow this entity of what I thought was my past has come back to help me cope
 with the present, and I can't wait until I have them back; until I have my hobby
 back.
-
-[^1]: This might be surprising to the uninitiated, but there is a lot of DIY
-    projects around audio amplifiers and speakers.
-
-[^2]: I once went to every single record store within 100 miles looking for a
-    Stockhausen record, eventually surrendering to getting it on Discogs.
-
-[^3]: I am Brazilian, and a portion of the Portuguese population holds a deep
-    grudge against us that I have a hard time comprehending. It's a weird form of
-    xenophobia.
-
-[^4]: I bought Yusef Lateef's "Eastern Sounds" at Amoeba in LA.
-
-[^5]: With the exception of my girlfriend. I find that it is not uncommon for
-    expatriates in the US to feel like Americans do not have friends, there is
-    something really peculiar about how Americans deal with friendship.
-
-[^6]: If you are wondering, it's Quarteto Novo's self titled album.

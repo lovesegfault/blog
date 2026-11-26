@@ -1,38 +1,23 @@
 //! What is under `content/`.
 
-use std::collections::BTreeMap;
 use std::fs;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail, ensure};
-use jiff::tz::{Offset, TimeZone};
-use jiff::{Zoned, civil};
-use serde::Deserialize;
-use toml::value::Datetime;
+use jiff::Zoned;
+use jiff::fmt::temporal::Pieces;
+use jiff::tz::Offset;
+use typst::foundations::OneOrMultiple;
+use typst::model::Document;
+use typst::syntax::{LinkedNode, ast};
+use typst_html::HtmlDocument;
 
+use crate::links::encode;
 use crate::output::read_text;
+use crate::tree::{Node, Tree};
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Front {
-    pub title: String,
-    date: Option<Datetime>,
-    updated: Option<Datetime>,
-    #[serde(default)]
-    pub draft: bool,
-    #[serde(default)]
-    pub categories: Vec<String>,
-    #[serde(default)]
-    pub tags: Vec<String>,
-    pub description: Option<String>,
-    #[serde(default)]
-    pub comments: Comments,
-    #[serde(default)]
-    pub macros: BTreeMap<String, String>,
-}
-
-#[derive(Deserialize, Clone, Copy)]
-#[serde(untagged)]
+#[derive(Clone, Copy)]
 pub enum Comments {
     /// In the issue named after the page.
     Open(bool),
@@ -40,47 +25,35 @@ pub enum Comments {
     Issue(u32),
 }
 
+#[derive(Clone)]
 pub struct Page {
-    pub front: Front,
+    /// As it is typed, which is what comments are found by.
+    pub title: String,
+    pub heading: Node,
+    pub body: Tree,
     pub slug: String,
     pub url: String,
     /// Only posts have one.
     pub date: Option<Zoned>,
     pub updated: Option<Zoned>,
+    pub draft: bool,
+    pub categories: Vec<String>,
+    pub tags: Vec<String>,
+    pub description: Option<String>,
+    pub comments: Comments,
+    pub language: String,
     pub path: PathBuf,
     /// Where its pictures and files are, if it has a folder to itself.
     pub folder: Option<PathBuf>,
-    source: String,
-    body: usize,
 }
 
 pub const NOT_FOUND: &str = "/404.html";
 
-impl Default for Comments {
-    fn default() -> Self {
-        Self::Open(true)
-    }
-}
-
-/// The front matter, and where the body starts.
-fn split(source: &str) -> Result<(&str, usize)> {
-    let front = source.strip_prefix("+++").and_then(|rest| rest.split_once("\n+++\n"));
-    let (front, body) = front.context("the file has to start with front matter between lines of `+++`")?;
-    Ok((front, source.len() - body.len()))
-}
-
-fn zoned(when: Datetime) -> Result<Zoned> {
-    let day = when.date.context("a date needs a day")?;
-    let day = civil::Date::new(day.year as i16, day.month as i8, day.day as i8)?;
-    let time = match when.time {
-        Some(time) => civil::Time::new(time.hour as i8, time.minute as i8, time.second.unwrap_or(0) as i8, 0)?,
-        None => civil::Time::midnight(),
-    };
-    let minutes = match when.offset {
-        Some(toml::value::Offset::Custom { minutes }) => minutes,
-        _ => 0,
-    };
-    Ok(day.to_datetime(time).to_zoned(TimeZone::fixed(Offset::from_seconds(i32::from(minutes) * 60)?))?)
+fn zoned(when: String) -> Result<Zoned> {
+    let when = Pieces::parse(&when)?;
+    ensure!(when.time_zone_annotation().is_none(), "a date takes an offset, as in `-03:00`");
+    let zone = when.to_numeric_offset().unwrap_or(Offset::UTC).to_time_zone();
+    Ok(when.date().to_datetime(when.time().unwrap_or_default()).to_zoned(zone)?)
 }
 
 /// As GitHub and Hugo name their anchors.
@@ -101,82 +74,78 @@ pub fn address(name: &str) -> String {
     slug.split('-').filter(|word| !word.is_empty()).collect::<Vec<_>>().join("-")
 }
 
+/// Where a file is published.
+pub fn published(path: &str) -> String {
+    let folders =
+        [("content/drafts/", "/posts/"), ("content/404/", "/"), ("content/", "/"), ("static/", "/"), ("", "")];
+    let url = folders.iter().find_map(|(folder, url)| Some(format!("{url}{}", path.strip_prefix(folder)?))).unwrap();
+    ["%", " ", "#", "?"].iter().fold(url, |url, sign| url.replace(sign, &encode(sign)))
+}
+
 impl Page {
-    pub fn parse(path: &Path, source: String, is_post: bool) -> Result<Self> {
-        let folder = path.ends_with("index.md").then(|| path.parent().unwrap().to_owned());
+    pub fn new(path: &Path, document: &HtmlDocument) -> Result<Self> {
+        let folder = path.ends_with("index.typ").then(|| path.parent().unwrap().to_owned());
         let name = folder.as_deref().map_or(path.file_stem(), Path::file_name);
         let slug = name.context("a page needs a name")?.to_string_lossy().into_owned();
         ensure!(slug == slugify(&slug), "`{slug}` would not do in an address: try `{}`", slugify(&slug));
-        let (front, body) = split(&source)?;
-        let front: Front = toml::from_str(front)?;
-        ensure!(front.date.is_some() == is_post, "posts have a `date`, and other pages do not");
+        let (mut body, info) = (Tree::new(document), document.info());
+        let front = body.nodes.extract_if(.., |node| node.tag == "x-front").next();
+        let mut front = front.context("a page starts with `#show: post.with(title: [A Title])`")?;
+        ensure!(front.count(&["x-note"]) == 0, "a title cannot have a note");
+        let date = |name| front.option::<Option<String>>(name)?.map(zoned).transpose();
+        let names = |name| Ok::<_, anyhow::Error>(front.option::<OneOrMultiple<String>>(name)?.0);
+        let draft = path.starts_with("content/drafts");
+        let is_post = draft || path.starts_with("content/posts");
+        ensure!(date("date")?.is_some() == is_post, "posts have a `date`, and other pages do not");
         Ok(Self {
+            title: info.title.as_deref().unwrap_or_default().trim().into(),
             url: match slug.as_str() {
                 _ if is_post => format!("/posts/{slug}/"),
                 "404" => NOT_FOUND.to_owned(),
                 _ => format!("/{slug}/"),
             },
-            date: front.date.map(zoned).transpose()?,
-            updated: front.updated.map(zoned).transpose()?,
+            date: date("date")?,
+            updated: date("updated")?,
+            categories: names("categories")?,
+            tags: names("tags")?,
+            description: info.description.as_deref().map(|text| text.trim().into()),
+            comments: front.option("comments").map(Comments::Issue).or(front.option("comments").map(Comments::Open))?,
+            language: info.locale.unwrap_or_default().rfc_3066().into(),
+            heading: front.children.pop().context("the title is not shown")?,
             path: path.to_owned(),
-            front,
-            slug,
-            folder,
-            source,
             body,
+            slug,
+            draft,
+            folder,
         })
     }
-
-    pub fn body(&self) -> &str {
-        &self.source[self.body..]
-    }
-
-    /// Names a place in the body, for errors.
-    pub fn at(&self, offset: usize) -> String {
-        format!("{}:{}", self.path.display(), self.source[..self.body + offset].matches('\n').count() + 1)
-    }
-
-    /// One of its own files.
-    pub fn file(&self, name: &str) -> Result<PathBuf> {
-        let folder = self.folder.as_ref().with_context(|| format!("move this page to `{}/index.md`", self.slug));
-        Ok(folder.with_context(|| format!("`{name}` has to be in the page's own folder"))?.join(name))
-    }
 }
 
-/// Each `name.md` and `name/index.md` in `folder`.
-fn sources(folder: &Path) -> Vec<PathBuf> {
-    let entries = fs::read_dir(folder).into_iter().flatten().flatten().map(|entry| entry.path());
-    let source = |path: PathBuf| if path.is_dir() { path.join("index.md") } else { path };
-    entries.map(source).filter(|path| path.extension().is_some_and(|e| e == "md") && path.is_file()).collect()
+pub fn is_source(path: &Path) -> bool {
+    path.extension().is_some_and(|extension| extension == "typ")
 }
 
-/// Posts, newest first, and then the other pages.
-pub fn load(drafts: bool) -> Result<Vec<Page>> {
-    let mut pages = Vec::new();
-    for (folder, is_post) in [("content", false), ("content/posts", true), ("content/drafts", true)] {
-        let unfinished = folder == "content/drafts";
-        if unfinished && !drafts {
-            continue;
-        }
-        for path in sources(Path::new(folder)) {
-            let mut page =
-                Page::parse(&path, read_text(&path)?, is_post).with_context(|| path.display().to_string())?;
-            page.front.draft |= unfinished;
-            if drafts || !page.front.draft {
-                pages.push(page);
-            }
-        }
-    }
-    pages.sort_by(|a, b| (&b.date, &a.slug).cmp(&(&a.date, &b.slug)));
-    Ok(pages)
+/// Each `name.typ` and `name/index.typ`.
+pub fn sources(drafts: bool) -> Vec<PathBuf> {
+    let folders = ["content", "content/posts", "content/drafts"].into_iter().take(if drafts { 3 } else { 2 });
+    let entries = folders.flat_map(fs::read_dir).flatten().flatten().map(|entry| entry.path());
+    let source = |path: PathBuf| if path.is_dir() { path.join("index.typ") } else { path };
+    entries.map(source).filter(|path| is_source(path) && path.is_file()).collect()
 }
 
 fn now() -> String {
-    format!("date = {}", Zoned::now().strftime("%Y-%m-%dT%H:%M:%S%:z"))
+    Zoned::now().strftime("\"%Y-%m-%dT%H:%M:%S%:z\"").to_string()
 }
 
 fn named(folder: &str, slug: &str) -> Option<PathBuf> {
-    [slug.to_owned(), format!("{slug}.md")].iter().map(|name| Path::new(folder).join(name)).find(|path| path.exists())
+    [slug.to_owned(), format!("{slug}.typ")].iter().map(|name| Path::new(folder).join(name)).find(|path| path.exists())
+}
+
+/// As markup that means nothing but itself.
+fn literal(text: &str) -> String {
+    let opening = text.find(|c: char| !c.is_ascii_digit());
+    let means = |at, c| "\\[]#$*_`<@~/".contains(c) || Some(at) == opening && "=+-.".contains(c);
+    text.char_indices().flat_map(|(at, c)| means(at, c).then_some('\\').into_iter().chain([c])).collect()
 }
 
 /// Starts a draft.
@@ -186,34 +155,40 @@ pub fn draft(title: &str) -> Result<PathBuf> {
     if let Some(taken) = named("content/drafts", &slug).or(named("content/posts", &slug)) {
         bail!("{} already exists", taken.display());
     }
-    let path = Path::new("content/drafts").join(slug).join("index.md");
-    let title = toml::Value::from(title);
+    let path = Path::new("content/drafts").join(slug).join("index.typ");
+    let front =
+        format!("  title: [{}],\n  date: {},\n  categories: \"essay\",\n  tags: (),", literal(title.trim()), now());
     fs::create_dir_all(path.parent().unwrap())?;
-    fs::write(&path, format!("+++\ntitle = {title}\n{}\ncategories = [\"essay\"]\ntags = []\n+++\n", now()))?;
+    fs::write(&path, format!("#import \"/blog.typ\": *\n\n#show: post.with(\n{front}\n)\n"))?;
     Ok(path)
 }
 
 /// Moves a draft in with the posts, dated now.
 pub fn publish(name: &str) -> Result<PathBuf> {
-    let name = Path::new(name.trim_end_matches("/index.md"));
+    let name = Path::new(name.trim_end_matches("/index.typ"));
     let slug = name.file_stem().context("which draft?")?.to_string_lossy();
     let from = named("content/drafts", &slug).with_context(|| format!("there is no draft called `{slug}`"))?;
     if let Some(taken) = named("content/posts", &slug) {
         bail!("{} already exists", taken.display());
     }
-    let markdown = |path: &Path| if from.is_dir() { path.join("index.md") } else { path.to_owned() };
+    let source = |path: &Path| if from.is_dir() { path.join("index.typ") } else { path.to_owned() };
     let to = Path::new("content/posts").join(from.file_name().unwrap());
-    let published = markdown(&to);
-    fs::write(markdown(&from), stamp(&read_text(&markdown(&from))?, &now())?)?;
+    let published = source(&to);
+    fs::write(source(&from), stamp(read_text(&source(&from))?, &now())?)?;
     fs::rename(&from, &to)?;
     Ok(published)
 }
 
-fn stamp(source: &str, date: &str) -> Result<String> {
-    let (front, body) = split(source)?;
-    let sets = |line: &str, key: &str| line.split('=').next().is_some_and(|name| name.trim() == key);
-    let lines = front.lines().filter(|line| !sets(line, "draft")).map(|l| if sets(l, "date") { date } else { l });
-    Ok(format!("+++{}\n+++\n{}", lines.collect::<Vec<_>>().join("\n"), &source[body..]))
+fn stamp(mut source: String, now: &str) -> Result<String> {
+    fn date(node: LinkedNode) -> Option<Range<usize>> {
+        match node.cast::<ast::Named>() {
+            Some(named) if named.name().as_str() == "date" => node.children().next_back().map(|value| value.range()),
+            _ => node.children().find_map(date),
+        }
+    }
+    let written = date(LinkedNode::new(&typst::syntax::parse(&source))).context("the draft has no `date`")?;
+    source.replace_range(written, now);
+    Ok(source)
 }
 
 #[cfg(test)]
@@ -224,21 +199,24 @@ mod tests {
     fn anchors_match_the_ones_hugo_made() {
         assert_eq!(slugify("1. sizeof()"), "1-sizeof");
         assert_eq!(slugify("Standard Cognition & Rust in 2020"), "standard-cognition--rust-in-2020");
-        assert_eq!(slugify(r"An orthogonal basis \mathcal B"), "an-orthogonal-basis-mathcal-b");
         assert_eq!(address("Então: C, C++ & C#"), "entao-c-cpp-csharp");
     }
 
     #[test]
     fn dates_keep_their_own_offset() {
-        let source = "+++\ntitle = 'x'\ndate = 2021-04-01T22:04:19-07:00\n+++\n\nbody\n";
-        let page = Page::parse(Path::new("x/index.md"), source.into(), true).unwrap();
-        assert_eq!(page.date.as_ref().unwrap().strftime("%F %:z").to_string(), "2021-04-01 -07:00");
-        assert_eq!((page.url.as_str(), page.at(1).as_str()), ("/posts/x/", "x/index.md:6"));
+        let shown = |date: &str| zoned(date.into()).unwrap().strftime("%F %R %:z").to_string();
+        assert_eq!(shown("2021-04-01T22:04:19-07:00"), "2021-04-01 22:04 -07:00");
+        assert_eq!(shown("2021-04-01"), "2021-04-01 00:00 +00:00");
     }
 
     #[test]
-    fn publishing_only_touches_the_date_and_the_flag() {
-        let draft = "+++\ntitle = 'x'\ndate = 2020-01-01\ndraft = true\ntags = []\n+++\n\ndate = draft\n";
-        assert_eq!(stamp(draft, "date = 1").unwrap(), "+++\ntitle = 'x'\ndate = 1\ntags = []\n+++\n\ndate = draft\n");
+    fn titles_are_not_markup() {
+        assert_eq!(literal("1. It's Vec<T> - or C#."), r"1\. It's Vec\<T> - or C\#.");
+    }
+
+    #[test]
+    fn publishing_only_touches_the_date() {
+        let draft = "#show: post.with(title: [date: x], date: \"0\")\n#f(date: 0)";
+        assert_eq!(stamp(draft.into(), "1").unwrap(), "#show: post.with(title: [date: x], date: 1)\n#f(date: 0)");
     }
 }

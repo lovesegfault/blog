@@ -2,9 +2,9 @@ mod article;
 mod code;
 mod content;
 mod figure;
+mod formula;
 mod highlight;
 mod links;
-mod markdown;
 mod math;
 mod output;
 mod pages;
@@ -13,6 +13,8 @@ mod programs;
 mod serve;
 mod site;
 mod style;
+mod tree;
+mod typeset;
 
 use std::path::PathBuf;
 use std::{env, fs};
@@ -51,6 +53,8 @@ fn main() -> Result<()> {
     let here = env::current_dir()?;
     let root = here.ancestors().find(|folder| folder.join("site.toml").exists());
     env::set_current_dir(root.context("there is no site.toml here")?)?;
+    // Typst and MathJax both go deep.
+    rayon::ThreadPoolBuilder::new().stack_size(16 << 20).build_global()?;
 
     match command {
         Command::New { title } => println!("{}", content::draft(&title)?.display()),

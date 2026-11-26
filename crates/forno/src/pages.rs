@@ -7,7 +7,7 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 use mural::{HOME, LABELS, POST};
 
 use crate::article::{Article, Section};
-use crate::content::{Comments, Front, NOT_FOUND, address};
+use crate::content::{Comments, NOT_FOUND, Page, address};
 use crate::figure::{card, figure};
 use crate::links::encode;
 use crate::site::{Build, Taxonomy, Term};
@@ -57,7 +57,7 @@ fn layout(build: &Build, head: &Head, body: Markup) -> Markup {
                 @for font in &style.fonts[..if head.title.is_some() { 3 } else { 2 }] {
                     link rel="preload" as="font" type="font/woff2" href=(font) crossorigin;
                 }
-                @if body.0.contains(r#"class="katex""#) { link rel="stylesheet" href=(style.math_sheet); }
+                @if body.0.contains("<mjx-math") { link rel="stylesheet" href=[build.math_sheet.get()]; }
                 link rel="stylesheet" href=(style.sheet);
                 script { (PreEscaped(BEFORE_PAINT)) }
                 script type="module" src=(style.script) {}
@@ -88,7 +88,7 @@ fn list(posts: &[&Article]) -> Markup {
         ol.posts {
             @for group in posts.chunk_by(|a, b| year(a) == year(b)) {
                 @for (row, post) in group.iter().enumerate() {
-                    li.first[row == 0].draft[post.page.front.draft] {
+                    li.first[row == 0].draft[post.page.draft] {
                         a href=(post.page.url) data-lights=(post.page.slug) {
                             @if let Some(date) = &post.page.date { time.voice datetime=(date.date()) { (date.year()) } }
                             span { (post.title) }
@@ -126,10 +126,10 @@ fn contents(sections: &[Section]) -> Markup {
     } } } }
 }
 
-fn comments(build: &Build, front: &Front) -> Markup {
-    let (term, issue, thread) = match front.comments {
-        Comments::Open(true) if !front.draft => {
-            (Some("title"), None, format!("?q={}", encode(&format!("is:issue in:title \"{}\"", front.title))))
+fn comments(build: &Build, page: &Page) -> Markup {
+    let (term, issue, thread) = match page.comments {
+        Comments::Open(true) if !page.draft => {
+            (Some("title"), None, format!("?q={}", encode(&format!("is:issue in:title \"{}\"", page.title))))
         }
         Comments::Open(_) => return html!(),
         Comments::Issue(number) => (None, Some(number), format!("/{number}")),
@@ -173,7 +173,7 @@ fn sheet(build: &Build, heading: Markup, figure: Markup, column: Markup, end: Ma
 
 /// Drafts are left out of cards, which are too slow to draw at every save.
 pub fn site_card(build: &Build, posts: &[&Article]) -> Result<String> {
-    let published: Vec<_> = posts.iter().copied().filter(|post| !post.page.front.draft).collect();
+    let published: Vec<_> = posts.iter().copied().filter(|post| !post.page.draft).collect();
     card(build, &everything(&published, 170), None)
 }
 
@@ -190,27 +190,27 @@ pub fn home(build: &Build, posts: &[&Article], card: &str) -> Result<Markup> {
 }
 
 pub fn article(build: &Build, article: &Article, newer: Option<&Article>, older: Option<&Article>) -> Result<Markup> {
-    let (page, front) = (article.page, &article.page.front);
+    let page = article.page;
     let mut shape = article.sentences.thinned(70);
     if shape.pieces.iter().all(|piece| piece.kind != Kind::Text) {
         shape.pieces.clear();
     }
     let event = Source::Post(shape);
     let head = Head {
-        title: Some(&front.title),
+        title: Some(&page.title),
         url: &page.url,
         description: if article.summary.is_empty() { &build.config.subtitle } else { &article.summary },
-        card: &if front.draft { String::new() } else { card(build, &event, Some(&article.name))? },
+        card: &if page.draft { String::new() } else { card(build, &event, Some(&article.name))? },
         feed: "/index.xml",
         published: page.date.as_ref(),
     };
     let heading = html! {
-        h1 { (article.title) }
+        h1 lang=(page.language) { (article.title) }
         @if let Some(date) = &page.date {
             p.voice {
-                @if front.draft { span { "draft" } }
+                @if page.draft { span { "draft" } }
                 (day(date))
-                @for category in &front.categories { a href={ "/categories/" (address(category)) "/" } { (category) } }
+                @for category in &page.categories { a href={ "/categories/" (address(category)) "/" } { (category) } }
                 span { (article.minutes) " min" }
                 @if let Some(date) = &page.updated { span { "updated " (day(date)) } }
             }
@@ -222,10 +222,10 @@ pub fn article(build: &Build, article: &Article, newer: Option<&Article>, older:
                 details { summary { "Contents" } (contents(&article.contents)) }
             }
         }
-        article.prose #Text data-page=(page.slug) { (article.body) }
-        @if !front.tags.is_empty() {
+        article.prose #Text lang=(page.language) data-page=(page.slug) { (article.body) }
+        @if !page.tags.is_empty() {
             ul.labels aria-label="Tags" {
-                @for tag in &front.tags { (label(&format!("/tags/{}/", address(tag)), tag, &[])) }
+                @for tag in &page.tags { (label(&format!("/tags/{}/", address(tag)), tag, &[])) }
             }
         }
     };
@@ -239,7 +239,7 @@ pub fn article(build: &Build, article: &Article, newer: Option<&Article>, older:
                 }
             }
         }
-        (comments(build, front))
+        (comments(build, page))
     };
     Ok(layout(build, &head, sheet(build, heading, figure(build, &event, &[], &POST)?, column, end)))
 }
@@ -297,7 +297,7 @@ pub fn feed(build: &Build, name: Option<&str>, url: &str, posts: &[&Article]) ->
                 copyright { "© " (config.author) }
                 atom:link href={ (config.url) (url) "index.xml" } rel="self" type="application/rss+xml" {}
                 @for post in posts { item {
-                    title { (post.page.front.title) }
+                    title { (post.page.title) }
                     link { (config.url) (post.page.url) }
                     pubDate { (date(post).unwrap_or_default()) }
                     // Readers tell new posts from old ones by this.

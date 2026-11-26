@@ -1,10 +1,13 @@
-+++
-title = "Home"
-date = 2019-02-13T23:41:15Z
-draft = false
-tags = [ "home", "farm", "lost" ]
-categories = [ "essay" ]
-+++
+#import "/blog.typ": *
+
+#show: post.with(
+  title: [Home],
+  date: "2019-02-13T23:41:15Z",
+  categories: "essay",
+  tags: ("home", "farm", "lost"),
+)
+
+#let home = link.with("https://www.youtube.com/watch?v=dC8Gxqhcjhk")
 
 I grew up in a farm, a farm in the middle of nowhere. Well, of course it is
 somewhere, _22° 02′ 46.2″ S 43° 02′ 38.2″ W_ to be exact, it's just that "where"
@@ -34,10 +37,14 @@ being the only ones to discover teleportation, or at least the only ones to name
 it. Saudade is a notoriously untranslatable word; it is "longing, melancholy,
 nostalgia, ... a vague and constant desire for something that does not, and
 probably cannot exist, not an active discontent or poignant sadness, but an
-indolent, dreaming wistfulness."[^1] Saudade is everything taking so long to be
-so miserable, it fills the soul with lacking. As Drummond wrote, we also have
-saudade of what hasn't been, and it hurts a lot[^2]. Saudade is raw power in
-word-form; it is impossible for me to say it without getting goosebumps.
+indolent, dreaming wistfulness."#footnote[
+  Emmons, Shirlee and Lewis, Wilbur Watkins; "Researching the Song: A Lexicon"
+] Saudade is everything taking so long to be so miserable, it fills the soul
+with lacking. As Drummond wrote, we also have saudade of what hasn't been, and
+it hurts a lot#footnote[
+  Drummond, Carlos de Andrade; "O Avesso Das Coisas"
+]. Saudade is raw power in word-form; it is impossible for me to say it without
+getting goosebumps.
 
 The more I live and the more I accomplish, the more I realize that I am lost. I
 am lost because I cannot find home; it no longer exists for me to find it. I can
@@ -58,13 +65,17 @@ it so strong. In some ways, home is a common denominator between us all,
 everyone has a home, somewhere in their memory. Home can disappear, and yet
 remain within us for as long as we are alive. I oscillate between seeing this as
 a curse or a blessing, because saudade of what can no longer exist hurts so
-much. Thinking about this reminded me of David Byrne's track ["Home,"][home][^3]
-where he sings:
+much. Thinking about this reminded me of David Byrne's track
+#home["Home,"]#footnote[
+  Byrne, David; "Everything That Happens Will Happen Today"
+] where he sings:
 
-> You can fly - from the stuff that still surrounds you\
-> We're home - and the band keeps marching on\
-> Connecting - to every living soul\
-> Compassion - for things I'll never know
+#quote[
+  You can fly - from the stuff that still surrounds you \
+  We're home - and the band keeps marching on \
+  Connecting - to every living soul \
+  Compassion - for things I'll never know
+]
 
 The whole song, in one way or another, deals deeply with the idea of home, but I
 think that passage, the ending of the track, speaks precisely of how home
@@ -74,26 +85,29 @@ and to long for it once it lives solely in memory. Perhaps the real wisdom to be
 had is that we should all cherish home, while it lasts and once it's gone, for
 it's part of what makes us human, for it's part of who we are, always.
 
-Memories in Past Tense
----
+= Memories in Past Tense
 
-![A baby held up behind a bed of red flowers](images/flowers.jpg)
-My great-aunt Eunice and I picking flowers
+#picture(
+  "images/flowers.jpg",
+  alt: "A baby held up behind a bed of red flowers",
+)[My great-aunt Eunice and I picking flowers]
 
-![A white hallway with a tall wooden doorway, opening onto another room](images/hall.jpg)
-Hall of the house
+#picture(
+  "images/hall.jpg",
+  alt: "A white hallway with a tall wooden doorway, opening onto another room",
+)[Hall of the house]
 
-![A small child holding the reins of a pale horse with a red saddle blanket](images/horse.jpg)
-Me learning how to ride a horse
+#picture(
+  "images/horse.jpg",
+  alt: "A small child holding the reins of a pale horse with a red saddle blanket",
+)[Me learning how to ride a horse]
 
-![A toddler with a bucket among geese and chickens](images/chickens.jpg)
-Me feeding the chickens
+#picture(
+  "images/chickens.jpg",
+  alt: "A toddler with a bucket among geese and chickens",
+)[Me feeding the chickens]
 
-![A stone path across a lawn, leading to a white house among trees](images/entrance.jpg)
-Entrance of the farm
-
-[^1]: Emmons, Shirlee and Lewis, Wilbur Watkins; "Researching the Song: A Lexicon"
-[^2]: Drummond, Carlos de Andrade; "O Avesso Das Coisas"
-[^3]: Byrne, David; "Everything That Happens Will Happen Today"
-
-[home]: https://www.youtube.com/watch?v=dC8Gxqhcjhk
+#picture(
+  "images/entrance.jpg",
+  alt: "A stone path across a lawn, leading to a white house among trees",
+)[Entrance of the farm]

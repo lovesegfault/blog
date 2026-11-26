@@ -4,7 +4,7 @@ use std::fs;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow, bail, ensure};
 use image::imageops::FilterType;
 use image::metadata::Orientation;
 use image::{DynamicImage, ImageDecoder, ImageReader, RgbaImage};
@@ -95,8 +95,8 @@ pub fn scrub(bytes: &[u8]) -> Result<Vec<u8>> {
     scrubbed.context("the file is cut short")
 }
 
-/// Whether a picture or a video that cannot be scrubbed has Exif or a location in it.
-pub fn gives_away(path: &Path) -> Result<bool> {
+/// Fails for a picture or a video that cannot be scrubbed, and has Exif or a location in it.
+pub fn discreet(path: &Path) -> Result<()> {
     const SIGNS: [&[u8]; 7] = [
         b"MM\0*\0\0\0\x08",
         b"II*\0\x08\0\0\0",
@@ -107,10 +107,12 @@ pub fn gives_away(path: &Path) -> Result<bool> {
         b"LOCATION",
     ];
     if !is(path, &["avif", "heic", "heif", "m4v", "mov", "mp4", "webm", "webp"]) {
-        return Ok(false);
+        return Ok(());
     }
-    let bytes = read(path)?;
-    Ok(SIGNS.iter().any(|sign| memchr::memmem::find(&bytes, sign).is_some()))
+    let (bytes, how) = (read(path)?, "`exiftool -all=` or `ffmpeg -map_metadata -1`");
+    let clean = SIGNS.iter().all(|sign| memchr::memmem::find(&bytes, sign).is_none());
+    ensure!(clean, "{} may say where it was made. Clean it with {how}", path.display());
+    Ok(())
 }
 
 fn scrub_jpeg(bytes: &[u8], orientation: Orientation) -> Option<Vec<u8>> {

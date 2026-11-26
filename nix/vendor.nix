@@ -1,15 +1,24 @@
-# Other people's work that the site is made with: Graphviz, KaTeX, and the open fonts.
+# Other people's work that the site is made with: Graphviz, MathJax, Typst packages, and fonts.
 {
   lib,
-  dejavu_fonts,
   fetchurl,
   graphviz,
-  katex,
   makeWrapper,
   python3,
   runCommand,
+  typstPackages,
 }:
 let
+  # What posts can import from `@preview`.
+  packages = with typstPackages; [ cetz_0_5_2 ];
+
+  mathjax =
+    name: hash:
+    fetchurl {
+      url = "https://registry.npmjs.org/${name}/-/${baseNameOf name}-4.1.3.tgz";
+      inherit hash;
+    };
+
   fetch =
     path: hash:
     fetchurl {
@@ -43,17 +52,22 @@ runCommand "vendor"
     ];
   }
   ''
-    mkdir -p $out/fonts $out/katex/fonts $out/ruler
+    mkdir -p $out/fonts $out/mathjax/font $out/ruler $out/typst/preview
     cd $out
 
-    # Graphviz measures labels with whatever font it finds, so it is left a monospaced one.
-    cp ${dejavu_fonts}/share/fonts/truetype/DejaVuSansMono.ttf ruler
+    # Graphviz measures labels with whatever font it finds, so it is left the one that they are set in.
+    fonttools ttLib.woff2 decompress ${../assets/fonts/BerkeleyMono.woff2} -o fonts/BerkeleyMono.ttf
+    cp fonts/BerkeleyMono.ttf ruler
     echo "<fontconfig><dir>$out/ruler</dir></fontconfig>" > ruler/fonts.conf
     makeWrapper ${graphviz}/bin/dot dot --set FONTCONFIG_FILE $out/ruler/fonts.conf
-    katex=${katex}/lib/node_modules/katex/dist
-    cp $katex/katex.min.js katex
-    cp $katex/fonts/*.woff2 katex/fonts
-    sed -E 's/,url\([^)]*\.(woff|ttf)\) format\("[a-z]+"\)//g' $katex/katex.min.css > katex/katex.min.css
+
+    tar -xf ${mathjax "mathjax" "sha512-BN/8Pkgn7G1pIDYJqd9md+JHsE/jydSYbyOZnSdSA0WziuVO8mRxdYiWFumkVVly/8U+hm9DpIIoWuvySverzw=="} \
+      -C mathjax --strip-components=1
+    tar -xf ${mathjax "@mathjax/mathjax-newcm-font" "sha512-gzAB3dFHilHX1l5x2xUqRL+1jDQt3Fyza1DkEMVXWC4E8SvsGdlgEza47HYi2WhVcgfkvf4zgUGzuhbq3Pjlew=="} \
+      -C mathjax/font --strip-components=1 package/chtml package/chtml.js
+    for package in ${toString (lib.closePropagation packages)}; do
+      cp -r --no-preserve=mode $package/lib/typst-packages/* typst/preview
+    done
 
     ${face "Spectral" "300" "normal" "spectral/Spectral-Light.ttf"
       "sha256-oqUwMD0yZHO2mreGO4eekgPsdH5R1fp8exng6XXgB0A="

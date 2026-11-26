@@ -4,7 +4,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use crate::output::{File, Files};
 
-pub fn is_external(url: &str) -> bool {
+fn is_external(url: &str) -> bool {
     let scheme = url.split_once(':').map_or("", |(scheme, _)| scheme);
     url.starts_with("//")
         || !scheme.is_empty() && scheme.bytes().all(|byte| byte.is_ascii_alphanumeric() || b"+-".contains(&byte))
@@ -62,7 +62,7 @@ pub fn find<'a>(files: &'a Files, path: &str) -> Option<(&'a String, &'a File)> 
 }
 
 /// Text never has bare quotes in it, so whatever follows `opening` is the value of an attribute.
-fn values<'a>(html: &'a str, opening: &'a str) -> impl Iterator<Item = String> {
+pub fn values<'a>(html: &'a str, opening: &'a str) -> impl Iterator<Item = String> {
     html.split(opening).skip(1).filter_map(|rest| rest.split('"').next()).map(|value| value.replace("&amp;", "&"))
 }
 
@@ -75,7 +75,7 @@ pub fn check(files: &Files) -> BTreeSet<String> {
     let pages: HashMap<String, String> = files.iter().filter_map(page).collect();
     let (mut problems, mut anchors) = (BTreeSet::new(), HashSet::new());
     for (path, html) in &pages {
-        for id in values(html, " id=\"").chain(values(html, "<a name=\"")) {
+        for id in values(html, " id=\"") {
             if let Some((_, id)) = anchors.replace((path, id)) {
                 problems.insert(format!("{path}: more than one thing is called `{id}`"));
             }

@@ -85,12 +85,12 @@ static LANGUAGES: LazyLock<Vec<Language>> = LazyLock::new(|| {
         arborium_javascript, "JavaScript", ["javascript", "js"], "ochre", false, "";
         arborium_json, "JSON", ["json"], "olive", true, "(pair key: (_) @key)";
         arborium_lua, "Lua", ["lua"], "cobalt", false, "";
-        arborium_markdown, "Markdown", ["markdown", "md"], "cream", false, "";
         arborium_nix, "Nix", ["nix"], "slate", false, NIX;
         arborium_python, "Python", ["python", "py"], "ochre", true, "";
         arborium_rust, "Rust", ["rust", "rs"], "sienna", true, RUST;
         arborium_toml, "TOML", ["toml"], "olive", false, "[(bare_key) (quoted_key)] @key";
         arborium_typescript, "TypeScript", ["typescript", "ts"], "cobalt", false, "";
+        arborium_typst, "Typst", ["typst", "typ"], "cream", false, "";
         arborium_x86asm, "x86", ["x86", "x86asm", "nasm"], "slate", false, "";
         arborium_yaml, "YAML", ["yaml", "yml"], "olive", false, YAML;
         arborium_zig, "Zig", ["zig"], "ochre", false, "";
@@ -106,11 +106,11 @@ fn ink(capture: &str) -> Option<Ink> {
         ("spell" | "error", _) => return None,
         ("attribute" | "preproc" | "label", _) | ("keyword", "directive") | ("function", "macro" | "special") => "p",
         ("keyword" | "conditional" | "repeat" | "include" | "exception" | "storageclass", _) => "k",
-        ("type", "qualifier") | ("text", "title") => "k",
+        ("type", "qualifier") | ("markup", "heading.marker" | "list") => "k",
         ("type" | "constructor" | "module" | "tag" | "key", _) | ("variable", "builtin") => "t",
-        ("function" | "method", _) | ("text", "uri" | "reference") => "f",
+        ("function" | "method", _) => "f",
         ("number" | "float" | "boolean" | "constant" | "escape", _) | ("string", "escape") => "n",
-        ("string" | "character", _) | ("text", "literal") => "s",
+        ("string" | "character", _) | ("markup", "raw.block") => "s",
         ("comment", _) => COMMENT,
         ("operator" | "punctuation" | "delimiter", _) => PUNCTUATION,
         _ => "",

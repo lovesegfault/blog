@@ -1,10 +1,11 @@
-+++
-title = "Values"
-date = 2021-04-01T22:12:55-07:00
-tags = [ "values" ]
-categories = [ "essay" ]
-draft = true
-+++
+#import "/blog.typ": *
+
+#show: post.with(
+  title: [Values],
+  date: "2021-04-01T22:12:55-07:00",
+  categories: "essay",
+  tags: "values",
+)
 
 Introspect into most startups today, and you'll find many shared structures
 among their bureaucracies. One such structures are company values, a document

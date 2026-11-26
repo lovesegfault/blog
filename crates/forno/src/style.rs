@@ -11,11 +11,10 @@ use mural::{HOME, LABELS, NARROW, POST, RECIPE, Scene, Valley};
 use crate::figure::FIRE;
 use crate::output::{Cache, File, Output, read_text};
 use crate::photo::webp;
-use crate::site::Tools;
+use crate::site::{Build, Tools};
 
 pub struct Style {
     pub sheet: String,
-    pub math_sheet: String,
     pub script: String,
     /// For the text, the notes and the title.
     pub fonts: [String; 3],
@@ -80,31 +79,35 @@ fn asset(output: &Output, path: PathBuf) -> Result<String> {
     output.asset(&path.file_name().unwrap().to_string_lossy(), File::Copied(path.clone()))
 }
 
-/// A stylesheet, pointed at where the files it uses are published.
-fn sheet(path: &Path, output: &Output) -> Result<String> {
-    let css = read_text(path)?;
+/// A stylesheet, pointed at where the files it uses from `folder` are published.
+fn sheet(css: String, folder: &Path, output: &Output) -> Result<String> {
     let mut parts = css.split("url(");
     let mut linked = parts.next().unwrap().to_owned();
     for part in parts {
-        let (file, rest) = part.split_once(')').with_context(|| format!("{}: `url(` is not closed", path.display()))?;
-        write!(linked, "url({}){rest}", asset(output, path.with_file_name(file))?)?;
+        let (file, rest) = part.split_once(')').context("a `url(` in the stylesheet is not closed")?;
+        write!(linked, "url({}){rest}", asset(output, folder.join(file.trim_matches('"')))?)?;
     }
     Ok(linked)
+}
+
+/// Returns the address of the stylesheet for the formulas that were set.
+pub fn math(build: &Build) -> Result<String> {
+    let css = build.math.lock().unwrap().iter().fold(build.tools.math.sheet()?, |css, rule| css + rule);
+    build.output.asset("math.css", File::Made(sheet(css, &build.tools.vendor, &build.output)?.into()))
 }
 
 impl Style {
     pub fn new(tools: &Tools, programs: &Path, output: &Output) -> Result<Self> {
         let fired = fire(&tools.cache)?;
-        let mut own = sheet(Path::new("assets/site.css"), output)?;
+        let mut own = sheet(read_text(Path::new("assets/site.css"))?, Path::new("assets"), output)?;
         for scene in [HOME, POST, NARROW] {
             own = own.replace(&format!("--scene: {};", scene.name), &measurements(&scene));
         }
-        let css = sheet(&tools.vendor.join("fonts.css"), output)? + &tiles(&fired, output)? + &own;
-        let math = sheet(&tools.vendor.join("katex/katex.min.css"), output)?;
+        let fonts = sheet(read_text(&tools.vendor.join("fonts.css"))?, &tools.vendor, output)?;
+        let css = fonts + &tiles(&fired, output)? + &own;
         let font = |name| asset(output, tools.vendor.join(format!("fonts/{name}-common.woff2")));
         Ok(Self {
             sheet: output.asset("site.css", File::Made(css.into_bytes()))?,
-            math_sheet: output.asset("katex.css", File::Made(math.into_bytes()))?,
             script: asset(output, "assets/site.js".into())?,
             fonts: [font("Spectral-Regular")?, font("BonaNova-Italic")?, font("Spectral-Light")?],
             collider: asset(output, programs.join("collision.wasm"))?,

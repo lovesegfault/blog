@@ -1,10 +1,15 @@
-+++
-title = "Logic"
-date = 2021-04-01T22:09:08-07:00
-tags = [ "logic", "mathematics", "introduction" ]
-categories = [ "essay" ]
-draft = true
-+++
+#import "/blog.typ": *
+
+#show: post.with(
+  title: [Logic],
+  date: "2021-04-01T22:09:08-07:00",
+  categories: "essay",
+  tags: ("logic", "mathematics", "introduction"),
+)
+
+#let original = link.with(
+  "https://www.math.tecnico.ulisboa.pt/~fteix/CI2017_18_1S/logica.pdf",
+)
 
 Mathematics, much like any science, uses everyday language to express itself.
 When we say, for example, "two is an even natural number," we are utilizing the
@@ -17,10 +22,10 @@ is a great basketball player", referring to a popular sport. There is, however,
 a fundamental difference between these two sentences, and it's this difference
 that we shall analyze.
 
-Suppose that, in a hip *café* in downtown San Francisco, while sipping on a
+Suppose that, in a hip _café_ in downtown San Francisco, while sipping on a
 Latte and eating some locally sourced, family made, cake, Daniel and Marissa
 start discussing about basketball. In the heat of the moment, Daniel exclaims,
-"LaVar Ball is an *excellent* basketball player!" Marissa, more for the pleasure
+"LaVar Ball is an _excellent_ basketball player!" Marissa, more for the pleasure
 of contradicting rather than conviction, replies "That's absurd! LaVar was fine,
 but he's nothing even close to an extraordinary player! Magic Johnson, Michael
 Jordan, those were really extraordinary!" We shouldn't be bothered to report the
@@ -48,7 +53,7 @@ The sentences we construct, both in mathematical and everyday language, involve
 certain beings, each of which is designated by a convenient symbol, which in
 this case we call designation.
 
----
-This is a translation and adaptation of the absolutely great text [Mathematical Logic][original].
+#divider()
 
-[original]: https://www.math.tecnico.ulisboa.pt/~fteix/CI2017_18_1S/logica.pdf
+This is a translation and adaptation of the absolutely great text
+#original[Mathematical Logic].

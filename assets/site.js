@@ -31,7 +31,13 @@ function formulas() {
   on(document, "copy", () => {
     const [touched, at] = [$$(".formula").filter((it) => selection.containsNode(it, true)), scrollY];
     if (!touched.length) return;
-    const ranges = Array.from({ length: selection.rangeCount }, (_, i) => selection.getRangeAt(i).cloneRange());
+    // Firefox remembers where a range was, and so do its clones.
+    const ranges = Array.from({ length: selection.rangeCount }, (_, i) => {
+      const [range, was] = [new Range(), selection.getRangeAt(i)];
+      range.setStart(was.startContainer, was.startOffset);
+      range.setEnd(was.endContainer, was.endOffset);
+      return range;
+    });
     const select = () => (selection.removeAllRanges(), ranges.forEach((range) => selection.addRange(range)));
     for (const it of touched) {
       const [start, end] = it.matches(".picked") ? ["Before", "After"] : ["After", "Before"];

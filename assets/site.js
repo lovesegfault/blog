@@ -30,15 +30,22 @@ function formulas() {
   });
   on(document, "copy", () => {
     const [touched, at] = [$$(".formula").filter((it) => selection.containsNode(it, true)), scrollY];
+    if (!touched.length) return;
+    const ranges = Array.from({ length: selection.rangeCount }, (_, i) => selection.getRangeAt(i).cloneRange());
+    const select = () => (selection.removeAllRanges(), ranges.forEach((range) => selection.addRange(range)));
     for (const it of touched) {
-      const [range, [start, end]] = [selection.getRangeAt(0), picked(it) ? ["Before", "After"] : ["After", "Before"]];
-      if (it.contains(range.startContainer)) range[`setStart${start}`](it);
-      if (it.contains(range.endContainer)) range[`setEnd${end}`](it);
+      const [start, end] = it.matches(".picked") ? ["Before", "After"] : ["After", "Before"];
+      for (const range of ranges) {
+        if (it.contains(range.startContainer)) range[`setStart${start}`](it);
+        if (it.contains(range.endContainer)) range[`setEnd${end}`](it);
+      }
       it.prepend(it.dataset.source);
       it.classList.add("copied");
     }
+    select();
     requestAnimationFrame(() => {
       for (const it of touched) it.firstChild.remove(), it.classList.remove("copied");
+      select();
       scrollTo(scrollX, at);
     });
   });

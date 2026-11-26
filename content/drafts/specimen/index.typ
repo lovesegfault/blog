@@ -233,21 +233,24 @@ take the margin over. On a narrow screen both go back into the column.
 
 Graphviz lays out @lookup, and the one after it is drawn by Typst.
 
-#figure(caption: [How a symbol is found])[
-  ```dot
-  digraph {
-    rankdir=LR
-    call [label="call puts@plt"]
-    plt [label=".plt"]
-    got [label=".got.plt", class=warm]
-    ld [label="ld.so", style="rounded,filled"]
-    call -> plt -> got
-    got -> ld [label="once", style=dashed]
-    got -> puts [label="after"]
-    ld -> puts
-  }
-  ```
-] <lookup>
+#figure(
+  diagram(alt: "A call goes through the PLT and the GOT, to ld.so at first and to puts after that")[
+    ```dot
+    digraph {
+      rankdir=LR
+      call [label="call puts@plt"]
+      plt [label=".plt"]
+      got [label=".got.plt", class=warm]
+      ld [label="ld.so", style="rounded,filled"]
+      call -> plt -> got
+      got -> ld [label="once", style=dashed]
+      got -> puts [label="after"]
+      ld -> puts
+    }
+    ```
+  ],
+  caption: [How a symbol is found],
+) <lookup>
 
 #drawing(alt: "An angle in the unit circle", cetz.canvas(length: 4em, {
   import cetz.draw: *

@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 use std::fmt::Write;
-use std::iter::successors;
+use std::iter::{once, successors};
 use std::mem::{replace, take};
 use std::ops::ControlFlow;
 use std::sync::LazyLock;
@@ -27,7 +27,7 @@ use typst::visualize::{Color, Geometry, Paint, Shape};
 use typst_html::{FrameElem, HtmlAttr, HtmlElem};
 use unicode_math_class::MathClass;
 
-use crate::tree::Node;
+use crate::tree::{Node, plain};
 use crate::typeset::is_written;
 
 /// Typst's MathML, followed by the drawing.
@@ -45,8 +45,8 @@ pub const RULE: ShowFn<EquationElem> = |equation, engine, styles| {
         _ => Content::empty(),
     };
     let (mut spoken, mut drawn) = (equation.clone(), equation.clone());
-    let (body, alt) = (equation.body.clone().set(LrElem::size, Rel::one()), equation.alt.get_cloned(styles));
-    spoken.body = alt.clone().map_or(body, TextElem::packed);
+    let body = equation.body.clone().set(LrElem::size, Rel::one());
+    spoken.body = equation.alt.get_cloned(styles).map_or(body, TextElem::packed);
     let mut math = TYPST.get(Target::Html, spoken.pack_ref()).unwrap().apply(spoken.pack_ref(), engine, styles)?;
     if let Some(BlockBody::Content(inside)) = math.to_packed::<BlockElem>().and_then(|it| it.body.get_cloned(styles)) {
         math = inside;
@@ -70,8 +70,7 @@ pub const RULE: ShowFn<EquationElem> = |equation, engine, styles| {
     let source = [equation.span(), equation.body.span()].into_iter().find_map(|span| source(engine, span));
     Ok(math
         .with_attr(HtmlAttr::constant("number"), number.plain_text())
-        .with_attr(HtmlAttr::constant("text"), equation.body.plain_text())
-        .with_attr(HtmlAttr::constant("source"), source.map(Into::into).or(alt).unwrap_or(equation.body.plain_text()))
+        .with_optional_attr(HtmlAttr::constant("source"), source)
         .with_body(Some(body))
         .pack()
         .spanned(equation.body.traverse(&mut written).break_value().unwrap_or(Span::detached())))
@@ -530,6 +529,65 @@ pub fn arrange(node: &mut Node, displayed: bool) {
     }
 }
 
+fn class(node: &Node) -> Option<MathClass> {
+    default_math_class(node.children.first().filter(|_| node.tag == "mo")?.text.chars().next()?)
+}
+
+fn is_single(node: &Node) -> bool {
+    let fence = |node| matches!(class(node), Some(MathClass::Opening | MathClass::Fence | MathClass::Closing));
+    match &node.children[..] {
+        [first, inside @ .., last] => fence(first) && fence(last) && !inside.iter().any(fence),
+        only => only.iter().all(is_single),
+    }
+}
+
+/// Adds the signs that it takes for a formula to mean the same once it is only text.
+pub fn punctuate(node: &mut Node) {
+    use MathClass::*;
+    node.children.iter_mut().filter(|part| part.tag != "math").for_each(punctuate);
+    let (signs, scripts): (&[&str], _) = match &*node.tag {
+        _ if node.get("accent").or(node.get("accentunder")).is_some() => (&["", ""], false),
+        "mfrac" if node.get("linethickness").is_some() => (&["", " choose "], false),
+        "mfrac" => (&["", "/"], false),
+        "mroot" => (&["", "^(1/"], false),
+        "msub" | "munder" | "msubsup" | "munderover" | "mmultiscripts" => (&["", "_", "^", "", " pre_", " pre^"], true),
+        "msup" | "mover" => (&["", "^"], true),
+        _ => (&[], false),
+    };
+    let classes: Vec<_> = once(Some(Opening)).chain(node.children.iter().map(class)).chain([Some(Closing)]).collect();
+    for ((at, part), [last, own, next]) in node.children.iter_mut().enumerate().zip(classes.array_windows()) {
+        let [left, right] =
+            [matches!(last, Some(Opening | Fence)), matches!(next, Some(Closing | Fence | Punctuation))]
+                .map(|tight| if tight { "" } else { " " });
+        let [before, open, close] = match (signs.get(at), own, &*part.tag) {
+            (_, _, "mfrac" | "mroot" | "msqrt" | "msup") if scripts && at == 0 => ["", "(", ")"],
+            (Some(sign), ..) if !is_single(part) && (at > 0 || !scripts) => [sign, "(", ")"],
+            (Some(_), ..) if "′″‴⁗".contains(&plain(&part.children)) => continue,
+            (Some(sign), ..) => [sign, "", ""],
+            (_, Some(Alphabetic | Punctuation), _) | (.., "msqrt" | "mtd") => ["", "", right],
+            _ if part.get("rspace") == Some("0em") || part.tag == "mtr" => continue,
+            (_, Some(Binary | Vary), _) if last.is_some() => continue,
+            (_, Some(Binary | Vary | Relation), _) | (.., "mspace") => [" ", "", " "],
+            (.., "mfrac") => [left, "", if *next == Some(Fence) { " " } else { right }],
+            _ => ["", "", if is_single(part) { "" } else { right }],
+        };
+        part.signs = [[before, open, &part.signs[0]].concat(), [&part.signs[1], close].concat()];
+    }
+    match &*node.tag {
+        "msqrt" => node.signs = if is_single(node) { ["√", ""] } else { ["√(", ")"] }.map(Into::into),
+        "mroot" => node.signs[1] += ")",
+        "mtable" => (node.children.iter_mut().skip(1))
+            .filter_map(|row| row.children.iter_mut().find_map(|cell| cell.children.first_mut()))
+            .for_each(|first| first.signs[0].insert_str(0, "; ")),
+        _ => {}
+    }
+}
+
+/// On one line.
+pub fn flat(formula: &Node) -> String {
+    spoken(&plain(&formula.children)).split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 /// Text that there was no font for.
 pub fn missing(frame: &Frame) -> Option<&str> {
     frame.items().find_map(|(_, item)| match item {
@@ -601,6 +659,19 @@ mod tests {
     #[test]
     fn comments_are_not_published() {
         assert_eq!(set("$a /* b */$").0[0].children[0].get("source"), Some("$a  $"));
+    }
+
+    #[test]
+    fn formulas_mean_the_same_as_text() {
+        for (typst, expected) in [
+            ("2 1/9 x_1^2 y' = -a", "2 1/9 x_1^2 y′ = −a"),
+            ("(|a| + |b|) / (c d)^(-1)", "(|a| + |b|)/((cd)^(−1))"),
+            ("sqrt(2) x sqrt(a b) root(3, c)^2", "√2 x√(ab) (c^(1/3))^2"),
+            ("mat(1, 2; 3, 4) binom(n, k)", "(1 2; 3 4)(n choose k)"),
+            ("sum_(i = 1)^n sin f(i)", "∑_(i=1)^n sin f(i)"),
+        ] {
+            assert_eq!(plain(&set(&format!("${typst}$")).0).trim(), expected);
+        }
     }
 
     #[test]

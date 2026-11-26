@@ -86,6 +86,12 @@ impl Output {
         Ok(url)
     }
 
+    /// Adds a file at an address that lasts, for those who kept it, and returns it with the mark of this version.
+    pub fn lasting(&self, url: &str, file: File) -> Result<String> {
+        let marked = format!("{url}?{}", &digest(&[&file.bytes()?])[..10]);
+        self.add(url, file).and(Ok(marked))
+    }
+
     pub fn into_files(self) -> Files {
         self.0.into_inner().unwrap()
     }
@@ -94,11 +100,12 @@ impl Output {
 /// Replaces whatever an earlier build left in `folder`.
 pub fn write(files: &Files, folder: &Path) -> Result<()> {
     if folder.exists() {
-        let replaceable = folder.join("sitemap.xml").exists() || fs::read_dir(folder)?.next().is_none();
+        let empty = fs::read_dir(folder)?.all(|entry| entry.is_ok_and(|entry| entry.file_name() == ".DS_Store"));
+        let replaceable = empty || folder.join("sitemap.xml").exists();
         ensure!(replaceable, "{} does not look like a built site, so it was left alone", folder.display());
         fs::remove_dir_all(folder)?;
     }
-    for (url, file) in files {
+    for (url, file) in files.get_key_value("/sitemap.xml").into_iter().chain(files) {
         let path = folder.join(url.trim_start_matches('/'));
         fs::create_dir_all(path.parent().unwrap())?;
         fs::write(&path, file.bytes()?).with_context(|| format!("cannot write {}", path.display()))?;
@@ -109,7 +116,7 @@ pub fn write(files: &Files, folder: &Path) -> Result<()> {
 impl Cache {
     /// The folder that `make` fills, which is made once for any given `inputs`.
     pub fn entry(&self, inputs: &[&[u8]], make: impl FnOnce(&Path) -> Result<()>) -> Result<PathBuf> {
-        let folder = self.0.join(digest(inputs));
+        let folder = self.0.join(digest(&[inputs, &[include_bytes!("../../../Cargo.lock")]].concat()));
         if !folder.exists() {
             let draft = folder.with_extension(format!("{}-{:?}", std::process::id(), std::thread::current().id()));
             fs::create_dir_all(&draft)?;

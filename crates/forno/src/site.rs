@@ -5,16 +5,18 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
+use jiff::Timestamp;
 use rayon::prelude::*;
 use serde::Deserialize;
 
 use crate::article::Article;
 use crate::content::{self, NOT_FOUND, Page, address};
-use crate::output::{Cache, File, Files, Output, read, read_text, walk};
+use crate::output::{Cache, File, Files, Output, read_text, walk};
+use crate::scrub::scrub;
 use crate::style::Style;
 use crate::typeset::{Desk, Typst};
-use crate::{links, pages, photo};
+use crate::{links, pages};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -75,6 +77,8 @@ pub struct Term<'a> {
     pub posts: Vec<&'a Article<'a>>,
 }
 
+pub const SOURCES: [&str; 5] = ["assets", "blog.typ", "content", "site.toml", "static"];
+
 impl Tools {
     pub fn new() -> Result<Self> {
         let vendor: PathBuf = env::var_os("FORNO_VENDOR").context("run this inside `nix develop`")?.into();
@@ -111,17 +115,10 @@ impl Build<'_> {
 
     /// Publishes the files in `folder` as they are, but for what photos give away.
     fn copy(&self, folder: &Path, url: &str) -> Result<()> {
-        for path in walk(folder)? {
-            let name = path.strip_prefix(folder)?.to_string_lossy().into_owned();
-            let file = if content::is_source(&path) {
-                continue;
-            } else if photo::is_photo(&path) {
-                File::Made(photo::scrub(&read(&path)?).with_context(|| path.display().to_string())?)
-            } else {
-                photo::discreet(&path).unwrap_or_else(|error| self.report(error.to_string()));
-                File::Copied(path)
-            };
-            self.output.add(&(links::resolve(url, "") + &name), file)?;
+        for path in walk(folder)?.into_iter().filter(|path| !content::is_source(path)) {
+            let url = links::resolve(url, "") + &path.strip_prefix(folder)?.to_string_lossy();
+            let file = scrub(&path).inspect_err(|error| self.report(format!("{error:#}")));
+            self.output.add(&url, file.unwrap_or(File::Copied(path)))?;
         }
         Ok(())
     }
@@ -149,6 +146,15 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
     let articles: Vec<Article> = sources.par_iter().map(|page| Article::new(&build, page)).collect();
     let posts: Vec<&Article> = articles.iter().take_while(|article| article.page.date.is_some()).collect();
     let card = pages::site_card(&build, &posts)?;
+    for Article { page, body, .. } in articles.iter().filter(|article| !article.page.draft) {
+        if page.date.iter().chain(&page.updated).any(|date| date.timestamp() > Timestamp::now()) {
+            build.report(format!("{}: this is dated in the future", page.path.display()));
+        }
+        let linked = |draft: &&Page| draft.draft && body.0.contains(&format!("=\"{}", draft.url));
+        for draft in sources.iter().filter(linked) {
+            build.report(format!("{}: `{}` is only a draft", page.path.display(), draft.url));
+        }
+    }
 
     build.copy(Path::new("static"), "/")?;
     add("/", pages::home(&build, &posts, &card)?)?;
@@ -178,13 +184,14 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
 
     let urls: Vec<&str> = listed.iter().map(|(url, _)| *url).collect();
     for (from, to) in config.redirects.iter().flat_map(|(from, to)| redirects(from, to, &urls)) {
+        ensure!(from.ends_with('/') || from.ends_with(".html"), "site.toml: `{from}` has to end in `/` or `.html`");
         add(&from, pages::redirect(&build, &to))?;
     }
 
     let files = build.output.into_files();
     let mut problems = build.problems.into_inner().unwrap();
     if sources.len() == paths.len() {
-        problems.extend(links::check(&files));
+        problems.extend(links::check(&files, &config.url));
     }
     Ok(Site { files, problems })
 }

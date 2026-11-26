@@ -6,6 +6,12 @@ result
 result-*
 *.drv
 
+# Left behind by editors and exiftool, and would be published
+*~
+\#*#
+*_original
+/content/**/index.pdf
+
 # The generator
 /.cache
 /public

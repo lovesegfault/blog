@@ -38,16 +38,13 @@ fn survey(roots: &[&str]) -> Vec<(Option<SystemTime>, PathBuf)> {
 fn watch(tools: &Tools, press: &Press) -> ! {
     let (mut seen, mut programs) = ([Vec::new(), Vec::new()], Err(anyhow!("nothing is compiled yet")));
     loop {
-        let now = [
-            survey(&["crates/collision", "crates/explainers"]),
-            survey(&["assets", "blog.typ", "content", "static", "site.toml"]),
-        ];
+        let now = [survey(&["crates/collision", "crates/explainers"]), survey(&site::SOURCES)];
         if now == seen {
             thread::sleep(Duration::from_millis(150));
             continue;
         }
         let started = Instant::now();
-        if now[0] != seen[0] {
+        if now[0] != seen[0] || programs.as_ref().is_ok_and(|folder: &PathBuf| !folder.exists()) {
             programs = programs::compile(&tools.cache);
         }
         seen = now;

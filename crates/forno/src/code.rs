@@ -24,7 +24,7 @@ pub struct Options {
     start: Option<usize>,
     numbers: Smart<bool>,
     diff: bool,
-    wrap: bool,
+    wrap: Smart<bool>,
     run: Option<String>,
 }
 
@@ -105,6 +105,7 @@ fn note<'a>(text: &'a str, names: &[String]) -> (&'a str, Option<usize>) {
             && let Some(note) = names.iter().position(|known| known == name)
             && let Some(code) = open.iter().find_map(|open| before.trim_end().strip_suffix(open))
             && (open != LEADERS || !code.ends_with(|c: char| !c.is_whitespace()))
+            && (open != [""] || !["", "#include", "#import", "template"].contains(&code.trim()))
         {
             return (code.trim_end(), Some(note));
         }
@@ -116,7 +117,9 @@ fn note<'a>(text: &'a str, names: &[String]) -> (&'a str, Option<usize>) {
 fn link(text: &str, inks: &[Ink]) -> Option<Range<usize>> {
     let start = text.find("https://").or(text.find("http://")).filter(|&start| inks[start] == COMMENT)?;
     let address = text[start..].split([' ', '\t', '"', '<', '>', '`']).next()?;
-    Some(start..start + address.trim_end_matches(['.', ',', ';', ':', ')', '\'']).len())
+    let bare = address.trim_end_matches(['.', ',', ';', ':', ')', '\'']);
+    let closed = bare.matches('(').count() > bare.matches(')').count() && address[bare.len()..].starts_with(')');
+    Some(start..start + bare.len() + usize::from(closed))
 }
 
 impl<'a> Listing<'a> {
@@ -132,12 +135,24 @@ impl<'a> Listing<'a> {
         let runs = language.is_some_and(|language| RUNNABLE.contains(&language.label));
         ensure!(runs || options.run.is_none(), "`run` is for {}", RUNNABLE.join(", "));
         let mut number = options.start.unwrap_or(1);
-        let mut lines: Vec<Line> = Vec::new();
-        for text in code.lines() {
+        let (mut lines, mut typed) = (Vec::<Line>::new(), 0);
+        for (at, text) in code.lines().enumerate() {
             let continued = lines.last().is_some_and(|last| last.role != Role::Output && last.text.ends_with('\\'));
+            let command = at >= typed && (continued || text.starts_with("$ "));
+            let continued = console && (continued || at < typed);
+            // A here-document is typed up to the word that ends it.
+            if let Some((_, word)) = text.split_once("<<").filter(|_| command) {
+                let word =
+                    word.trim_start_matches(['-', ' ', '\'', '"', '\\']).split([' ', '\'', '"', ';', '|']).next();
+                let end = code.lines().skip(at).position(|line| Some(line.trim_matches(['>', ' ', '\t'])) == word);
+                typed = at + 1 + end.unwrap_or(0);
+            }
             let header = ["+++ ", "--- ", "@@", "diff ", "index "].iter().any(|start| text.starts_with(start));
             let (role, text) = match text.split_at_checked(1).unwrap_or(("", text)) {
-                _ if console && continued => (Role::Continued, text),
+                (">", _) if continued => {
+                    bail!("this `>` would be copied: leave it out, or indent it if it is no prompt")
+                }
+                _ if continued => (Role::Continued, text),
                 ("$", rest) if console && !rest.starts_with(|c| c != ' ') => (Role::Command, rest.trim_start()),
                 _ if console || patch && header => (Role::Output, text),
                 ("+", _) if patch => (Role::Added, text),
@@ -215,11 +230,15 @@ impl<'a> Listing<'a> {
     /// `id` is the block's, `source` is where its file can be had, and `cite` makes the mark that leads to a note.
     pub fn render(&self, id: &str, source: Option<&str>, cite: &mut dyn FnMut(usize) -> Markup) -> Markup {
         let (options, patch) = (self.options, self.patch);
-        let (wrap, numbered) = (options.wrap || self.transcript, options.numbers.unwrap_or(!patch && !self.transcript));
+        let (wrap, numbered) =
+            (options.wrap.unwrap_or(self.transcript), options.numbers.unwrap_or(!patch && !self.transcript));
         let label = if patch { Some("diff") } else { self.language.map(|language| language.label) };
+        let text = |at: usize| self.lines.get(at).map_or("", |line| line.text.trim());
+        let lined_up = |at| text(at).contains("  ") || text(at).contains('\t') || text(at + 1).starts_with(['^', '~']);
+        let whole = self.lines.iter().enumerate().filter(|(at, _)| !wrap || options.wrap.is_auto() && lined_up(*at));
         let width = |line: &Line| line.text.chars().count() + 3 * line.text.matches('\t').count();
-        let columns = self.lines.iter().map(width).max().unwrap_or(0);
-        let wide = columns > COLUMNS && !wrap && self.lines.iter().all(|line| line.note.is_none());
+        let columns = whole.map(|(_, line)| width(line) + line.note.map_or(0, |_| 6)).max().unwrap_or(0);
+        let wide = columns > COLUMNS && self.lines.iter().all(|line| line.note.is_none());
         let digits = self.lines.last().map_or(0, |line| line.number.to_string().len()).max(2);
 
         let mut pre = |lines: &[Line]| {
@@ -242,8 +261,9 @@ impl<'a> Listing<'a> {
                 }
             } } } }
         };
+        // Reader views throw out a `div` with many links, and what is called `header.h` unless it is content.
         html! {
-            figure.code.wide[wide].wrap[wrap].patch[patch] id=(id)
+            figure.code.content.wide[wide].wrap[wrap].patch[patch] id=(id)
                 style={ "--columns:" (columns) ";--digits:" (digits) }
                 data-language=[options.run.as_ref().and(label).map(str::to_lowercase)] data-options=[&options.run]
             {
@@ -252,7 +272,7 @@ impl<'a> Listing<'a> {
                         @if let Some(source) = source { a href=(source) { (name) } } @else { (name) }
                     }
                 }
-                div.lines {
+                section.lines {
                     @for part in self.lines.chunk_by(|a, b| a.among(&options.fold) == b.among(&options.fold)) {
                         @if part[0].among(&options.fold) {
                             details {
@@ -311,7 +331,7 @@ mod tests {
         assert_eq!(split("f(); // <a>"), ("f();", Some(0)));
         assert_eq!(split("f(); /* <a> */"), ("f();", Some(0)));
         assert_eq!(split("f(); // 50% <a>"), ("f(); // 50%", Some(0)));
-        assert_eq!(split("Vec<a>").1.or(split("#include <b>").1), None);
+        assert_eq!(split("Vec<a>").1.or(split("#include <a>").1).or(split("f(); // <b>").1), None);
     }
 
     #[test]
@@ -327,6 +347,14 @@ mod tests {
         let session = Listing::new("console", &options, "$ a \\\n  b\n$1\n", &[]).unwrap();
         assert!(session.lines.iter().map(|line| line.role).eq([Role::Command, Role::Continued, Role::Output]));
         assert_eq!(session.portable(&mut |_| html!()).0, "<pre><code>$ a \\\n  b\n$1\n</code></pre>");
+        let typed = Listing::new("console", &options, "$ a <<'E'\nb << c\nE\nc\n$ d <<< e\ne", &[]).unwrap();
+        assert!(typed.lines.iter().map(|line| line.role == Role::Output).eq([false, false, false, true, false, true]));
+        assert!(Listing::new("console", &options, "$ a \\\n> b", &[]).is_err());
+    }
+
+    #[test]
+    fn what_is_lined_up_does_not_wrap() {
+        assert!(page("", Options::default(), "a b c d e\n f();\n  ^").unwrap().contains("--columns:5;"));
     }
 
     #[test]
@@ -340,7 +368,7 @@ mod tests {
     fn marks_and_links_span_tokens() {
         let marked = page("c", Options { mark: vec!["f(".into()], ..Options::default() }, "f(é);").unwrap();
         assert!(marked.contains(r#"<mark><span class="f">f</span><span class="o">(</span></mark>é"#));
-        let linked = page("c", Options::default(), "// (https://a.b/c).").unwrap();
-        assert!(linked.contains(r#"<a class="c" href="https://a.b/c">https://a.b/c</a>"#));
+        let linked = page("c", Options::default(), "// (https://a.b/c_(d)).").unwrap();
+        assert!(linked.contains(r#"<a class="c" href="https://a.b/c_(d)">https://a.b/c_(d)</a>"#));
     }
 }

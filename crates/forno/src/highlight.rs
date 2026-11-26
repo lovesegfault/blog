@@ -3,7 +3,7 @@
 use std::cmp::Reverse;
 use std::sync::{LazyLock, OnceLock};
 
-use arborium_highlight::{CompiledGrammar, GrammarConfig, ParseContext};
+use arborium_highlight::{CompiledGrammar, GrammarConfig, Injection, ParseContext};
 
 /// A class in the stylesheet, or nothing for plain text.
 pub type Ink = &'static str;
@@ -143,12 +143,21 @@ impl Language {
         for (span, ink) in spans {
             inks[span.start as usize..span.end as usize].fill(ink);
         }
-        for inner in parsed.injections.iter().filter(|_| depth < 3) {
-            // Nix names the language in a comment.
-            if let Some(language) = language(inner.language.trim_matches(['/', '*', '#', ' '])) {
-                let range = inner.start as usize..inner.end as usize;
-                language.coat(&code[range.clone()], &mut inks[range], depth + 1);
-            }
+        // Nix names the language in a comment, which goes before what is only a guess.
+        let known = |inner: &Injection| language(inner.language.trim_matches(['/', '*', '#', ' ']));
+        let mut inner: Vec<_> = parsed.injections.iter().filter(|inner| depth < 3 && known(inner).is_some()).collect();
+        inner.sort_by_key(|inner| (inner.start, &inner.language));
+        inner.dedup_by_key(|inner| inner.start);
+        // What is spliced into a string does not end it.
+        let spliced = |gap: &str| gap.len() < 5 && gap.starts_with("''") || gap.starts_with("${") && gap.ends_with('}');
+        for parts in inner.chunk_by(|a, b| code.get(a.end as usize..b.start as usize).is_some_and(spliced)) {
+            let (start, end) = (parts[0].start as usize, parts[parts.len() - 1].end as usize);
+            let (code, inks) = (&code[start..end], &mut inks[start..end]);
+            let (mut whole, mut coat) = ("x".repeat(code.len()), inks.to_vec());
+            let ranges = parts.iter().map(|part| part.start as usize - start..part.end as usize - start);
+            ranges.clone().for_each(|range| whole.replace_range(range.clone(), &code[range]));
+            known(parts[0]).unwrap().coat(&whole, &mut coat, depth + 1);
+            ranges.for_each(|range| inks[range.clone()].copy_from_slice(&coat[range]));
         }
         parsed.spans.iter().all(|span| span.capture != "error")
     }
@@ -185,5 +194,6 @@ mod tests {
     #[test]
     fn languages_nest() {
         assert_eq!(painted("rust", "m!(f(1))"), "ppofonoo");
+        assert!(painted("nix", r#"{ script = ''if "${a}"; then b; fi''; }"#).ends_with("kkkksfoskksso.o"));
     }
 }

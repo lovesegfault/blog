@@ -85,6 +85,7 @@
             TYPST_FONT_PATHS = "${vendor}/fonts";
             TYPST_PACKAGE_CACHE_PATH = "${vendor}/typst";
           };
+          shellHook = "[ ! -e site.toml ] || pre-commit install > /dev/null";
           packages = with pkgs; [
             (writeShellScriptBin "forno" ''exec cargo run --package forno -- "$@"'')
             cargo

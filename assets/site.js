@@ -26,7 +26,7 @@ function formulas() {
   // Left to itself, a triple click stops at the first one.
   on(document, "click", ({ detail, target }) => {
     const block = target.closest("p, li, dt, dd, th, td, h1, h2, h3, h4, figcaption, figure");
-    if (detail === 3 && block?.matches(":has(.formula):not(figure)")) selection.selectAllChildren(block);
+    if (detail === 3 && block?.matches(":not(figure)") && $(".formula", block)) selection.selectAllChildren(block);
   });
   on(document, "copy", () => {
     const [touched, at] = [$$(".formula").filter((it) => selection.containsNode(it, true)), scrollY];
@@ -99,7 +99,7 @@ async function figure(element) {
   const light = (names) => posts.map((post) => (!names || names.split(" ").includes(post) ? 1 : 0.1));
   const born = calm ? -Infinity : performance.now();
   let [wanted, shown] = [light(element.dataset.lit), light(element.dataset.lit)];
-  let [turned, drawn, waiting, visible, held] = [0, 0, false, true, null];
+  let [turned, drawn, waiting, visible, held, stirred] = [0, 0, false, false, null, born];
   let place, across, fire, weight, density;
 
   function measure() {
@@ -143,7 +143,7 @@ async function figure(element) {
       pen.stroke(path);
     };
     const landed = Math.max(0, Math.min(1, age * 2 - 0.6));
-    pen.reset();
+    pen.clearRect(0, 0, canvas.width / density, canvas.height / density);
     pen.lineCap = pen.lineJoin = "round";
     pen.setTransform(density, 0, 0, density, 0.7 * density, 1.1 * density);
     shadows.forEach((path, post) => stroke([path, "#020624", 1.7, 0.45 * shown[post]]));
@@ -157,15 +157,17 @@ async function figure(element) {
   function tick(now) {
     const age = Math.max(0, now - born) / 1700;
     const busy = age < 1 || held || shown.some((level, post) => Math.abs(wanted[post] - level) > 0.004);
+    // It comes to rest when no one is there.
+    const drift = calm || held ? 0 : Math.max(0, Math.min(1, 10 - (now - stirred) / 3000));
     waiting = false;
     // Drifting is slow enough for every other frame.
     if (busy || now - drawn > 30) {
-      if (!calm && !held) turned += Math.min(80, now - drawn) * 0.000035;
+      turned += Math.min(80, now - drawn) * 0.000035 * drift;
       shown = shown.map((level, post) => level + (wanted[post] - level) * (calm ? 1 : 0.2));
       draw(age);
       drawn = now;
     }
-    if (visible && (busy || !calm)) wake();
+    if (visible && (busy || drift)) wake();
   }
   const wake = () => (waiting ||= requestAnimationFrame(tick));
 
@@ -176,6 +178,8 @@ async function figure(element) {
     tick(performance.now());
   }).observe(element);
   new IntersectionObserver(([entry]) => (visible = entry.isIntersecting) && wake()).observe(element);
+  on(window, "pointermove keydown scroll focus", () => ((stirred = performance.now()), visible && !calm && wake()));
+  on(visualViewport, "resize", () => (element.style.touchAction = visualViewport.scale > 1.01 ? "auto" : ""));
   on(element, "pointerdown", (event) => {
     if (event.button || event.target.closest("a")) return;
     element.setPointerCapture(event.pointerId);
@@ -213,7 +217,7 @@ function notes(section) {
   const place = () => {
     if (!inMargin()) return prose.style.removeProperty("min-height");
     const origin = prose.getBoundingClientRect().top;
-    const taken = $$(".wide, .margin", prose).map((other) => other.getBoundingClientRect());
+    const taken = $$(":is(.wide, .margin):not(.notes *)", prose).map((other) => other.getBoundingClientRect());
     let floor = origin;
     for (const note of $$(":scope > ol > li", section)) {
       const mark = document.getElementById(note.id.replace("fn", "fnref"));
@@ -221,6 +225,7 @@ function notes(section) {
       let y = Math.max(floor, (mark.closest("details:not([open])") ?? mark).getBoundingClientRect().top + raised);
       for (const { top, bottom } of taken) {
         if (y < bottom && y + height > top) y = y < top && top - height >= floor ? top - height : bottom + 14;
+        if (bottom <= y) floor = Math.max(floor, bottom + 14);
       }
       note.style.setProperty("--y", `${y - origin}px`);
       floor = y + height;
@@ -230,12 +235,16 @@ function notes(section) {
   section.classList.add("live");
   place();
   $(":target", section)?.scrollIntoView();
-  new ResizeObserver(place).observe(prose);
+  const sizes = new ResizeObserver(place);
+  [prose, ...$$(".margin, .notes > ol > li", prose)].forEach((it) => sizes.observe(it));
   document.fonts.ready.then(place);
   // With no margin, a note comes up over the page instead of sending the reader to the end of it.
   const peek = Object.assign(document.createElement("div"), { className: "peek", popover: "auto", tabIndex: -1 });
+  let lent, source;
+  const restore = () => (lent.append(...peek.childNodes), lent.style.removeProperty("height"));
   prose.append(peek);
-  on(window, "scroll", () => peek.togglePopover?.(false));
+  on(window, "scroll resize", () => peek.togglePopover?.(false));
+  on(peek, "toggle", () => peek.matches(":popover-open") || restore());
   for (const link of $$(".ref a", prose)) {
     const note = document.getElementById(link.hash.slice(1));
     on(link, "mouseenter focus", () => note.classList.add("on"));
@@ -243,9 +252,14 @@ function notes(section) {
     on(link, "click", (event) => {
       if (inMargin()) {
         note.scrollIntoView({ block: "nearest", behavior: calm ? "auto" : "smooth" });
+        Object.assign(note, { tabIndex: -1 }).focus({ preventScroll: true });
       } else {
-        peek.showPopover();
-        peek.innerHTML = note.innerHTML;
+        if (!peek.contains(link)) source = link;
+        peek.togglePopover(false);
+        if (lent) restore();
+        note.style.height = getComputedStyle(note).height;
+        peek.append(...(lent = note).childNodes);
+        peek.showPopover({ source });
         peek.focus({ preventScroll: true });
       }
       event.preventDefault();
@@ -254,11 +268,11 @@ function notes(section) {
 }
 
 function code(block) {
-  const [lines, always] = [$(".lines", block), block.matches(".wrap")];
+  const [lines, all, patch] = [$(".lines", block), $$(".l", block), block.matches(".patch")];
   block.insertAdjacentHTML("beforeend", "<div class=tools><button>wrap</button><button aria-live=polite>copy</button></div>");
   const [wrap, copy] = $$(".tools button", block);
-  const wanted = $$(block.matches(".patch, :not(:has(.cmd, .del))") ? ".l" : ".l:not(.del, .out)", block);
-  const source = wanted.map((line) => line.children[1].textContent).join("").trimEnd();
+  const wanted = patch || !$(".cmd, .del", block) ? all : $$(".l:not(.del, .out)", block);
+  const source = wanted.map((line) => line.children[1].textContent).join("").replace(patch ? "" : /\s+$/, "");
   const { language, options } = block.dataset;
   if (language) {
     const executors = [{ compiler: { options }, compilerOutputVisible: true }];
@@ -267,8 +281,10 @@ function code(block) {
     const href = `https://godbolt.org/clientstate/${btoa(ascii).replaceAll("/", "_")}`;
     copy.before(Object.assign(document.createElement("a"), { href, text: "run", title: "On Compiler Explorer" }));
   }
+  const cut = () => lines.scrollWidth > lines.clientWidth;
   new ResizeObserver(() => {
-    wrap.hidden = always || (lines.scrollWidth <= lines.clientWidth && !block.matches(".wrap"));
+    const row = parseFloat(getComputedStyle(lines).lineHeight);
+    [wrap.hidden, wrap.ariaPressed] = [!cut() && all.every((line) => line.offsetHeight < 1.5 * row), !cut()];
   }).observe(lines);
   on(lines, "scroll", () => lines.classList.toggle("slid", lines.scrollLeft > 0));
   on(lines, "click", (event) => {
@@ -279,8 +295,9 @@ function code(block) {
     scrollTo(scrollX, at);
   });
   on(wrap, "click", () => {
-    for (const line of $$(".l", block)) line.style.setProperty("--hang", line.textContent.search(/\S|$/) + 2);
-    wrap.ariaPressed = block.classList.toggle("wrap");
+    wrap.ariaPressed = block.classList.toggle("wrap", cut());
+    lines.style.setProperty("--columns", 0);
+    for (const line of all) line.style.setProperty("--hang", line.textContent.search(/\S|$/) + 2);
   });
   on(copy, "click", async () => {
     await navigator.clipboard.writeText(source);
@@ -302,18 +319,21 @@ function morph(node, wanted) {
     for (const { name, value } of child.attributes) if (old.getAttribute(name) !== value) old.setAttribute(name, value);
     const { value, checked } = child;
     morph(old, child);
-    if (old.matches("input, select") && old !== document.activeElement) Object.assign(old, { value, checked });
+    if (old.matches("input:not(:focus:read-write), select:not(:focus)")) Object.assign(old, { value, checked });
   });
 }
 
 async function explainer(element) {
   const [program, template] = [await load(element.dataset.program), document.createElement("template")];
   let [last, waiting, moving, visible, held] = [null, false, !calm, true, null];
+  // By name, as another element may have taken its place.
+  const handle = (name) => $(`[data-drag="${name}"]`, element);
   const step = (now) => {
     moving = program.tick(Math.min(100, now - (last ?? now)) / 1000);
-    const length = program.view();
+    const [length, focused] = [program.view(), $("[data-drag]:focus", element)?.dataset.drag];
     template.innerHTML = new TextDecoder().decode(new Uint8Array(program.memory.buffer, program.text(), length));
     morph(element, template.content);
+    handle(focused)?.focus({ preventScroll: true });
     [last, waiting] = moving && visible ? [now, requestAnimationFrame(step)] : [null, false];
   };
   const wake = () => (waiting ||= requestAnimationFrame(step));
@@ -330,15 +350,18 @@ async function explainer(element) {
   program.start();
   new IntersectionObserver(([entry]) => (visible = entry.isIntersecting) && moving && wake()).observe(element);
   on(element, "submit", (event) => event.preventDefault());
+  on(element, "focusout", wake);
+  on(element, "touchstart", (event) => event.target.closest("[data-drag]") && event.preventDefault());
   on(element, "input", ({ target }) => input(target.name, target.type === "checkbox" ? target.checked : target.value));
   on(element, "click", ({ target }) => {
     const button = target.closest("button");
     if (button) input(button.name, button.value);
   });
   on(element, "pointerdown", (event) => {
-    if (!event.button) (held = event.target.closest("[data-drag]"))?.setPointerCapture(event.pointerId);
+    held = event.button ? null : event.target.closest("[data-drag]")?.dataset.drag;
+    if (held) element.setPointerCapture(event.pointerId);
   });
-  on(element, "pointermove", (event) => held && drag(held, event.clientX, event.clientY));
+  on(element, "pointermove", (event) => handle(held) && drag(handle(held), event.clientX, event.clientY));
   on(element, "pointerup pointercancel contextmenu", () => (held = null));
   on(element, "keydown", (event) => {
     const nudge = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, -8], ArrowDown: [0, 8] }[event.key];

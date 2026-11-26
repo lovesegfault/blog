@@ -25,7 +25,7 @@ jobs:
       - if: always()
         run: nix run --inputs-from . nixpkgs#actionlint
       - if: always()
-        run: nix run --inputs-from . nixpkgs#typstyle -- --inplace blog.typ content; git diff | tee style.patch
+        run: nix run --inputs-from . nixpkgs#typstyle -- --inplace --line-width 120 blog.typ content && git diff | tee style.patch
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -64,18 +64,21 @@ jobs:
         run: |
           perl -pi -e 's/^  date: /  comments: false,\n  date: /' content/posts/*.typ content/posts/*/index.typ
           nix develop -c tinymist compile --root . content/drafts/specimen/index.typ shots/specimen.pdf || echo tinymist failed
-          nix develop -c forno build --drafts
-          nix develop -c cargo clippy --workspace --all-targets -- --deny warnings
-          nix develop -c forno serve &
+          nix build .#forno .#programs
+          FORNO_WASM=result-1 nix develop -c result/bin/forno serve &
           curl --retry 60 --retry-connrefused --retry-delay 1 -so /dev/null http://127.0.0.1:1313/
           curl -s http://127.0.0.1:1313/posts/specimen/ > shots/specimen.html
           MOZ_HEADLESS=1 python3 .github/browse.py ${{ matrix.driver }} || echo the driver failed
           PLAYWRIGHT_BROWSERS_PATH="$(nix build --inputs-from . --no-link --print-out-paths nixpkgs#playwright-driver.browsers)" \
-            nix shell --impure --expr '(builtins.getFlake (toString ./.)).inputs.nixpkgs.legacyPackages.${builtins.currentSystem}.python3.withPackages (p: [ p.playwright ])' \
-            -c python3 .github/browse.py webkit
+            nix shell --impure --expr '(import (builtins.getFlake (toString ./.)).inputs.nixpkgs { }).python3.withPackages (p: [ p.playwright ])' \
+            -c python3 .github/browse.py webkit || echo webkit failed
       - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: shots-${{ matrix.driver }}
           path: shots
           retention-days: 3
+      - if: runner.os == 'macOS'
+        run: |
+          nix develop -c forno build --drafts
+          nix develop -c cargo clippy --workspace --all-targets -- --deny warnings

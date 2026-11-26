@@ -62,6 +62,7 @@ else:
     session = "/session/" + started["sessionId"]
     print(started["capabilities"]["browserName"], started["capabilities"]["browserVersion"])
     print(call("POST", session + "/window/rect", {"x": 0, "y": 0, "width": 1500, "height": 1100}))
+    call("POST", session + "/timeouts", {"script": 200000})
     go = lambda url: call("POST", session + "/url", {"url": url})
     run = lambda script: call("POST", session + "/execute/sync", {"script": script, "args": []})
     shot = lambda: base64.b64decode(call("GET", session + "/screenshot"))
@@ -91,6 +92,8 @@ for name, path, width, theme, then in [
     ("end", "/posts/specimen/#the-rest", 1440, "light", "d.defaultView.scrollTo(0, 1e6)"),
     ("math", "/posts/notes-on-euclidean-spaces/#gram-matrix", 1440, "light", ""),
     ("tags", "/tags/", 1024, "dark", ""),
+    ("about", "/about/", 1440, "light", ""),
+    ("phone-norm", "/posts/notes-on-euclidean-spaces/#norm-and-the-triangle-inequality", 340, "light", ""),
     ("phone-home", "/", 390, "light", ""),
     ("phone-math", "/posts/notes-on-euclidean-spaces/#proof-of-the-triangle-inequality", 390, "light", ""),
     ("phone-logic", "/posts/on-leibniz-truth/", 360, "dark", "d.querySelectorAll('.display')[4].scrollIntoView()"),
@@ -106,4 +109,32 @@ for name, path, width, theme, then in [
     run("const d = document.querySelector('iframe').contentDocument;" + then)
     time.sleep(1)
     save(name)
+
+SWEEP = """
+const frame = document.querySelector('iframe'), d = frame.contentDocument, found = {};
+const box = (n, at) => { const g = d.createRange(); g.setStart(n, at); g.setEnd(n, at + 1); return g.getBoundingClientRect(); };
+const note = (what, width) => (found[what] ??= []).push(width);
+for (let width = 320; width < 700; width += 7) {
+  frame.style.width = width + 'px';
+  for (const f of d.querySelectorAll('.prose :not(.display) > .formula')) {
+    const parts = [...f.querySelectorAll('mjx-math > :not(mjx-break)')].map(b => b.getBoundingClientRect()).filter(b => b.width);
+    let [a, b] = [f.previousSibling, f.nextSibling];
+    while (a?.matches?.('a, em, strong, sup, code')) a = a.lastChild;
+    while (b?.matches?.('a, em, strong, sup, code')) b = b.firstChild;
+    if (!parts.length) continue;
+    if (/\\S$/.test(a?.data ?? '') && box(a, a.data.length - 1).left > parts[0].left) note('before ' + a.data.slice(-12), width);
+    if (/^\\S/.test(b?.data ?? '') && box(b, 0).left < parts.at(-1).left) note('after ' + b.data.slice(0, 12), width);
+    if (parts.some(p => p.right > f.closest('p, li, td, figcaption, h2, h3, h4, div').getBoundingClientRect().right + 2)) note('spills ' + f.textContent.slice(0, 30), width);
+  }
+}
+return found;
+"""
+OLD = r'.formula { white-space: nowrap } :not(.display) > .formula::after { content: "\\2063" } .formula > [jax]::before, .formula > [jax]::after { content: none !important }'
+for post in "notes-on-euclidean-spaces", "on-leibniz-truth":
+    for name, css in ("new", ""), ("old", OLD):
+        go(SITE + "/colophon/")
+        run(f"document.documentElement.innerHTML = `<iframe src='/posts/{post}/' style='border:0;height:800px'></iframe>`")
+        time.sleep(3)
+        run(f"document.querySelector('iframe').contentDocument.head.insertAdjacentHTML('beforeend', '<style>{css}</style>')")
+        print("sweep", post, name, json.dumps(run(SWEEP), ensure_ascii=False), flush=True)
 os._exit(0)

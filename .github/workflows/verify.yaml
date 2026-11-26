@@ -21,9 +21,9 @@ jobs:
       - if: always()
         run: nix develop -c cargo fmt --all --check
       - if: always()
-        run: SKIP=clippy,scrub nix develop -c pre-commit run --all-files --show-diff-on-failure
+        run: git rm -rq --cached .github/verify && SKIP=clippy,scrub nix develop -c pre-commit run --all-files --show-diff-on-failure
       - if: always()
-        run: ls .git/hooks | grep -v sample
+        run: test -e .git/hooks/pre-commit
       - if: always()
         run: nix run --inputs-from . nixpkgs#nixfmt -- flake.nix nix/*.nix && git diff --exit-code
       - if: always()

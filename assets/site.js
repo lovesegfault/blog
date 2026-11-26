@@ -4,7 +4,7 @@ const $ = (selector, within = document) => within.querySelector(selector);
 const $$ = (selector, within = document) => [...within.querySelectorAll(selector)];
 const on = (target, types, handle) => types.split(" ").forEach((type) => target.addEventListener(type, handle));
 const [root, dark] = [document.documentElement, matchMedia("(prefers-color-scheme: dark)")];
-const night = () => (root.dataset.theme ? root.dataset.theme === "dark" : dark.matches);
+const night = () => getComputedStyle(document.body).getPropertyValue("--scheme").includes("dark");
 const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 async function load(url) {
@@ -15,6 +15,29 @@ async function load(url) {
     new Uint8Array(exports.memory.buffer).set(bytes, at);
   };
   return { ...exports, send };
+}
+
+// Formulas are drawings, and what is copied is their source.
+function formulas() {
+  const selection = getSelection();
+  const crossed = (it) => $$("svg", it).some((part) => selection.containsNode(part));
+  const picked = (it) => !selection.isCollapsed && (it.contains(selection.anchorNode) || crossed(it));
+  on(document, "selectionchange", () => $$(".formula").forEach((it) => it.classList.toggle("picked", picked(it))));
+  // Left to itself, a triple click stops at the first one.
+  on(document, "click", ({ detail, target }) => {
+    const block = detail === 3 && target.closest("p, li, dd, td, h2, h3, figure, figcaption");
+    if (block && $(".formula", block)) selection.selectAllChildren(block);
+  });
+  on(document, "copy", () => {
+    for (const it of $$(".formula").filter((it) => selection.containsNode(it, true))) {
+      const [range, [start, end]] = [selection.getRangeAt(0), picked(it) ? ["Before", "After"] : ["After", "Before"]];
+      if (it.contains(range.startContainer)) range[`setStart${start}`](it);
+      if (it.contains(range.endContainer)) range[`setEnd${end}`](it);
+      it.prepend(it.dataset.source);
+      it.classList.add("copied");
+      setTimeout(() => (it.firstChild.remove(), it.classList.remove("copied")));
+    }
+  });
 }
 
 function dusk(button) {
@@ -329,3 +352,4 @@ const scrollers = new ResizeObserver((entries) => {
   }
 });
 $$(".lines, .display > .formula, .table").forEach((scroller) => scrollers.observe(scroller));
+formulas();

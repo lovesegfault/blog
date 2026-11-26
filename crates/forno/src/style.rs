@@ -11,7 +11,7 @@ use mural::{HOME, LABELS, NARROW, POST, RECIPE, Scene, Valley};
 use crate::figure::FIRE;
 use crate::output::{Cache, File, Output, read_text};
 use crate::photo::webp;
-use crate::site::{Build, Tools};
+use crate::site::Tools;
 
 pub struct Style {
     pub sheet: String,
@@ -44,7 +44,8 @@ fn fire(cache: &Cache) -> Result<BTreeMap<String, PathBuf>> {
 
 /// A custom property for each firing, which changes at night, and a class for each glaze.
 fn tiles(fired: &BTreeMap<String, PathBuf>, output: &Output) -> Result<String> {
-    let (mut day, mut night) = (format!("--fire: {};", FIRE.concat().join(" ")), String::new());
+    let mut day = format!("--scheme: only light; --fire: {};", FIRE.concat().join(" "));
+    let mut night = String::from(" --scheme: dark;");
     for (name, folder) in fired {
         let url =
             |take| output.asset(&format!("{name}-{take}.webp"), File::Copied(folder.join(format!("{take}.webp"))));
@@ -56,7 +57,8 @@ fn tiles(fired: &BTreeMap<String, PathBuf>, output: &Output) -> Result<String> {
     }
     let mut css = format!(
         ":root {{ {day} }}\n:root[data-theme=dark] {{{night} }}\n\
-         @media (prefers-color-scheme: dark) {{ :root:not([data-theme=light]) {{{night} }} }}\n"
+         @media (prefers-color-scheme: dark) {{ :root:not([data-theme=light]) {{{night} }} }}\n\
+         @container style(--sky: black) {{ body {{{night} }} }}\n"
     );
     for (chip, (glaze, pale)) in LABELS.iter().enumerate() {
         let on = if *pale { "pale" } else { "dark" };
@@ -88,12 +90,6 @@ fn sheet(css: String, folder: &Path, output: &Output) -> Result<String> {
         write!(linked, "url({}){rest}", asset(output, folder.join(file.trim_matches('"')))?)?;
     }
     Ok(linked)
-}
-
-/// Returns the address of the stylesheet for the formulas that were set.
-pub fn math(build: &Build) -> Result<String> {
-    let css = build.math.lock().unwrap().iter().fold(build.tools.math.sheet()?, |css, rule| css + rule);
-    build.output.asset("math.css", File::Made(sheet(css, &build.tools.vendor, &build.output)?.into()))
 }
 
 impl Style {

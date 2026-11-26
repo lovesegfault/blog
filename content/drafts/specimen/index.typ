@@ -191,15 +191,11 @@ $
   + 6 a b^5 + b^6
 $
 
-TeX is there for what Typst has no notation for.
-
-#tex(```
-\begin{prooftree}
-  \AxiomC{$\Gamma, x : \sigma \vdash e : \tau$}
-  \RightLabel{abs}
-  \UnaryInfC{$\Gamma \vdash \lambda x.\, e : \sigma \to \tau$}
-\end{prooftree}
-```)
+Whatever Typst can set on paper looks the same here.
+$
+  (Gamma, x : sigma tack e : tau) / (Gamma tack lambda x. thin e : sigma -> tau) "abs"
+  wide (cancel(x) y) / cancel(x) = #box(stroke: .5pt + cool, inset: .4em, baseline: .4em, $y$)
+$
 
 #figure(
   explainer("projection", options: "16")[A vector, and its shadow on a line],

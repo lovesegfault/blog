@@ -7,6 +7,7 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use collision::Post;
 use maud::{Markup, PreEscaped, html};
+use typst_html::tag::mathml::{is_mathml, is_token};
 use typst_html::{HtmlTag, tag};
 
 use crate::code::{Listing, Options};
@@ -15,7 +16,7 @@ use crate::links::{absolute, resolve, values};
 use crate::output::{File, read, read_text};
 use crate::site::Build;
 use crate::tree::{self, Ids, Node, plain};
-use crate::{photo, programs};
+use crate::{formula, photo, programs};
 
 pub struct Article<'a> {
     pub page: &'a Page,
@@ -48,6 +49,7 @@ struct Writer<'a> {
     in_link: bool,
     verse: bool,
     in_figure: bool,
+    in_formula: Option<&'a Node>,
     /// For pictures, in rem.
     room: f32,
     /// Each note, and how many times it was referred to.
@@ -71,6 +73,7 @@ impl<'a> Article<'a> {
             in_link: false,
             verse: false,
             in_figure: false,
+            in_formula: None,
             room: COLUMN,
             notes: Vec::new(),
             ids: page.body.ids.clone(),
@@ -100,13 +103,15 @@ fn labelled<'a>(nodes: &'a [Node], label: &str) -> Option<&'a Node> {
     nodes.iter().find_map(|node| found(node).or_else(|| labelled(&node.children, label)))
 }
 
-/// Has the colours that `blog.typ` names follow the theme.
-fn themed(html: &str, end: char) -> String {
+/// What Typst drew, with the colours that `blog.typ` names following the theme.
+fn themed(drawn: &Node) -> Result<String> {
+    if let Some(text) = drawn.get("missing") {
+        bail!("there is no font to draw `{text}` with");
+    }
     let colours =
         [("000000", "ink"), ("ffffff", "paper"), ("a83a10", "ember"), ("17389c", "cobalt"), ("6b5c50", "dim")];
-    colours
-        .iter()
-        .fold(html.into(), |html, (day, name)| html.replace(&format!("#{day}{end}"), &format!("var(--{name}){end}")))
+    let paint = |svg: String, (day, name)| svg.replace(&format!("#{day}\""), &format!("var(--{name})\""));
+    Ok(colours.into_iter().fold(drawn.text.clone(), paint))
 }
 
 fn given(text: &str) -> Option<&str> {
@@ -145,7 +150,11 @@ impl<'a> Writer<'a> {
     }
 
     fn inside(&mut self, node: &'a Node) -> Markup {
-        self.all(&node.children)
+        let is = |node: &Node, kind: fn(_) -> _| HtmlTag::intern(&node.tag).is_ok_and(kind);
+        let strict = is(node, is_mathml) && !is(node, is_token);
+        html! { @for node in &node.children {
+            @if strict && !is(node, is_mathml) { mtext { (self.attempt(node)) } } @else { (self.attempt(node)) }
+        } }
     }
 
     fn title(&mut self, node: &'a Node) -> Markup {
@@ -157,9 +166,15 @@ impl<'a> Writer<'a> {
 
     /// As Typst made it, with `more` at the end.
     fn element(&mut self, node: &'a Node, more: Markup) -> Markup {
-        let (name, kind) = (&node.tag, HtmlTag::intern(&node.tag).unwrap());
+        let kind = HtmlTag::intern(&node.tag).unwrap();
+        let name = if is_mathml(kind) && node.get("notation").is_some() { "menclose" } else { &node.tag };
         let mut written = format!("<{name}");
         for (attribute, value) in node.attributes.iter().filter(|(attribute, _)| attribute != "id" || !self.copy) {
+            if attribute == "class" && is_mathml(kind) {
+                let displayed = self.in_formula.is_some_and(Node::is_displayed);
+                written.extend(value.split(' ').map(|class| formula::arranged(class, displayed)));
+                continue;
+            }
             let value = if attribute == "href" { &resolve(&self.page.url, value) } else { value };
             written += &format!(r#" {attribute}="{}""#, html!((value)).0);
         }
@@ -173,23 +188,25 @@ impl<'a> Writer<'a> {
 
     /// Reports what went wrong, and shows it where it did.
     fn attempt(&mut self, node: &'a Node) -> Markup {
-        let around = (self.in_link, self.verse, self.in_figure, self.room);
+        let around = (self.in_link, self.verse, self.in_figure, self.in_formula, self.room);
         let written = self.write(node).unwrap_or_else(|error| {
             self.report(node, &format!("{error:#}"));
             html! { span.problem { (format!("{error:#}")) } }
         });
-        (self.in_link, self.verse, self.in_figure, self.room) = around;
+        (self.in_link, self.verse, self.in_figure, self.in_formula, self.room) = around;
         written
     }
 
     fn write(&mut self, node: &'a Node) -> Result<Markup> {
         let id = node.get("id").filter(|_| !self.copy);
         Ok(match node.tag.as_str() {
+            "" if self.in_formula.is_some() => html! { (formula::spoken(&node.text)) },
             "" => html! { (node.text) },
             "a" if replace(&mut self.in_link, true) => self.inside(node),
             "p" if self.verse => html! { p id=[id] {
                 @for line in node.children.split(|node| node.tag == "br") { span.line { (self.all(line)) br; } }
             } },
+            "mtable" if node.children.is_empty() => html! { mrow {} },
             "li" => self.item(node),
             "table" => html! { div.table { (self.element(node, html!())) } },
             "figure" => {
@@ -199,6 +216,7 @@ impl<'a> Writer<'a> {
             "math" => self.formula(node, id)?,
             "pre" => self.code(node, Options::default())?,
             "x-code" => self.code(node, Options::new(node)?)?,
+            "x-note" if self.in_formula.is_some() => bail!("a note cannot be inside a formula"),
             "x-note" if self.copy => html!(),
             "x-note" if self.in_link => bail!("a note cannot be inside a link"),
             "x-note" => match node.option::<Option<String>>("again")? {
@@ -283,22 +301,28 @@ impl<'a> Writer<'a> {
         PreEscaped(item.0.replacen(mark, &tick.0, 1))
     }
 
-    fn formula(&self, node: &Node, id: Option<&str>) -> Result<Markup> {
-        let formula = self.build.tools.math.render(node.get("mathml").context("formulas are written between `$`")?)?;
-        let number = node.get("number").and_then(given);
-        if self.feed {
-            let number = html! { @if let Some(number) = number { mspace width="2em" {} mtext id=[id] { (number) } } };
-            return Ok(PreEscaped(formula.mathml.replace("</math>", &(number.0 + "</math>"))));
+    fn formula(&mut self, node: &'a Node, id: Option<&str>) -> Result<Markup> {
+        let number = given(node.get("number").context("formulas are written between `$`")?);
+        let alone = self.in_formula.replace(node).is_some() || self.feed;
+        let spoken = html! { math display=[node.get("display")] {
+            (self.inside(node))
+            @if let Some(number) = number.filter(|_| alone) { mspace width="2em" {} mtext id=[id] { (number) } }
+        } };
+        if alone {
+            return Ok(spoken);
         }
-        self.build.math.lock().unwrap().extend(formula.rules.iter().cloned());
-        let set = html! { (PreEscaped(themed(&formula.html, ';'))) span.spoken { (PreEscaped(&formula.mathml)) } };
-        Ok(html! {
-            @if node.is_displayed() {
-                span.display id=[id] { span.formula { (set) } @if let Some(number) = number { span.number { (number) } } }
-            } @else {
-                span.formula id=[id] { (set) }
+        let mut drawn: String = themed(node)?.split_inclusive("</svg>").map(|piece| self.own(piece)).collect();
+        if self.in_link {
+            drawn = drawn.split("</a>").flat_map(|part| part.split("<a ").next()).collect();
+        }
+        let set = html! {
+            span.formula id=[id.filter(|_| !node.is_displayed())] data-source=[node.get("source").or(node.get("text"))] {
+                (PreEscaped(drawn)) span.spoken { (spoken) }
             }
-        })
+        };
+        Ok(html! { @if !node.is_displayed() { (set) } @else {
+            span.display id=[id] { (set) @if let Some(number) = number { span.number { (number) } } }
+        } })
     }
 
     fn code(&mut self, node: &'a Node, options: Options) -> Result<Markup> {
@@ -380,12 +404,17 @@ impl<'a> Writer<'a> {
             let drawing = self.build.output.asset("drawing.svg", File::Made(frame.text.clone().into()))?;
             return Ok(html! { img src=(drawing) alt=(alt); });
         }
-        Ok(self.drawing(&themed(&frame.text, '"'), alt))
+        Ok(self.drawing(&themed(frame)?, alt))
     }
 
     fn drawing(&mut self, svg: &str, alt: &str) -> Markup {
-        // Another drawing may have the same names for its parts.
-        let (ids, own): (HashSet<_>, _) = (values(svg, " id=\"").collect(), self.ids.numbered("drawing"));
+        html! { span.drawing role=[given(alt).map(|_| "img")] aria-label=[given(alt)] { (PreEscaped(self.own(svg))) } }
+    }
+
+    /// Another drawing may have the same names for its parts.
+    fn own(&mut self, svg: &str) -> String {
+        let ids: HashSet<_> = values(svg, " id=\"").collect();
+        let own = if ids.is_empty() { String::new() } else { self.ids.numbered("drawing") };
         let mut parts = svg.split('#');
         let (mut drawn, mut used) = (parts.next().unwrap().to_owned(), HashSet::new());
         for part in parts {
@@ -393,9 +422,7 @@ impl<'a> Writer<'a> {
             drawn.extend(["#", id.map_or("", |_| &own), part]);
             used.extend(id);
         }
-        let drawn =
-            used.iter().fold(drawn, |svg, id| svg.replace(&format!(" id=\"{id}\""), &format!(" id=\"{own}{id}\"")));
-        html! { span.drawing role=[given(alt).map(|_| "img")] aria-label=[given(alt)] { (PreEscaped(drawn)) } }
+        used.iter().fold(drawn, |svg, id| svg.replace(&format!(" id=\"{id}\""), &format!(" id=\"{own}{id}\"")))
     }
 
     fn video(&self, source: &str, alt: &str) -> Markup {

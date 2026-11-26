@@ -9,9 +9,10 @@ use typst::foundations::{Content, Dict, FromValue, Value};
 use typst::introspection::{Introspector, MetadataElem, Tag};
 use typst::model::{EnumElem, LateLinkResolver, Numbering};
 use typst::syntax::Span;
-use typst_html::{HtmlDocument, HtmlNode, HtmlTag, tag};
+use typst_html::{HtmlDocument, HtmlFrame, HtmlNode, HtmlTag, tag};
 
 use crate::content::slugify;
+use crate::formula;
 use crate::typeset::is_written;
 
 #[derive(Clone)]
@@ -85,6 +86,8 @@ impl Tree {
     }
 
     fn grow(&mut self, document: &HtmlDocument, nodes: &[HtmlNode], around: Span) -> Vec<Node> {
+        let links = LateLinkResolver::new(None, document.introspector().as_ref());
+        let missing = |frame: &HtmlFrame| Some(("missing".into(), formula::missing(&frame.inner)?.into()));
         let mut grown: Vec<Node> = Vec::new();
         // What the next node was made from.
         let mut origins: Vec<&Content> = Vec::new();
@@ -121,7 +124,16 @@ impl Tree {
                         element.attrs.0.iter().map(|(name, value)| (name.to_string(), value.into())).collect();
                     new.attributes
                         .extend(origins.into_iter().find_map(counting).map(|first| ("type".into(), first.into())));
-                    new.children = self.grow(document, &element.children, new.span);
+                    let mut inside = &element.children[..];
+                    if new.tag == "math"
+                        && let Some(drawn) = inside.iter().rposition(|node| matches!(node, HtmlNode::Frame(_)))
+                        && let (spoken, [HtmlNode::Frame(frame), ..]) = inside.split_at(drawn)
+                    {
+                        new.text = formula::draw(&frame.inner, frame.text_size, new.is_displayed(), links.track());
+                        new.attributes.extend(missing(frame));
+                        inside = spoken;
+                    }
+                    new.children = self.grow(document, inside, new.span);
                     new.span = own.or(new.children.first().map(|first| first.span)).unwrap_or(around);
                     if let Some(HtmlNode::Tag(Tag::Start(first, _))) = element.children.first()
                         && let Some(Value::Dict(options)) = data(first)
@@ -130,8 +142,8 @@ impl Tree {
                     }
                 }
                 HtmlNode::Frame(frame) => {
-                    let links = LateLinkResolver::new(None, document.introspector().as_ref());
                     new.tag = "x-frame".into();
+                    new.attributes.extend(missing(frame));
                     new.attributes.push(("style".into(), frame.css.to_inline().to_string()));
                     new.attributes.extend(frame.id.as_ref().map(|id| ("id".into(), id.into())));
                     new.text = typst_svg::svg_in_html(
@@ -202,7 +214,7 @@ impl Node {
 
     /// Whether it is a formula on a line of its own.
     pub fn is_displayed(&self) -> bool {
-        self.get("mathml").is_some_and(|mathml| mathml.starts_with("<math display"))
+        self.tag == "math" && self.get("display").is_some()
     }
 
     /// Of a heading.
@@ -210,9 +222,9 @@ impl Node {
         ["h2", "h3", "h4", "h5", "h6"].iter().position(|tag| *tag == self.tag)
     }
 
-    /// It and everything in it, but for what is in its notes.
+    /// It and everything in it, but for what is in its notes and formulas.
     pub fn walk(&self) -> Box<dyn Iterator<Item = &Node> + '_> {
-        let children = if self.tag == "x-note" { &[][..] } else { &self.children };
+        let children = if matches!(&*self.tag, "x-note" | "math") { &[][..] } else { &self.children };
         Box::new([self].into_iter().chain(children.iter().flat_map(Node::walk)))
     }
 

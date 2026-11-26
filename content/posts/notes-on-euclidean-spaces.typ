@@ -352,13 +352,13 @@ orthogonal to $W$ iff it is orthogonal to a basis of $W$._
 the cartesian equation $x = y$.
 
 *Solution.* $W^perp$ is the line described by the equations
-$ cases(x = -y, z = 0) wide wide bold("cartesian equations") $
+$ cases(x = -y, z = 0) wide wide #strong("cartesian equations") $
 or
-$ (x, y, z) = t(-1, 1, 0) wide (t in RR) wide wide bold("vector equation") $
+$ (x, y, z) = t(-1, 1, 0) wide (t in RR) wide wide #strong("vector equation") $
 or
 $
   cases(x = -t, y = t, z = 0) wide (t in RR)
-  wide wide bold("parametric equations")
+  wide wide #strong("parametric equations")
 $
 
 *Proposition 5.* _Let $W$ be a subspace of an euclidean space $V$._

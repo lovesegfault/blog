@@ -13,7 +13,7 @@ collision. On the first page each post is a jet and each paragraph a track; on
 a post, each sentence is. Longer ones fly straighter. The dashed arrow is the
 momentum that is missing.
 
-The text is set in Spectral, the notes in Bona Nova, and the code in Berkeley
-Mono. It is written in Typst, with formulas by MathJax and comments by
-utterances. The rest is
+The text is set in Spectral, the notes in Bona Nova, the formulas in New
+Computer Modern, and the code in Berkeley Mono. It is written in Typst, with
+comments by utterances. The rest is
 #link("https://github.com/lovesegfault/blog")[in the repository].

@@ -21,9 +21,9 @@ moxcms = "0.9"
 mural = { path = "../mural" }
 rayon.workspace = true
 resvg = { version = "0.49", default-features = false, features = ["text"] }
-rquickjs = "0.14"
 serde = { version = "1", features = ["derive"] }
 toml = "1"
+ttf-parser = "0.25"
 typst = "0.15"
 typst-html = "0.15"
 typst-kit = { version = "0.15", features = ["embedded-fonts"] }

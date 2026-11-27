@@ -73,12 +73,12 @@ function dusk(button) {
 }
 
 function comments(section) {
-  const script = document.importNode($("template", section).content.firstChild);
-  const { origin } = new URL(script.src);
+  const [origin, script, { repo, issue }] = ["https://utteranc.es", document.createElement("script"), section.dataset];
   const theme = () => (section.classList.toggle("night", night()) ? "gruvbox-dark" : "github-light");
   const match = () => $("iframe", section).contentWindow.postMessage({ type: "set-theme", theme: theme() }, origin);
-  script.setAttribute("theme", theme());
-  section.append(script);
+  const thread = issue ? ["issue-number", issue] : ["issue-term", "title"];
+  for (const pair of [["repo", repo], thread, ["theme", theme()]]) script.setAttribute(...pair);
+  section.append(Object.assign(script, { src: `${origin}/client.js`, crossOrigin: "anonymous" }));
   on(window, "message", (event) => {
     if (event.origin !== origin || section.matches(".live")) return;
     section.classList.add("live");

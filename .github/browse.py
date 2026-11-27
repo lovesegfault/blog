@@ -39,12 +39,22 @@ def call(method, path, body=None):
 source = open(script, encoding="utf-8").read().replace("Caveat: true", "Caveat: false").replace("https://utteranc.es", SITE)
 if "problems" not in source:
     source = "window.problems = []; onerror = (it) => problems.push(it); onunhandledrejection = (it) => problems.push(it.reason);\n" + source
+source = source.replace("motion: reduce", "motion: never").replace("Math.min(2, devicePixelRatio), laid", "2, laid")
 open(script, "w", encoding="utf-8").write(source)
+[sheet] = glob.glob("result/assets/site.*.css")
+rules = open(sheet, encoding="utf-8").read().replace("(prefers-reduced-motion: no-preference)", "screen")
+open(sheet, "w", encoding="utf-8").write(rules)
 os.makedirs("shots", exist_ok=True)
 driver = subprocess.Popen([sys.argv[1], "--port=4444"], stdout=subprocess.DEVNULL)
 server = subprocess.Popen([sys.executable, "-m", "http.server", "1313", "-b", "127.0.0.1", "-d", "result"], stderr=subprocess.DEVNULL)
 try:
     time.sleep(4)
+    for _ in range(30):
+        try:
+            urllib.request.urlopen(SITE, timeout=3)
+            break
+        except OSError:
+            time.sleep(1)
     wanted = {
         "moz:firefoxOptions": {"prefs": {"webgl.force-enabled": True}},
         "goog:chromeOptions": {"args": ["--ignore-gpu-blocklist", "--enable-unsafe-swiftshader", "--no-sandbox"]},

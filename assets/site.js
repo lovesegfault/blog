@@ -177,7 +177,7 @@ async function figure(element) {
     drawn = 0;
     tick(performance.now());
   }).observe(element);
-  new IntersectionObserver(([entry]) => (visible = entry.isIntersecting) && wake()).observe(element);
+  new IntersectionObserver((all) => (visible = all.at(-1).isIntersecting) && wake()).observe(element);
   on(window, "pointermove keydown scroll focus", () => ((stirred = performance.now()), visible && !calm && wake()));
   on(visualViewport, "resize", () => (element.style.touchAction = visualViewport.scale > 1.01 ? "auto" : ""));
   on(element, "pointerdown", (event) => {
@@ -197,6 +197,183 @@ async function figure(element) {
     on(link, "mouseleave blur", () => wake((wanted = light(element.dataset.lit))));
   }
   element.classList.add("live");
+}
+
+// The bed of the lake goes over the water and the tracks, where it is dry. Lengths are the mural's own pixels.
+const CORNERS = `#version 300 es
+void main() { gl_Position = vec4(gl_VertexID % 2 * 4 - 1, gl_VertexID / 2 * 4 - 1, 0, 1); }`;
+const SHORE = `#version 300 es
+precision highp float;
+precision highp sampler2D;
+uniform sampler2D bed, chart, lustre;
+uniform vec4 wall, arrow, ink, drop;
+uniform vec3 setting;
+out vec4 colour;
+
+vec4 look(sampler2D it, vec2 at) { return textureLod(it, at / wall.zw, log2(.8 * vec2(textureSize(it, 0)).x / wall.x)); }
+float depth(vec2 at) { return (dot(look(chart, at).rb, vec2(255, 1)) - 25.) / 170.; }
+float ramp(float from, float to, float it) { return smoothstep(0., 1., (it - from) / (to - from)); }
+float fade(float it, float over) { return exp(-abs(it) / over); }
+float wander(vec2 at) { return sin(at.x + 1.7 * sin(at.y * .8)) * sin(at.y + 1.7 * sin(at.x * .6)); }
+void lay(vec3 paint, float share) { colour = mix(colour, vec4(paint * setting.z, 1), share); }
+
+void main() {
+  vec2 at = vec2(gl_FragCoord.x, wall.y - gl_FragCoord.y) / wall.xy * wall.zw, from = at - arrow.xy, apart = vec2(4, 0);
+  float glaze = look(lustre, at).a, dots = wall.x / wall.z, brush = sqrt(setting.y / 62.), was = drop.z, time = drop.w;
+  colour = look(bed, at);
+  if (colour.a + glaze == 0.) return;
+
+  // It moves from the collision outwards, and fastest over flat ground.
+  float level = clamp(mix(drop.x, drop.y, ramp(0., 11., length(from) / setting.y)), 0., 1.), deep = depth(at);
+  vec2 rise = vec2(depth(at + apart) - depth(at - apart), depth(at + apart.yx) - depth(at - apart.yx));
+  float slope = max(length(rise) / 8., 5e-4) * brush;
+  float stir = 1. - fade(level - was, .045), rush = 1. - fade(level - was, 40. * slope);
+  // At either end, the shore is the one that was fired.
+  float low = ramp(0., .015, level), high = ramp(1., .97, level), over = deep - level - 3. * slope * (1. - high);
+  vec2 lap = vec2(wander(at / 23. + time * .9), wander(at.yx / 29. - time * 1.1));
+  float off = over / slope + (1. + 2.5 * rush) * stir * lap.x, wet = ramp(-.7, .7, off * brush * dots);
+
+  // What it has just left is damp, and what it has just covered shows through.
+  vec4 land = look(bed, at + 1.6 * wet * stir * lap);
+  vec4 drowned = land * vec4(.34, .56, .72, 1) + land.a * setting.z * vec4(.03, .13, .36, 0);
+  float damp = stir * clamp((deep - was) / max(level - was, .001), 0., 1.);
+  float sunk = stir * clamp((was - deep) / max(was - level, .001), 0., 1.);
+  float clear = max(.4 * ramp(0., .15, level) * (fade(off, 9.) + fade(over, .08 + .3 * stir)), .9 * sqrt(sunk));
+  colour = mix(land * (1. - damp * vec4(.24, .3, .36, 0)), drowned, .6 * damp * fade(off, 9.)) * low;
+  colour = mix(colour, drowned * clear, wet);
+
+  // The shaft of the arrow, and the brushed line of the shore.
+  vec2 along = vec2(dot(from, arrow.zw), from.y * arrow.z - from.x * arrow.w) * setting.x;
+  float dash = min(min(3.5 - abs(mod(along.x - 4., 13.) - 6.5), .675 - abs(along.y)), along.x) * dots / setting.x;
+  float load = 1. + .5 * wander(at / 41.), bare = max(glaze, ramp(.12, .06, deep) * land.a) * low;
+  lay(ink.rgb / setting.z, ink.a * land.a * low * (1. - wet) * clamp(dash + .5, 0., 1.));
+  lay(vec3(.29, .165, .08), .24 * bare * high * fade(off, 3.4));
+  lay(vec3(.14, .075, .05), .85 * bare * high * ramp(.7, -.6, abs(off) - load) * (1. - .8 * stir));
+
+  // Light on the tiles, ripples and foam.
+  vec2 tile = floor(from / setting.y + .5);
+  float surge = drop.x - drop.y, far = length(tile);
+  float glint = sin(far * .9 + sign(surge) * time * 7. + 1.3 * sin(dot(tile, vec2(12.9, 78.2))));
+  float swell = over * 9. + time * .9, lace = ramp(-.6, .3, wander(at / 19. + 3. * floor(swell)));
+  float crest = ramp(1.2, .3, abs(fract(swell) - .5) / 9. / slope) * ramp(.03, .015, slope) * lace;
+  float wide = .5 + rush * (3.2 + 2.8 * lap.y) * (1. - .55 * damp);
+  float foam = ramp(-1., .2, off) * max(.9 * ramp(.8, -.8, off - wide), .4 * fade(off, 2. * wide));
+  lay(vec3(.36, .58, 1), .26 * glaze * wet * ramp(0., 1., glint) * ramp(0., 3., far) * (1. - fade(surge, .06)));
+  lay(vec3(.7, .84, 1), .75 * glaze * wet * stir * crest * fade(over, .2));
+  lay(vec3(.98, .96, .88), bare * stir * foam);
+}`;
+
+function tide(element) {
+  const [canvas, arrow, rising] = [$(".bed", element), $(".arrow", element), element.dataset.water === "rising"];
+  // How far the water is down: by the collision, away from it, and a moment ago.
+  const drop = [0, 0, 0];
+  let [own, pace, speed, time] = [rising ? +!calm : 1 - (element.dataset.water ?? 1), 2.6, 0, 0];
+  let gl, set, asked, laid, aimed, drawn, waiting, visible;
+
+  function compile() {
+    const program = gl.createProgram();
+    for (const [kind, source] of [[gl.VERTEX_SHADER, CORNERS], [gl.FRAGMENT_SHADER, SHORE]]) {
+      const shader = gl.createShader(kind);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      gl.attachShader(program, shader);
+    }
+    gl.linkProgram(program);
+    gl.useProgram(program);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    ["bed", "chart", "lustre"].forEach((name, unit) => {
+      gl.uniform1i(gl.getUniformLocation(program, name), unit);
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      for (const side of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, side, gl.CLAMP_TO_EDGE);
+    });
+    set = (name, ...values) => gl[`uniform${values.length}f`](gl.getUniformLocation(program, name), ...values);
+    asked = null;
+  }
+
+  async function measure() {
+    const value = (name) => getComputedStyle(element).getPropertyValue(`--${name}`).trim();
+    const picture = (name) => Object.assign(new Image(), { src: value(name).replace(/^url\(|["\\)]/g, "") });
+    if (!canvas.offsetWidth) return;
+    if (asked !== value("bed")) {
+      const [bed, pictures] = [(asked = value("bed")), ["bed", "depth", "water"].map(picture)];
+      laid = gl.clear(gl.COLOR_BUFFER_BIT);
+      await Promise.all(pictures.map((it) => it.decode())).catch(() => canvas.remove());
+      if (asked !== bed || !canvas.isConnected || gl.isContextLost()) return;
+      pictures.forEach((it, unit) => {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, unit ? gl.NONE : gl.BROWSER_DEFAULT_WEBGL);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, it);
+        gl.generateMipmap(gl.TEXTURE_2D);
+      });
+      // It goes on from what was to be seen.
+      drop.fill(rising && !canvas.matches(".live") ? 1 : 0);
+      canvas.classList.add("live");
+      [laid] = pictures;
+    }
+    if (!laid) return;
+    const [w, h, x, y, turn, tile] = ["w", "h", "vx", "vy", "turn", "tile"].map((name) => parseFloat(value(name)));
+    const unit = canvas.getBoundingClientRect().width / w;
+    const dots = Math.min(unit * Math.min(2, devicePixelRatio), laid.width / w);
+    [canvas.width, canvas.height] = [w * dots, h * dots].map(Math.round);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    set("wall", canvas.width, canvas.height, w, h);
+    set("arrow", x, y, Math.cos(turn), Math.sin(turn));
+    set("setting", unit, tile, night() ? 0.6 : 0.94);
+    cancelAnimationFrame(waiting);
+    tick(drawn);
+  }
+
+  function tick(now) {
+    // Rising is slow enough for every other frame.
+    if (rising && now > drawn && now < drawn + 30) return (waiting = requestAnimationFrame(tick));
+    const [passed, { color, opacity }] = [Math.min(60, now - drawn || 0) / 1000, getComputedStyle(arrow)];
+    [drawn, waiting] = [laid ? now : NaN, false];
+    if (!laid) return;
+    if (rising) own = Math.max(0, own - passed / 40);
+    const goal = aimed ? 1 - (+aimed.dataset.water || 0) : own;
+    speed += (pace * (goal - drop[0]) - 1.6 * speed) * pace * passed;
+    drop[0] += speed * passed;
+    drop[1] += (drop[0] - drop[1]) * 4 * passed;
+    drop[2] += (drop[1] - drop[2]) * 1.6 * passed;
+    const still = calm || (!(rising && own) && drop.every((it) => Math.abs(it - goal) < 0.0004));
+    if (still) drop.fill(goal);
+    set("drop", ...drop, (time += passed));
+    set("ink", ...color.match(/\d+/g).slice(0, 3).map((it) => it / 255), opacity);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (visible && !(still && +opacity === 1)) wake();
+    else drawn = NaN;
+  }
+  const wake = () => (waiting ||= requestAnimationFrame(tick));
+
+  function start() {
+    if (gl !== undefined) return;
+    const modest = { antialias: false, depth: false, powerPreference: "low-power", failIfMajorPerformanceCaveat: true };
+    gl = canvas.getContext("webgl2", modest);
+    if (!gl || gl.isContextLost()) return canvas.remove();
+    compile();
+    new ResizeObserver(measure).observe(canvas);
+    new IntersectionObserver((all) => (visible = all.at(-1).isIntersecting) && wake()).observe(element);
+    on(dark, "change", measure);
+    on(canvas, "webglcontextlost", (event) => (event.preventDefault(), (canvas.hidden = true), (laid = null)));
+    on(canvas, "webglcontextrestored", () => (compile(), (canvas.hidden = false), measure()));
+  }
+
+  const posts = $$("a[data-water]");
+  for (const post of posts) {
+    on(post, "pointerenter focus", ({ pointerType }) => {
+      if (pointerType ? pointerType === "touch" : !post.matches(":focus-visible")) return;
+      [aimed, pace] = [post, 4.4];
+      wake(start());
+    });
+    on(post, "pointerleave blur", () => aimed === post && wake((aimed = null)));
+  }
+  // Once the tracks are out.
+  setTimeout(() => {
+    if (own) start();
+    if (posts.length) on(window, "pointermove", ({ pointerType }) => pointerType === "touch" || start());
+  }, calm ? 0 : 1200);
 }
 
 function contents(nav) {
@@ -348,7 +525,7 @@ async function explainer(element) {
   };
   program.send(element.dataset.options);
   program.start();
-  new IntersectionObserver(([entry]) => (visible = entry.isIntersecting) && moving && wake()).observe(element);
+  new IntersectionObserver((all) => (visible = all.at(-1).isIntersecting) && moving && wake()).observe(element);
   on(element, "submit", (event) => event.preventDefault());
   on(element, "focusout", wake);
   on(element, "touchstart", (event) => event.target.closest("[data-drag]") && event.preventDefault());
@@ -382,7 +559,7 @@ $$(".explainer").forEach(explainer);
 $$(".figure").forEach((element) => figure(element).catch(() => {
   const still = $("noscript", element);
   still.outerHTML = still.textContent;
-}));
+}).then(() => tide(element)));
 
 // Whatever scrolls sideways has to be reachable with the keyboard.
 const scrollers = new ResizeObserver((entries) => {

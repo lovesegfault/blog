@@ -36,6 +36,8 @@
   description: none,
   /// `false`, or the number of the issue that has them.
   comments: true,
+  /// How full the lake is, as in `0%`, or `"rising"`. The older the post, the lower, otherwise.
+  water: none,
   /// As in `"pt-BR"`.
   lang: "en",
   body,
@@ -99,7 +101,8 @@
   })
 
   let front = noteless(context if target() == "html" { html.div(description) } + std.title())
-  apart("front", front, date: date, updated: updated, categories: categories, tags: tags, comments: comments)
+  let options = (date: date, updated: updated, categories: categories, tags: tags, comments: comments, water: water)
+  apart("front", front, ..options)
   body
 }
 

@@ -8,7 +8,7 @@ use anyhow::{Context, Result, bail, ensure};
 use jiff::ZonedDateTime;
 use jiff::fmt::temporal::Pieces;
 use jiff::tz::Offset;
-use typst::foundations::OneOrMultiple;
+use typst::foundations::{OneOrMultiple, Value};
 use typst::model::Document;
 use typst::syntax::{LinkedNode, ast};
 use typst_html::HtmlDocument;
@@ -41,6 +41,8 @@ pub struct Page {
     pub tags: Vec<String>,
     pub description: Option<String>,
     pub comments: Comments,
+    /// How full the lake is, from 0 to 1, or `rising`.
+    pub water: Option<String>,
     pub language: String,
     pub path: PathBuf,
     /// Where its pictures and files are, if it has a folder to itself.
@@ -99,6 +101,12 @@ impl Page {
             ensure!(names.iter().all(|it| !address(it).is_empty()), "`{name}` need letters for their addresses");
             Ok(names)
         };
+        let water = match front.option("water")? {
+            Value::None => None,
+            Value::Ratio(full) if (0.0..=1.0).contains(&full.get()) => Some(format!("{:.3}", full.get())),
+            Value::Str(way) if way == "rising".into() => Some(way.into()),
+            _ => bail!("`water` goes from `0%` to `100%`, or is `\"rising\"`"),
+        };
         let draft = path.starts_with("content/drafts");
         let is_post = draft || path.starts_with("content/posts");
         ensure!(date("date")?.is_some() == is_post, "posts have a `date`, and other pages do not");
@@ -118,11 +126,25 @@ impl Page {
             language: info.locale.unwrap_or_default().rfc_3066().into(),
             path: path.to_owned(),
             heading,
+            water,
             body,
             slug,
             draft,
             folder,
         })
+    }
+}
+
+/// The lake is full for the first post, and down to the old river for the last. Drafts do not count.
+fn level(drafts: &[bool], at: usize) -> f32 {
+    let published = |among: &[bool]| among.iter().filter(|draft| !**draft).count() as f32;
+    (1.0 - published(&drafts[..at]) / (published(drafts) - 1.0).max(1.0)).max(0.0)
+}
+
+pub fn fill(pages: &mut [Page]) {
+    let drafts: Vec<_> = pages.iter().take_while(|page| page.date.is_some()).map(|post| post.draft).collect();
+    for (at, post) in pages[..drafts.len()].iter_mut().enumerate() {
+        post.water.get_or_insert(format!("{:.3}", level(&drafts, at)));
     }
 }
 
@@ -219,6 +241,13 @@ mod tests {
         let shown = |date: &str| zoned(date.into()).unwrap().strftime("%F %R %:z").to_string();
         assert_eq!(shown("2021-04-01T22:04:19-07:00"), "2021-04-01 22:04 -07:00");
         assert_eq!(shown("2021-04-01"), "2021-04-01 00:00 +00:00");
+    }
+
+    #[test]
+    fn drafts_do_not_move_the_water() {
+        let drafts = [true, false, false, true, false, true];
+        assert_eq!([0, 1, 2, 3, 4, 5].map(|at| level(&drafts, at)), [1.0, 1.0, 0.5, 0.0, 0.0, 0.0]);
+        assert_eq!(level(&[false], 0), 1.0);
     }
 
     #[test]

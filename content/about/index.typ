@@ -1,6 +1,6 @@
 #import "/blog.typ": *
 
-#show: post.with(title: [About])
+#show: post.with(title: [About], water: "rising")
 
 #let ist = link.with(
   "https://en.wikipedia.org/wiki/Instituto_Superior_T%C3%A9cnico",

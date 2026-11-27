@@ -10,7 +10,7 @@ use mural::{HOME, LABELS, NARROW, POST, RECIPE, Scene, Valley};
 use typst::visualize::{Color, Oklab};
 
 use crate::figure::FIRE;
-use crate::output::{Cache, File, Output, read_text};
+use crate::output::{Cache, File, Output, read, read_text};
 use crate::photo::webp;
 use crate::site::Tools;
 
@@ -25,15 +25,16 @@ pub struct Style {
 }
 
 fn fire(cache: &Cache) -> Result<BTreeMap<String, PathBuf>> {
-    let drawing = read_text(Path::new("assets/valley.svg"))?;
-    let valley = Valley::parse(&drawing).context("assets/valley.svg")?;
+    let (drawing, chart) = (read_text(Path::new("assets/valley.svg"))?, read(Path::new("assets/depth.pgm"))?);
+    let valley = Valley::parse(&drawing, &chart).context("the valley in `assets`")?;
     let recipe = RECIPE.concat() + include_str!("photo.rs");
     let mut fired = BTreeMap::new();
     for firing in mural::firings(&valley) {
-        let folder = cache.entry(&[recipe.as_bytes(), drawing.as_bytes(), firing.name.as_bytes()], |folder| {
+        let inputs = [recipe.as_bytes(), drawing.as_bytes(), &chart, firing.name.as_bytes()];
+        let folder = cache.entry(&inputs, |folder| {
             eprintln!("firing {}", firing.name);
             for (take, image) in firing.takes.iter().zip((firing.fire)()?) {
-                let encoded = webp(&image.rgba, image.width, image.height, firing.quality)?;
+                let encoded = webp(&image.rgba, image.width, image.height, firing.quality(take))?;
                 fs::write(folder.join(format!("{take}.webp")), encoded)?;
             }
             Ok(())
@@ -53,8 +54,8 @@ fn tiles(fired: &BTreeMap<String, PathBuf>, output: &Output) -> Result<String> {
             |take| output.asset(&format!("{name}-{take}.webp"), File::Copied(folder.join(format!("{take}.webp"))));
         write!(day, " --{name}: url({});", url("day")?)?;
         write!(night, " --{name}: url({});", url("night")?)?;
-        if folder.join("water.webp").exists() {
-            write!(day, " --{name}-water: url({});", url("water")?)?;
+        for mask in ["water", "depth"].into_iter().filter(|mask| folder.join(format!("{mask}.webp")).exists()) {
+            write!(day, " --{name}-{mask}: url({});", url(mask)?)?;
         }
     }
     let mut css = format!(
@@ -72,10 +73,11 @@ fn tiles(fired: &BTreeMap<String, PathBuf>, output: &Output) -> Result<String> {
 /// What `--scene: name;` stands for.
 fn measurements(scene: &Scene) -> String {
     let Scene { name, size: [w, h], tip: [tx, ty], length, radius, .. } = scene;
-    let ([vx, vy], turn, farm) = (scene.vertex(), scene.turn(), scene.farm());
+    let ([vx, vy], turn, farm, tile) = (scene.vertex(), scene.turn(), scene.farm(), scene.tile());
     format!(
-        "--mural: var(--{name}); --water: var(--{name}-water); --w: {w}; --h: {h}; --tx: {tx}; --ty: {ty}; \
-         --vx: {vx}; --vy: {vy}; --turn: {turn}rad; --length: {length}; --farm: {farm}; --radius: {radius};"
+        "--mural: var(--{name}); --water: var(--{name}-water); --bed: var(--{name}-bed); \
+         --depth: var(--{name}-bed-depth); --w: {w}; --h: {h}; --tx: {tx}; --ty: {ty}; --vx: {vx}; --vy: {vy}; \
+         --turn: {turn}rad; --length: {length}; --farm: {farm}; --radius: {radius}; --tile: {tile};"
     )
 }
 

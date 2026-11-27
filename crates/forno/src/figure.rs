@@ -57,7 +57,7 @@ fn tracks(source: &Source, lit: &[&str], radius: f32, weight: f32) -> Markup {
 }
 
 /// `lit` names the posts that stand out, if not all of them.
-pub fn figure(build: &Build, source: &Source, lit: &[&str], scene: &Scene) -> Result<Markup> {
+pub fn figure(build: &Build, source: &Source, lit: &[&str], scene: &Scene, water: Option<&str>) -> Result<Markup> {
     let r = scene.radius;
     let still = html! {
         svg xmlns=(SVG) viewBox={ (-2.5 * r) " " (-4.0 * r) " " (5.0 * r) " " (8.0 * r) } {
@@ -68,7 +68,7 @@ pub fn figure(build: &Build, source: &Source, lit: &[&str], scene: &Scene) -> Re
     let shaft = html! { svg.shaft aria-hidden="true" { line x1="7" x2="100%" {} } };
     let lit = (!lit.is_empty()).then(|| lit.join(" "));
     Ok(html! {
-        div.figure data-program=(build.style.collider) data-event=(source) data-lit=[lit] {
+        div.figure data-program=(build.style.collider) data-event=(source) data-lit=[lit] data-water=[water] {
             div.mural {}
             div.arrow {
                 (shaft)
@@ -81,6 +81,7 @@ pub fn figure(build: &Build, source: &Source, lit: &[&str], scene: &Scene) -> Re
                     (shaft)
                 }
             }
+            canvas.bed {}
         }
     })
 }

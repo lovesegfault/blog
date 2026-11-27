@@ -43,12 +43,17 @@ struct Paint {
     offshore: f32,
     /// From 0 to 1, how much to hold back whatever would get in the way of text.
     calm: f32,
+    /// Whether it is kept in the picture.
+    shown: bool,
+    /// What the chart has for the lake that is to come.
+    sounding: f32,
 }
 
 impl Paint {
     fn plain(glaze: &str) -> Self {
         let glazes = [glaze::named(glaze); 2];
-        Self { glazes, blend: 0.0, body: 0.0, edge: f32::MAX, inside: f32::MAX, offshore: -1.0, calm: 0.0 }
+        let [edge, inside] = [f32::MAX; 2];
+        Self { glazes, blend: 0.0, body: 0.0, edge, inside, offshore: -1.0, calm: 0.0, shown: true, sounding: 0.0 }
     }
 }
 
@@ -108,6 +113,8 @@ struct Surface {
     shadow: f32,
     /// How well something drawn on the water would take.
     wet: f32,
+    shown: bool,
+    sounding: f32,
 }
 
 /// A fired wall.
@@ -174,7 +181,7 @@ impl Kiln<'_> {
         let noise = Noise { seed: noise::hash(tile[0], tile[1], wall.seed), period: wall.period };
 
         if wall.missing && cell == [0.0; 2] {
-            return self.mortar(u, v, noise);
+            return Surface { shown: paint(x, y, tile).shown, ..self.mortar(u, v, noise) };
         }
 
         // No two tiles are cut alike, and some have lost a corner.
@@ -205,7 +212,8 @@ impl Kiln<'_> {
         let lively = 1.0 - if wall.period.is_some() { step(5.0, 19.0, rim) } else { calm };
 
         let behind = paint(x - 1.2, y - 2.6, tile).inside;
-        let mut out = Surface { shadow: 0.40 * step(-7.5, 1.5, behind).powi(2), ..Surface::default() };
+        let Paint { shown, sounding, .. } = paint_here;
+        let mut out = Surface { shadow: 0.40 * step(-7.5, 1.5, behind).powi(2), shown, sounding, ..Surface::default() };
         let tiled = step(-soft, soft, rim);
         match wall.grout {
             Some(_) => out.cover = step(-soft, soft, from_cut),
@@ -408,7 +416,7 @@ impl Panel {
             let [x, y] = [column, row].map(|pixel| (pixel as f32 + 0.5) / density);
             let shadow = surface.shadow * (1.0 - surface.cover);
             let alpha = surface.cover + shadow;
-            if alpha > 0.0 {
+            if alpha > 0.0 && surface.shown {
                 let colour = shadow_colour.mix(shine(surface, slope, x, y, light), surface.cover / alpha);
                 pixel[..3].copy_from_slice(&colour.srgb());
                 pixel[3] = (alpha * 255.0 + 0.5) as u8;
@@ -417,15 +425,25 @@ impl Panel {
         Image { width: width as u32, height: height as u32, rgba }
     }
 
-    /// A half-size mask for what is drawn on the lake. Like lustre, it breaks at every joint and stops at the shore.
-    fn water(&self) -> Image {
-        let (width, height) = (self.width / 2, self.height / 2);
+    /// A picture `by` times smaller, of means.
+    fn mask(&self, by: usize, of: fn(&Surface) -> f32, colour: fn(f32) -> [u8; 4]) -> Image {
+        let (width, height) = (self.width / by, self.height / by);
         let pixel = |i: usize| {
-            let corner = i / width * 2 * self.width + i % width * 2;
-            let wet: f32 = [0, 1, self.width, self.width + 1].iter().map(|step| self.surfaces[corner + step].wet).sum();
-            // A few levels do, and compress far better.
-            [0, 0, 0, (wet / 4.0 * 5.0).round() as u8 * 51]
+            let corner = (i / width * self.width + i % width) * by;
+            let sum: f32 = (0..by * by).map(|at| of(&self.surfaces[corner + at / by * self.width + at % by])).sum();
+            colour(sum / (by * by) as f32)
         };
         Image { width: width as u32, height: height as u32, rgba: (0..width * height).flat_map(pixel).collect() }
+    }
+
+    /// For what is drawn on the lake. Like lustre, it breaks at every joint and stops at the shore.
+    fn water(&self) -> Image {
+        // A few levels do, and compress far better.
+        self.mask(2, |surface| surface.wet, |wet| [0, 0, 0, (wet * 5.0).round() as u8 * 51])
+    }
+
+    /// The chart, as it falls on the tiles, in red, and to the quarter in blue.
+    fn depth(&self) -> Image {
+        self.mask(5, |surface| surface.sounding, |it| [it as u8, 0, (it.fract() * 4.0) as u8 * 64, 255])
     }
 }

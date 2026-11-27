@@ -1,4 +1,4 @@
-"""Draws `assets/valley.svg` from `survey.npz`. Lengths are in metres, east and south of the farm."""
+"""Draws `valley.svg` and `depth.pgm` from `survey.npz`. Lengths are in metres, east and south of the farm."""
 
 from pathlib import Path
 
@@ -13,14 +13,17 @@ WEST, EAST, NORTH, SOUTH = -900, 2900, -1500, 1500
 # From the shore up: the height, the room left at the cut, how much and how widely it wanders, and the gap.
 TERRACES = (8, 16, 5, 620, 0.10), (19, 36, 8, 520, 0.16), (33, 56, 10, 470, 0.22), (58, 70, 11, 460, 0.2)
 GLAZES = "sand", "ochre", "slate olive", "sienna", "moss", "manganese", "cream salmon", "ochre", "sienna"
+# Under the lake: the room left at both banks, how widely they wander, and their glazes.
+FIELDS = (11, 330, "salmon olive"), (31, 280, "moss cream"), (54, 300, "ochre sienna")
 START = f"""\
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="{WEST} {NORTH} {EAST - WEST} {SOUTH - NORTH}" fill-rule="evenodd">
-<!-- In metres east and south of the farm. Each group is a way of cutting the mural out, and each class is a glaze.
+<!-- In metres east and south of the farm. Each class is a glaze, and each group is a way of cutting the mural out,
+     but for the bed, which is what the lake covers.
      Hills: SRTM, NASA and USGS. Shore: modified Copernicus Sentinel data, 2024. River: EC JRC/Google. -->"""
 STYLE = """\
 <style>.sand{fill:#e2d0a8}.ochre{fill:#d2922c}.slate{fill:#7e9aa0}.olive{fill:#8c9350}.sienna{fill:#a8451d}\
 .moss{fill:#4f6136}.manganese{fill:#33201a}.cream{fill:#f0e6cc}.salmon{fill:#c9805a}.lake{fill:#1440b8}\
-.river{fill:#2457d0}#tight{display:none}</style>"""
+.river{fill:#2457d0}g+g{display:none}</style>"""
 
 
 def utm(lat, lon):
@@ -237,6 +240,23 @@ tight = lambda room: np.where(
     east | (Y < -330), wide(room), least(wide(room), (-past - 34 - room * 0.55 + 13 * noise(51, 380)) * 0.3, 5)
 )
 
+# How deep the lake is: 0 at the shore, and 1 at the bank of the old river, which is widened for the collision.
+channel = (blur(often, 1.2) > 54) & (shore < -14)
+away, out = depth(~channel, 70) * CELL, np.maximum(-shore, 0)
+slope = 0.3 * np.clip((blur(ground, 1.2) - 243.5) / 11.5, 0, 1) * ramp(away, 0, 60) + 0.3 * np.tanh(away / 80)
+slope += 0.8 * away / (away + out + 1) + away / 1500 + 0.05 * noise(60, 300) * ramp(away, 20, 90)
+slope = least(np.where(channel, (54 - blur(often, 0.8)) / 140, slope), (np.hypot(X - 346, Y - 36) - 92) / 60, 0.06)
+under = blur(np.where(shore < 0, (1.9 - slope) * np.tanh(out / 16), -shore / 16), 1.5)
+# Each step down uncovers as much of the ground.
+steps = np.quantile(under[(under > 0) & (np.hypot(X - 350, Y - 30) < 600)], np.linspace(0, 1, 40))
+under = blur(np.interp(under, [-1, *steps], [-0.15, *np.linspace(0, 1.5, 40)]), 1.2)
+# No ponds are left behind.
+stream = joined(under > 1, cell(346, 36))
+dry = blur((depth(~stream) - depth(stream)) * CELL, 1.5)
+under += (least(under, 0.98, 0.1) - under) * ramp(dry, 10, 40)
+# Creeks are too thin for these cells, so it runs on past the shore, for the kiln to cut.
+under = -least(-under, away / 6000 - 0.12, 0.02) - ramp(shore, 40, 80)
+
 
 def garden(cut):
     yield beds(least(np.minimum(rise + 9, (shore + 30) * 0.5), cut(0), 3.4))
@@ -259,6 +279,17 @@ def group(name, planted, first, shore):
     yield f'<path class="lake" d="{outline(shore, 0, 1e4, 14, 0.7)}"/>\n</g>'
 
 
+def bottom(shore):
+    yield '<g id="bed">'
+    for at, (room, across, glazes) in enumerate(FIELDS):
+        clear = least((dry - room) * 0.4, (9 - shore - room) * 0.4, 3)
+        for side, glaze in zip((1, -1), glazes.split()):
+            for path, _, x, y in beds(least(clear, side * noise(82 + at, across) * 17 - 2.2, 3.4), 2200):
+                if np.hypot(x - 350, y) < 1300:
+                    yield f'<path class="{glaze}" d="{path}"/>'
+    yield f'<path class="lake" d="{outline(-under, -1, 1e4, 14, 0.7)}"/>\n</g>'
+
+
 if __name__ == "__main__":
     first = [[bed for bed in some if bed[1] > 2e5 or np.hypot(bed[2] - 300, bed[3]) < 1250] for some in garden(wide)]
     river = np.minimum(blur(often, 1.2), 62 + (-shore - 30) * 0.9)
@@ -267,6 +298,11 @@ if __name__ == "__main__":
         STYLE,
         *group("wide", first, first, shore),
         *group("tight", list(garden(tight)), first, whole(shore + creeks)),
+        *bottom(whole(shore + creeks)),
         f'<path class="river" d="{outline(river, 62, -1e4, 26, 1.5)}"/>\n</svg>\n',
     ]
-    Path(__file__).parent.with_name("assets").joinpath("valley.svg").write_text("\n".join(drawing))
+    assets = Path(__file__).parent.with_name("assets")
+    assets.joinpath("valley.svg").write_text("\n".join(drawing))
+    x, y = np.meshgrid(np.arange(WEST, EAST, CELL) + CELL / 2, np.arange(NORTH, SOUTH, CELL) + CELL / 2)
+    chart = np.clip(sample(under, (x - XS[0]) / CELL, (y - YS[0]) / CELL) * 170 + 25.5, 0, 255).astype(np.uint8)
+    assets.joinpath("depth.pgm").write_bytes(b"P5 %d %d 255\n" % chart.shape[::-1] + chart.tobytes())

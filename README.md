@@ -23,6 +23,10 @@ has `tinymist` for your editor.
 Comments are found by the title. To rename a post that has some, set `comments`
 to the number of its issue.
 
+The lake is full for the newest post, and down to the old river for the oldest.
+Set `water` to `0%`, `100%` or what is between to choose, or to `"rising"` to
+have it fill slowly.
+
 ### Text
 
 | Write                                         | To get                      |
@@ -78,11 +82,11 @@ Each file in `crates/explainers/src/bin` is an interactive figure. Start from
 | ------------------- | ---------------------------------------------------- |
 | `site.toml`         | Names and redirects                                  |
 | `blog.typ`          | What posts import                                    |
-| `assets`            | The stylesheet, the script and the drawing           |
+| `assets`            | The stylesheet, the script, the drawing and a chart  |
 | `static`            | Files published as they are                          |
 | `crates/forno`      | The generator                                        |
 | `crates/mural`      | Fires `assets/valley.svg` into tiles                 |
-| `valley`            | Draws `assets/valley.svg` from public maps           |
+| `valley`            | Draws and charts the valley, from public maps        |
 | `crates/collision`  | Turns writing into particle tracks                   |
 | `flake.nix`         | The tools, and the Typst packages that posts import  |
 | `nix/fonts.nix`     | The fonts                                            |

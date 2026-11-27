@@ -37,7 +37,8 @@ pub fn measure(extension: Option<&str>, bytes: &Bytes) -> Option<(&'static str, 
 
 pub fn webp(rgba: &[u8], width: u32, height: u32, quality: f32) -> Result<Vec<u8>> {
     let config = webp::WebPConfig::new().map_err(|()| anyhow!("libwebp did not start"))?;
-    let config = webp::WebPConfig { quality, method: 5, alpha_quality: 90, use_sharp_yuv: 1, ..config };
+    let lossless = (quality == 100.0).into();
+    let config = webp::WebPConfig { quality, lossless, method: 5, alpha_quality: 90, use_sharp_yuv: 1, ..config };
     let encoded = webp::Encoder::from_rgba(rgba, width, height).encode_advanced(&config);
     Ok(encoded.map_err(|error| anyhow!("cannot encode: {error:?}"))?.to_vec())
 }

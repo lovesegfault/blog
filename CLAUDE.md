@@ -51,6 +51,10 @@ A formula is laid out as on paper, cut where a line may end, and drawn in pieces
 that the stylesheet fits to the screen. Hidden MathML beside it is for screen
 readers and feeds, and `formula::flat` is for where there is only text.
 
+The mural has the lake of today, which is all that shows with no script or no
+WebGL. Its bed is fired apart, with a chart of depths, and `tide` in `site.js`
+lays it over the parts that are dry.
+
 What is slow to make is kept in `.cache`, under a digest of its inputs, of the
 file that makes it and of `Cargo.lock`. A new input goes into the digest.
 Changing `photo.rs` or `crates/mural` fires every tile again.
@@ -63,6 +67,9 @@ These are written in two places, and change together:
 | The named colours        | `site.css`, `blog.typ` and `paint` in `style.rs`        |
 | Indents in formulas      | `site.css` and `INDENT` in `formula.rs`                 |
 | How tracks are drawn     | `site.js` and `tracks` in `figure.rs`                   |
+| The dashes of the arrow  | `site.css` and `SHORE` in `site.js`                     |
+| The line of the shore    | `fire` in the mural and `SHORE` in `site.js`            |
+| The scale of the chart   | `draw.py`, and `SHORE` in `valley.rs` and `site.js`     |
 | Talking to programs      | `site.js`, `programs.rs` and the `extern "C"` functions |
 | What the site is made of | `SOURCES` in `site.rs` and `site` in `flake.nix`        |
 | What it is made with     | `Tools::new` in `site.rs` and `env` in `flake.nix`      |
@@ -89,6 +96,8 @@ The tests cover the generator, and nothing that is seen. For that, go through
 - in Chrome, Firefox and Safari, which select and copy formulas differently;
 - with the keyboard, into a note and back.
 
+The water moves on the first page, under the pointer, and on `/about/`.
+
 After a change to the generator, compare `public` from before and after: titles,
 ids and `index.xml` should only differ where that was the point.
 
@@ -103,9 +112,10 @@ ids and `index.xml` should only differ where that was the point.
   in `highlight.rs`.
 - **A Typst package or a font.** `typst` in `flake.nix`, or `nix/fonts.nix`.
 - **The valley.** `nix develop .#valley -c python valley/draw.py` writes
-  `assets/valley.svg`. Run it untouched first: if the beds move, numpy changed
-  its numbers, and an older `flake.lock` has them. `survey.py` says where the
-  maps came from. A larger area takes more of them, and moves the beds too.
+  `valley.svg` and `depth.pgm`. Run it untouched first: if the beds move, numpy
+  changed its numbers, and an older `flake.lock` has them. `survey.py` says
+  where the maps came from. A larger area takes more of them, and moves the
+  beds too.
 - **Large files.** `.gitattributes` sends pictures, videos and whatever is under
   `images` or `files` to LFS. `assets` stays out of it.
 

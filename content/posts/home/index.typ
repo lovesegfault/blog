@@ -5,6 +5,7 @@
   date: "2019-02-13T23:41:15Z",
   categories: "essay",
   tags: ("home", "farm", "lost"),
+  water: 0%,
 )
 
 #let home = link.with("https://www.youtube.com/watch?v=dC8Gxqhcjhk")

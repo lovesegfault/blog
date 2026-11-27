@@ -49,6 +49,8 @@ source = open(script, encoding="utf-8").read().replace("Caveat: true", "Caveat: 
 if "problems" not in source:
     source = "window.problems = []; onerror = (it) => problems.push(it); onunhandledrejection = (it) => problems.push(it.reason);\n" + source
 source = source.replace("motion: reduce", "motion: never").replace("Math.min(2, devicePixelRatio), laid", "2, laid")
+source = source.replace(".catch(() => canvas.remove())", ".catch((it) => (problems.push(`decode ${it} ${pictures.map((p) => p.naturalWidth)}`), canvas.remove()))")
+source = source.replace("return canvas.remove()", "return problems.push(`context ${gl} ${gl?.isContextLost()}`), canvas.remove()")
 open(script, "w", encoding="utf-8").write(source)
 [sheet] = glob.glob("result/assets/site.*.css")
 rules = open(sheet, encoding="utf-8").read().replace("(prefers-reduced-motion: no-preference)", "screen")
@@ -65,8 +67,7 @@ try:
         except OSError:
             time.sleep(1)
     wanted = {
-        "moz:firefoxOptions": {"prefs": {"webgl.force-enabled": True}},
-        "goog:chromeOptions": {"args": ["--ignore-gpu-blocklist", "--enable-unsafe-swiftshader", "--no-sandbox"]},
+        "goog:chromeOptions": {"args": ["--no-sandbox"]},
     }
     if sys.argv[1] == "webkit":
         from playwright.sync_api import sync_playwright
@@ -102,6 +103,14 @@ try:
     size(1400, 900)
     go("/colophon/")
     print("SEEN", name, run(CARD))
+    if name != "Safari":
+        sys.exit(call("DELETE", session))
+    for before, early in ("/tags/", None), ("/about/", None), ("/posts/home/", None), ("/tags/", 0.5), ("/posts/home/", 0.5), ("/posts/home/", 1.0), ("/about/", 0.8):
+        go(before), time.sleep(4), go("/about/")
+        if early:
+            time.sleep(early), call("GET", session + "/screenshot")
+        time.sleep(4)
+        print("SEEN", name, "after", before, early, run(STATE))
     go("/posts/home/"), see("home", 9)
     run("document.querySelector('.dusk').click()"), see("night", 9), run("document.querySelector('.dusk').click()")
     go("/posts/notes-on-euclidean-spaces/"), see("notes", 9)

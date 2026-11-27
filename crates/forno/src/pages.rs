@@ -127,21 +127,17 @@ fn contents(sections: &[Section]) -> Markup {
 }
 
 fn comments(build: &Build, page: &Page) -> Markup {
-    let (term, issue, thread) = match page.comments {
+    let (issue, thread) = match page.comments {
         Comments::Open(true) if !page.draft => {
-            (Some("title"), None, format!("?q={}", encode(&format!("is:issue in:title \"{}\"", page.title))))
+            (None, format!("?q={}", encode(&format!("is:issue in:title \"{}\"", page.title))))
         }
         Comments::Open(_) => return html!(),
-        Comments::Issue(number) => (None, Some(number), format!("/{number}")),
+        Comments::Issue(number) => (Some(number), format!("/{number}")),
     };
     let repository = &build.config.comments;
     html! {
-        section.comments aria-label="Comments" {
+        section.comments aria-label="Comments" data-repo=(repository) data-issue=[issue] {
             a.voice href={ "https://github.com/" (repository) "/issues" (thread) } { "Comments are on GitHub" }
-            template {
-                script src="https://utteranc.es/client.js" repo=(repository) issue-term=[term] issue-number=[issue]
-                    crossorigin="anonymous" async {}
-            }
         }
     }
 }

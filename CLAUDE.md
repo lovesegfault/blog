@@ -22,7 +22,9 @@ every month by pull requests that merge themselves.
 
 - **Comments.** utterances finds a thread by the `<title>` of the page, which is
   `<post> :: null pointer`. Leave alone the format in `pages.rs`, `title` in
-  `site.toml`, and how `Page::title` is made.
+  `site.toml`, and how `Page::title` is made. Cloudflare is in front of the
+  site, and may put a script before the next one after an email address, so
+  `site.js` makes the one for utterances and none waits in a `<template>`.
 - **Addresses.** `/posts/<slug>/`, the files beside a post, the ids of headings
   (`slugify` names them as Hugo did) and of notes (`fn:1`, `fnref:1`), the feeds
   and their `guid`s. A page that moves gets a redirect in `site.toml`.

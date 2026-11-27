@@ -103,8 +103,7 @@ try:
     size(1400, 900)
     go("/colophon/")
     print("SEEN", name, run(CARD))
-    if name != "Safari":
-        sys.exit(call("DELETE", session))
+
     for before, early in ():
         go(before), time.sleep(4), go("/about/")
         if early:

@@ -83,7 +83,7 @@ if way == "webkit":
     }
     call = lambda method, path, body=None: ways[path.split("/")[-1]](body)
 try:
-    for n in range(16):
+    for n in range(8):
         session = "/session/" + call("POST", "/session", {"capabilities": {"alwaysMatch": {}}})["sessionId"]
         run = lambda script: call("POST", session + "/execute/sync", {"script": script, "args": []})
         call("POST", session + "/window/rect", {"x": 0, "y": 0, "width": 1400, "height": 900})

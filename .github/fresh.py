@@ -27,6 +27,7 @@ HTMLCanvasElement.prototype.getContext = function (kind, ...rest) {
   mark(`gl ${!!made} ${made?.isContextLost()}`);
   return made;
 };
+addEventListener('pointermove', () => mark('moved'), { once: true });
 """
 STATE = "return [document.querySelector('.bed')?.className ?? 'none', performance.now() | 0, ...(window.log ?? [])].join(' ');"
 PATHS = ["/posts/home/", "/posts/notes-on-euclidean-spaces/", "/about/"]
@@ -68,19 +69,37 @@ for _ in range(60):
         break
     except OSError:
         time.sleep(1)
+if way == "webkit":
+    from playwright.sync_api import sync_playwright
+
+    browser, pages = sync_playwright().start().webkit.launch(headless=False), []
+    ways = {
+        "session": lambda it: pages.append(browser.new_page()) or {"sessionId": "end"},
+        "rect": lambda it: pages[-1].set_viewport_size({"width": it["width"], "height": it["height"]}),
+        "url": lambda it: pages[-1].goto(it["url"]),
+        "sync": lambda it: pages[-1].evaluate("() => {" + it["script"] + "}"),
+        "actions": lambda it: pages[-1].mouse.move(*(it["actions"][0]["actions"][0][side] for side in "xy")),
+        "end": lambda it: pages[-1].close(),
+    }
+    call = lambda method, path, body=None: ways[path.split("/")[-1]](body)
 try:
     for n in range(16):
         session = "/session/" + call("POST", "/session", {"capabilities": {"alwaysMatch": {}}})["sessionId"]
         run = lambda script: call("POST", session + "/execute/sync", {"script": script, "args": []})
         call("POST", session + "/window/rect", {"x": 0, "y": 0, "width": 1400, "height": 900})
-        for path in PATHS:
+        for path in ["/"] if way == "hover" else ["/", *PATHS]:
             call("POST", session + "/url", {"url": SITE + path}), time.sleep(3)
+            if path == "/":
+                x, y = run("const r = document.querySelector('[data-lights=home]').getBoundingClientRect(); return [r.x + 90 | 0, r.y + 12 | 0];")
+                call("POST", session + "/actions", {"actions": [{"type": "pointer", "id": "m", "actions": [{"type": "pointerMove", "x": x, "y": y}]}]})
+                time.sleep(2), run("log.push(document.hasFocus())")
+            if n == 9 and way == "hover":
+                subprocess.run(["open", "-a", "Safari", SITE + "/about/"]), time.sleep(5)
             print("SEEN", n, path, run(STATE), file=open(f"shots/seen-{way}.txt", "a"))
         if n < 1:
             subprocess.run(["screencapture", "-x", f"shots/screen-{way}.png"])
         call("DELETE", session)
-    subprocess.run(["open", "-a", "Safari", SITE + "/about/"]), time.sleep(12)
-    subprocess.run(["screencapture", "-x", f"shots/free-{way}.png"])
+
     words = "unresponsive|timeout|timed out|crash|terminat|iosurface|metal|gpuprocess|fault|error"
     subprocess.run(f"log show --last 4m --style compact --predicate 'process CONTAINS \"WebKit\" OR process == \"Safari\"' | grep -iE '{words}' | tail -1500 > shots/log-{way}.txt", shell=True)
     subprocess.run(f"(sw_vers; safaridriver --version; sysctl hw.physicalcpu_max; system_profiler SPDisplaysDataType) > shots/mac-{way}.txt", shell=True)

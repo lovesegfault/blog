@@ -56,16 +56,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        turn: [plain, spin, mute, master, branch]
-    runs-on: macos-latest
+        turn: [macos-latest, macos-15, macos-15-intel, macos-26-intel]
+    runs-on: ${{ matrix.turn }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: site
       - run: sudo safaridriver --enable
+      - if: matrix.turn == 'macos-latest'
+        run: |
+          for prefix in WebKitDebugU WebKitInternalU WebKitExperimentalU InternalDebugU ExperimentalU WebKitPreferences.u WebKit2U WebKitU; do
+            for domain in -g com.apple.Safari; do
+              defaults write $domain ${prefix}seGPUProcessForDOMRenderingEnabled -bool true || true
+            done
+          done
       - name: look
-        run: tar -xzf site.tar.gz && python3 .github/fresh.py ${{ matrix.turn }}
+        run: |
+          tar -xzf site.tar.gz && python3 .github/fresh.py ${{ matrix.turn }}
+          tar -xzf site.tar.gz && python3 .github/browse.py safaridriver > shots/browse.txt
       - if: always()
         uses: actions/upload-artifact@v7
         with:

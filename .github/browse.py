@@ -105,7 +105,7 @@ try:
     print("SEEN", name, run(CARD))
     if name != "Safari":
         sys.exit(call("DELETE", session))
-    for before, early in ("/tags/", None), ("/about/", None), ("/posts/home/", None), ("/tags/", 0.5), ("/posts/home/", 0.5), ("/posts/home/", 1.0), ("/about/", 0.8):
+    for before, early in ():
         go(before), time.sleep(4), go("/about/")
         if early:
             time.sleep(early), call("GET", session + "/screenshot")

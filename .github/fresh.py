@@ -54,7 +54,7 @@ if way == "master":
 open(script, "w").write("{" + SPY + "}\n" + ("" if way == "mute" else source))
 for path in PATHS:
     page = open(f"result{path}index.html").read()
-    if way != "branch":
+    if way in ("plain", "spin", "mute", "master"):
         page = {"plain": PLAIN, "spin": PLAIN + SPIN}.get(way, page.replace('<canvas class="bed"></canvas>', ""))
     open(f"result{path}index.html", "w").write(page)
 rules = open(sheet).read().replace("(prefers-reduced-motion: no-preference)", "screen")
@@ -69,16 +69,13 @@ for _ in range(60):
     except OSError:
         time.sleep(1)
 try:
-    for n in range(12):
+    for n in range(16):
         session = "/session/" + call("POST", "/session", {"capabilities": {"alwaysMatch": {}}})["sessionId"]
         run = lambda script: call("POST", session + "/execute/sync", {"script": script, "args": []})
         call("POST", session + "/window/rect", {"x": 0, "y": 0, "width": 1400, "height": 900})
         for path in PATHS:
             call("POST", session + "/url", {"url": SITE + path}), time.sleep(3)
-            if n < 5 and "notes" in path:
-                for pid in subprocess.run(["pgrep", "-f", "WebKit.(GPU|WebContent)"], capture_output=True, text=True).stdout.split():
-                    subprocess.run(f"sudo sample {pid} 1 20 > shots/sample-{way}-{n}-{pid}.txt 2>&1", shell=True)
-            print("SEEN", n, path, run(STATE), flush=True)
+            print("SEEN", n, path, run(STATE), file=open(f"shots/seen-{way}.txt", "a"))
         if n < 1:
             subprocess.run(["screencapture", "-x", f"shots/screen-{way}.png"])
         call("DELETE", session)
@@ -86,6 +83,6 @@ try:
     subprocess.run(["screencapture", "-x", f"shots/free-{way}.png"])
     words = "unresponsive|timeout|timed out|crash|terminat|iosurface|metal|gpuprocess|fault|error"
     subprocess.run(f"log show --last 4m --style compact --predicate 'process CONTAINS \"WebKit\" OR process == \"Safari\"' | grep -iE '{words}' | tail -1500 > shots/log-{way}.txt", shell=True)
-    subprocess.run(f"(sw_vers; system_profiler SPDisplaysDataType; ls ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports) > shots/mac-{way}.txt", shell=True)
+    subprocess.run(f"(sw_vers; safaridriver --version; sysctl hw.physicalcpu_max; system_profiler SPDisplaysDataType) > shots/mac-{way}.txt", shell=True)
 finally:
     driver.kill(), server.kill()

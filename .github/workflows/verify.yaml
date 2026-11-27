@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   valley:
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -50,7 +51,29 @@ jobs:
           path: site.tar.gz
           retention-days: 3
       - run: nix flake check -L
+  fresh:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        turn: [1, 2, 3]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: site
+      - run: sudo safaridriver --enable
+      - name: look
+        run: tar -xzf site.tar.gz && python3 .github/fresh.py ${{ matrix.turn }}
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: shots-${{ matrix.turn }}
+          path: shots
+          retention-days: 3
   browse:
+    if: false
     needs: build
     strategy:
       fail-fast: false

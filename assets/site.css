@@ -120,7 +120,8 @@ code { font-family: var(--mono); font-style: normal; font-variant: none; }
 .figure *, .figure ::before, .figure ::after { position: absolute; }
 .figure.live { cursor: grab; }
 .figure.live:active { cursor: grabbing; }
-.mural { left: var(--x0); top: var(--y0); width: var(--across); height: var(--down); background: var(--mural) 0 0 / 100% 100%; }
+.mural, .bed { left: var(--x0); top: var(--y0); width: var(--across); height: var(--down); background: var(--mural) 0 0 / 100% 100%; }
+.bed { background-image: none; pointer-events: none; }
 .water { inset: 0; color: var(--foam); mask: var(--water) var(--x0) var(--y0) / var(--across) var(--down) no-repeat; pointer-events: none; }
 .water canvas { width: 100%; height: 100%; }
 .water img { width: calc(5 * var(--radius) * var(--u)); translate: -50% -50%; }
@@ -147,7 +148,7 @@ code { font-family: var(--mono); font-style: normal; font-variant: none; }
   background: var(--stroke) / 1.6em .2em, var(--stroke) / .2em 1.6em;
 }
 .farm:focus-visible { outline: none; }
-.farm:focus-visible::before { outline: 2px solid var(--accent); }
+.farm:focus-visible::before { outline: 2px solid var(--accent); outline-offset: -2px; }
 .farm span { right: 1.27em; top: .36em; font: italic 1.58em/1.2 var(--voice); letter-spacing: .03em; white-space: nowrap; opacity: .82; transition: opacity .2s; }
 .farm:hover span { opacity: 1; }
 
@@ -514,6 +515,7 @@ summary::-webkit-details-marker { display: none; }
 
 @media (prefers-reduced-motion: no-preference) {
   .js :is(.figure > .arrow, .water .shaft) { animation: appear 1s 1.3s both; }
+  .js [data-water="rising"] .bed:not(.live) { background-image: var(--bed); }
   .notes.live, .peek { animation: appear .3s; }
   @keyframes appear { from { opacity: 0; } }
 }

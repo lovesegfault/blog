@@ -146,6 +146,7 @@ pub fn build(tools: &Tools, programs: &Path, drafts: bool) -> Result<Site> {
     let paths = content::sources(drafts);
     let mut sources: Vec<Page> = paths.par_iter().filter_map(|path| build.page(path)).collect();
     sources.sort_by(|a, b| (&b.date, &a.slug).cmp(&(&a.date, &b.slug)));
+    content::fill(&mut sources);
     let articles: Vec<Article> = sources.par_iter().map(|page| Article::new(&build, page)).collect();
     let posts: Vec<&Article> = articles.iter().take_while(|article| article.page.date.is_some()).collect();
     let card = pages::site_card(&build, &posts)?;

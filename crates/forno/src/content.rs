@@ -8,7 +8,7 @@ use anyhow::{Context, Result, bail, ensure};
 use jiff::ZonedDateTime;
 use jiff::fmt::temporal::Pieces;
 use jiff::tz::Offset;
-use typst::foundations::OneOrMultiple;
+use typst::foundations::{OneOrMultiple, Value};
 use typst::model::Document;
 use typst::syntax::{LinkedNode, ast};
 use typst_html::HtmlDocument;
@@ -41,6 +41,8 @@ pub struct Page {
     pub tags: Vec<String>,
     pub description: Option<String>,
     pub comments: Comments,
+    /// How full the lake is, from 0 to 1, or `rising`.
+    pub water: Option<String>,
     pub language: String,
     pub path: PathBuf,
     /// Where its pictures and files are, if it has a folder to itself.
@@ -99,6 +101,12 @@ impl Page {
             ensure!(names.iter().all(|it| !address(it).is_empty()), "`{name}` need letters for their addresses");
             Ok(names)
         };
+        let water = match front.option("water")? {
+            Value::None => None,
+            Value::Ratio(full) if (0.0..=1.0).contains(&full.get()) => Some(full.get().to_string()),
+            Value::Str(way) if way == "rising".into() => Some(way.into()),
+            _ => bail!("`water` goes from `0%` to `100%`, or is `\"rising\"`"),
+        };
         let draft = path.starts_with("content/drafts");
         let is_post = draft || path.starts_with("content/posts");
         ensure!(date("date")?.is_some() == is_post, "posts have a `date`, and other pages do not");
@@ -118,11 +126,22 @@ impl Page {
             language: info.locale.unwrap_or_default().rfc_3066().into(),
             path: path.to_owned(),
             heading,
+            water,
             body,
             slug,
             draft,
             folder,
         })
+    }
+}
+
+/// The lake is full for the first post, and down to the old river for the last. Drafts do not count.
+pub fn fill(pages: &mut [Page]) {
+    let steps = pages.iter().filter(|page| page.date.is_some() && !page.draft).count().max(2) - 1;
+    let mut left = steps;
+    for post in pages.iter_mut().filter(|page| page.date.is_some()) {
+        post.water.get_or_insert(format!("{:.3}", left as f32 / steps as f32));
+        left = left.saturating_sub((!post.draft).into());
     }
 }
 

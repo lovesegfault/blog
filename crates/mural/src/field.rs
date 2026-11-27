@@ -64,6 +64,17 @@ impl Field {
         let bottom = self.data[i + self.width] + (self.data[i + self.width + 1] - self.data[i + self.width]) * u;
         top + (bottom - top) * v
     }
+
+    /// The same, with no creases between cells: a cubic B-spline, as four of those.
+    pub fn smooth(&self, x: f32, y: f32) -> f32 {
+        let taps = |at: f32| {
+            let (t, u) = (at - at.floor(), 1.0 - at + at.floor());
+            let [near, far] = [t, u].map(|t| (3.0 * t.powi(3) - 6.0 * t * t + 4.0) / 6.0);
+            let before = near + u.powi(3) / 6.0;
+            [(at - t - 1.0 + near / before, before), (at - t + 2.0 - far / (1.0 - before), 1.0 - before)]
+        };
+        taps(x).iter().flat_map(|(x, a)| taps(y).map(|(y, b)| a * b * self.at(*x, y))).sum()
+    }
 }
 
 fn transpose(from: &[f32], width: usize, height: usize) -> Vec<f32> {

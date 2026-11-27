@@ -7,6 +7,7 @@
   updated: "2000-01-02",
   categories: "notes",
   tags: "specimen",
+  water: 50%,
 )
 
 #let inner(x, y) = $lr(chevron.l #x, #y chevron.r)$

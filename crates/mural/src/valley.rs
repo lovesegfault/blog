@@ -1,21 +1,27 @@
-//! The drawing: `valley.svg`, in metres east and south of the farm.
+//! The drawing, `valley.svg`, in metres east and south of the farm, and its chart, `depth.pgm`.
 
 use std::collections::HashMap;
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use roxmltree::Document;
-use svgtypes::{SimplePathSegment as Segment, SimplifyingPathParser};
-use tiny_skia::{BlendMode, FillRule, Mask, Paint as Brush, Path, PathBuilder, Pixmap, Stroke, Transform};
+use svgtypes::{SimplePathSegment as Segment, SimplifyingPathParser, ViewBox};
+use tiny_skia::{BlendMode, FillRule, Mask, Paint as Brush, Path, PathBuilder, Pixmap, Point, Stroke, Transform};
 
 use crate::field::Field;
 use crate::glaze::{self, named};
 use crate::{Paint, step};
 
 pub struct Valley {
-    /// Groups of shapes, each a way of cutting the mural out.
+    /// Groups of shapes: the ways of cutting the mural out, and the bed of the lake.
     cuts: HashMap<String, Vec<(String, Path)>>,
     river: Path,
+    /// How deep the lake is, and the way from metres to its cells.
+    chart: Field,
+    cells: Transform,
 }
+
+/// What the chart has for no depth.
+const SHORE: f32 = 25.0;
 
 /// Where the valley sits on a wall.
 #[derive(Clone, Copy)]
@@ -32,6 +38,8 @@ pub struct View {
     pub dark: f32,
     /// Between these heights the lake gives way to plain deep tiles.
     pub sink: Option<[f32; 2]>,
+    /// As it was before the dam, and only what the lake covers.
+    pub dry: bool,
 }
 
 fn outline(d: &str) -> Result<Path> {
@@ -51,9 +59,9 @@ fn outline(d: &str) -> Result<Path> {
 }
 
 impl Valley {
-    pub fn parse(svg: &str) -> Result<Self> {
-        let (mut cuts, mut river) = (HashMap::<_, Vec<_>>::new(), None);
-        for node in Document::parse(svg)?.descendants().filter(|node| node.has_tag_name("path")) {
+    pub fn parse(svg: &str, chart: &[u8]) -> Result<Self> {
+        let (mut cuts, mut river, svg) = (HashMap::<_, Vec<_>>::new(), None, Document::parse(svg)?);
+        for node in svg.descendants().filter(|node| node.has_tag_name("path")) {
             ensure!(node.ancestors().all(|node| !node.has_attribute("transform")), "transforms have to be applied");
             let (class, path) = (node.attribute("class").unwrap_or(""), outline(node.attribute("d").unwrap_or(""))?);
             if class == "river" {
@@ -64,12 +72,24 @@ impl Valley {
                 cuts.entry(cut.to_owned()).or_default().push((class.to_owned(), path));
             }
         }
-        Ok(Self { cuts, river: river.context("there is no river")? })
+        let parts: Vec<_> = chart.splitn(5, u8::is_ascii_whitespace).collect();
+        let &[b"P5", width, height, b"255", depths] = &parts[..] else { bail!("depth.pgm is not a chart") };
+        let (width, height) = (str::from_utf8(width)?.parse()?, str::from_utf8(height)?.parse()?);
+        ensure!(depths.len() == width * height, "depth.pgm is cut short");
+        let ViewBox { x, y, w, h } = svg.root_element().attribute("viewBox").unwrap_or("").parse()?;
+        Ok(Self {
+            cuts,
+            river: river.context("there is no river")?,
+            chart: Field { width, height, data: depths.iter().copied().map(f32::from).collect() },
+            cells: Transform::from_translate(-x as f32, -y as f32)
+                .post_scale(width as f32 / w as f32, height as f32 / h as f32)
+                .post_translate(-0.5, -0.5),
+        })
     }
 }
 
 /// The valley traced onto a wall at full size, ready to be glazed.
-pub struct Cartoon {
+pub struct Cartoon<'a> {
     view: View,
     density: f32,
     width: usize,
@@ -79,6 +99,8 @@ pub struct Cartoon {
     inside: Field,
     depth: Field,
     river: Field,
+    /// Where it is dry: the distance into the lake to come, its chart, and the way from the wall to that.
+    flood: Option<(Field, &'a Field, Transform)>,
     cobalt: usize,
     deep: usize,
 }
@@ -111,9 +133,10 @@ impl Stencil {
     }
 }
 
-impl Cartoon {
-    pub fn trace(valley: &Valley, view: View, size: [f32; 2], density: f32) -> Result<Self> {
-        let shapes = valley.cuts.get(view.cut).with_context(|| format!("the valley has no group `{}`", view.cut))?;
+impl<'a> Cartoon<'a> {
+    pub fn trace(valley: &'a Valley, view: View, size: [f32; 2], density: f32) -> Result<Self> {
+        let group = |name| valley.cuts.get(name).with_context(|| format!("the valley has no group `{name}`"));
+        let (cut, bed) = (group(view.cut)?, if view.dry { group("bed")? } else { &[][..] });
         let [width, height] = size.map(|side| ((side + 2.0 * MARGIN) * density).ceil() as u32);
         let place = Transform::from_translate(-view.anchor[0], -view.anchor[1])
             .post_rotate(view.turn.to_degrees())
@@ -134,7 +157,8 @@ impl Cartoon {
         let pen = Brush { anti_alias: false, ..Brush::default() };
         let hair = Stroke { width: 1.2 / (view.scale * density), ..Stroke::default() };
         let mut coat = Mask::new(width, height).expect("the wall has a size");
-        for (class, path) in shapes.iter().filter(|(class, _)| class != "sand") {
+        let bare = ["sand", if view.dry { "lake" } else { "" }];
+        for (class, path) in cut.iter().filter(|(class, _)| !bare.contains(&&**class)).chain(bed) {
             let Some(bounds) = path.bounds().transform(place) else { continue };
             let span = |from: f32, to: f32, limit: u32| {
                 (from.max(0.0) as usize).min(limit as usize)..(to.ceil().max(0.0) as usize).min(limit as usize)
@@ -160,27 +184,29 @@ impl Cartoon {
             lines.stroke_path(path, &pen, &hair, place, None);
         }
 
-        let of = |wanted: &'static [&str]| {
-            shapes.iter().filter(|(class, _)| wanted.contains(&class.as_str())).map(|(_, path)| path)
-        };
-        let (ground, lake) = (mask(&mut of(&["sand", "lake"])), mask(&mut of(&["lake"])));
-        let river = mask(&mut std::iter::once(&valley.river));
         let (w, h) = (width as usize, height as usize);
+        let within = |shapes: &[(String, Path)], wanted: &[&str]| {
+            let mask = mask(&mut shapes.iter().filter(|(class, _)| wanted.contains(&&**class)).map(|(_, path)| path));
+            Field::signed_distance(w, h, |i| mask.data()[i] > 0)
+        };
+        let river = mask(&mut std::iter::once(&valley.river));
+        let cells = place.invert().expect("the valley has a size").post_concat(valley.cells).pre_translate(0.5, 0.5);
         Ok(Self {
             view,
             density,
             width: w,
             coats,
             edge: Field::distance(w, h, |i| lines.data()[i * 4 + 3] > 0).soften(2),
-            inside: Field::signed_distance(w, h, |i| ground.data()[i] > 0).soften(3),
-            depth: Field::signed_distance(w, h, |i| lake.data()[i] > 0),
+            inside: within(cut, &["sand", "lake"]).soften(3),
+            depth: within(if view.dry { bed } else { cut }, &["lake"]),
             river: Field::signed_distance(w, h, |i| river.data()[i] > 0).soften(3),
+            flood: view.dry.then(|| (within(cut, &["lake"]), &valley.chart, cells)),
             cobalt,
             deep: named("deep"),
         })
     }
 
-    pub fn paint(&self, x: f32, y: f32) -> Paint {
+    pub fn paint(&self, x: f32, y: f32, tile: [i32; 2]) -> Paint {
         let (px, py) = ((x + MARGIN) * self.density - 0.5, (y + MARGIN) * self.density - 0.5);
         let [first, second, share] = self.coats[(py + 0.5) as usize * self.width + (px + 0.5) as usize];
         let mut paint = Paint {
@@ -191,7 +217,18 @@ impl Cartoon {
             inside: self.inside.at(px, py) / self.density,
             offshore: self.depth.at(px, py) / self.density,
             calm: 0.0,
+            shown: true,
+            sounding: 0.0,
         };
+        if let Some((lake, chart, cells)) = &self.flood {
+            let (into, mut cell) = (lake.at(px, py) / self.density, Point::from_xy(px, py));
+            cells.map_point(&mut cell);
+            // From the line of the river to past that of the lake, short of the cut and of the farm.
+            paint.shown = paint.offshore < 2.0 && into > -15.0 && paint.inside > 4.0 && tile != [0; 2];
+            // The lesser of the chart and a shelf that starts at the shore, with no corner between them.
+            let (charted, shelf) = (chart.smooth(cell.x, cell.y), SHORE + 5.0 * into / self.view.scale);
+            paint.sounding = charted.min(shelf) - 8.0 * ((charted - shelf).abs() / -8.0).exp().ln_1p();
+        }
         let depth = paint.offshore / self.view.scale;
         if depth > 0.0 {
             // Cobalt lies thicker over deep water, and thinner along the old river.
@@ -208,5 +245,20 @@ impl Cartoon {
             }
         }
         paint
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_chart_lies_over_the_drawing() {
+        let svg = r#"<svg viewBox="-40 0 80 40"><path class="river" d="M0 0h1v1z"/></svg>"#;
+        let chart = [b"P5 8 4 255\n".as_slice(), &[0, 10, 20, 30, 40, 50, 60, 70].repeat(4)].concat();
+        let (valley, mut at) = (Valley::parse(svg, &chart).unwrap(), Point::from_xy(-3.0, 20.0));
+        valley.cells.map_point(&mut at);
+        assert!((valley.chart.smooth(at.x, at.y) - 32.0).abs() < 0.01);
+        assert!(Valley::parse(svg, &chart[..40]).is_err());
     }
 }

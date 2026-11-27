@@ -89,7 +89,7 @@ fn list(posts: &[&Article]) -> Markup {
             @for group in posts.chunk_by(|a, b| year(a) == year(b)) {
                 @for (row, post) in group.iter().enumerate() {
                     li.first[row == 0].draft[post.page.draft] {
-                        a href=(post.page.url) data-lights=(post.page.slug) {
+                        a href=(post.page.url) data-lights=(post.page.slug) data-water=[&post.page.water] {
                             @if let Some(date) = &post.page.date { time.voice datetime=(date.date()) { (date.year()) } }
                             " " span { (post.title) }
                         }
@@ -179,7 +179,7 @@ pub fn home(build: &Build, posts: &[&Article], card: &str) -> Result<Markup> {
     let body = html! {
         div.home {
             header { h1 { (config.title) } p { (config.subtitle) } (links()) }
-            main { (list(posts)) (figure(build, &everything(posts, 170), &[], &HOME)?) }
+            main { (list(posts)) (figure(build, &everything(posts, 170), &[], &HOME, None)?) }
         }
     };
     Ok(layout(build, &head, body))
@@ -237,7 +237,8 @@ pub fn article(build: &Build, article: &Article, newer: Option<&Article>, older:
         }
         (comments(build, page))
     };
-    Ok(layout(build, &head, sheet(build, heading, figure(build, &event, &[], &POST)?, column, end)))
+    let figure = figure(build, &event, &[], &POST, page.water.as_deref())?;
+    Ok(layout(build, &head, sheet(build, heading, figure, column, end)))
 }
 
 pub fn terms(build: &Build, of: &Taxonomy, other: &Taxonomy, posts: &[&Article], card: &str) -> Result<Markup> {
@@ -248,7 +249,7 @@ pub fn terms(build: &Build, of: &Taxonomy, other: &Taxonomy, posts: &[&Article],
     let column = html! {
         ul.labels.all #Text { @for term in of.terms.values() { (label(&term.url, term.name, &term.posts)) } }
     };
-    let figure = figure(build, &everything(posts, 55), &[], &POST)?;
+    let figure = figure(build, &everything(posts, 55), &[], &POST, None)?;
     Ok(layout(build, &head, sheet(build, heading, figure, column, html!())))
 }
 
@@ -258,7 +259,7 @@ pub fn term(build: &Build, of: &Taxonomy, term: &Term, posts: &[&Article], card:
     let head = Head { title, url, description: &description, card, feed: &feed, published: None };
     let heading = html! { h1 { (term.name) } p.voice { a href=(of.url) { (of.one) } " " a href=(feed) { "RSS" } } };
     let column = html! { div #Text { (list(&term.posts)) } };
-    let figure = figure(build, &everything(posts, 110), &names(&term.posts), &POST)?;
+    let figure = figure(build, &everything(posts, 110), &names(&term.posts), &POST, None)?;
     Ok(layout(build, &head, sheet(build, heading, figure, column, html!())))
 }
 

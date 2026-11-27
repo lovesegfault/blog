@@ -103,8 +103,12 @@ impl Scene {
         self.collision[0].hypot(self.collision[1]) * self.length / self.metres
     }
 
-    fn fire(&self, valley: &Valley) -> Result<Vec<Image>> {
-        let (vertex, tile) = (self.vertex(), self.farm() / self.tiles[0].hypot(self.tiles[1]));
+    pub fn tile(&self) -> f32 {
+        self.farm() / self.tiles[0].hypot(self.tiles[1])
+    }
+
+    fn fire(&self, valley: &Valley, dry: bool) -> Result<Vec<Image>> {
+        let (vertex, tile) = (self.vertex(), self.tile());
         let view = View {
             cut: self.cut,
             anchor: self.collision,
@@ -113,6 +117,7 @@ impl Scene {
             turn: self.turn() - (-self.collision[1]).atan2(-self.collision[0]),
             dark: self.length * 0.5,
             sink: None,
+            dry,
         };
         let wall = Wall {
             origin: [0, 1].map(|i| vertex[i] + (self.tiles[i] - 0.5) * tile),
@@ -154,17 +159,17 @@ fn loose(tile: [f32; 2], count: [i32; 2], joint: f32, seed: u32) -> Wall {
     Wall { tile, joint, grout: None, repeat: count, ..tiled(size, 3.0, 0.0, seed) }
 }
 
-/// By day, by night on black clay, and where the water is.
+/// By day, by night on black clay, and where the water is, or how deep it will be.
 fn landscape(valley: &Valley, view: View, wall: &Wall, night: Light) -> Result<Vec<Image>> {
     let cartoon = Cartoon::trace(valley, view, wall.size, wall.density)?;
     let (day, water) = {
-        let panel = fire(wall, |x, y, _| cartoon.paint(x, y));
-        (panel.photograph(Light::Day), panel.water())
+        let panel = fire(wall, |x, y, tile| cartoon.paint(x, y, tile));
+        (panel.photograph(Light::Day), if view.dry { panel.depth() } else { panel.water() })
     };
     let darker = [("sand", "char"), ("cream", "ash")].map(|(pale, dark)| (named(pale), named(dark)));
     let blacken = |glaze| darker.iter().find(|(pale, _)| *pale == glaze).map_or(glaze, |(_, dark)| *dark);
-    let night = fire(&Wall { grout: Some(Rgb::hex(0x201712)), ..*wall }, |x, y, _| {
-        let paint = cartoon.paint(x, y);
+    let night = fire(&Wall { grout: Some(Rgb::hex(0x201712)), ..*wall }, |x, y, tile| {
+        let paint = cartoon.paint(x, y, tile);
         Paint { glazes: paint.glazes.map(blacken), ..paint }
     })
     .photograph(night);
@@ -184,6 +189,7 @@ fn coast(valley: &Valley) -> Result<Vec<Image>> {
         turn: 0.335,
         dark: 1.0,
         sink: Some([205.0, 296.0]),
+        dry: false,
     };
     landscape(valley, view, &tiled([1440.0, 300.0], 1.7, 60.0, 9), dim(DUSK * 1.4))
 }
@@ -243,14 +249,18 @@ pub struct Firing<'a> {
     pub name: String,
     /// What to call the pictures that come out.
     pub takes: &'static [&'static str],
-    /// How carefully they have to be compressed, out of 100.
-    pub quality: f32,
+    quality: f32,
     pub fire: Box<dyn Fn() -> Result<Vec<Image>> + 'a>,
 }
 
 impl<'a> Firing<'a> {
     fn new(name: &str, quality: f32, fire: impl Fn() -> Result<Vec<Image>> + 'a) -> Self {
         Self { name: name.to_owned(), takes: &["day", "night"], quality, fire: Box::new(fire) }
+    }
+
+    /// How carefully a picture has to be compressed, out of 100.
+    pub fn quality(&self, take: &str) -> f32 {
+        if take == "depth" { 100.0 } else { self.quality }
     }
 }
 
@@ -272,7 +282,9 @@ pub fn firings(valley: &Valley) -> Vec<Firing<'_>> {
         all.push(Firing::new(&format!("label-{glaze}"), 84.0, move || Ok(label(glaze, pale, seed))));
     }
     for scene in [&HOME, &POST, &NARROW] {
-        all.push(Firing { takes: &["day", "night", "water"], ..Firing::new(scene.name, 75.0, || scene.fire(valley)) });
+        let firing = |name: &str, dry| Firing::new(name, 75.0, move || scene.fire(valley, dry));
+        all.push(Firing { takes: &["day", "night", "water"], ..firing(scene.name, false) });
+        all.push(Firing { takes: &["day", "night", "depth"], ..firing(&format!("{}-bed", scene.name), true) });
     }
     all
 }

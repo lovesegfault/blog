@@ -73,6 +73,14 @@ jobs:
           for driver in safaridriver "$GECKOWEBDRIVER$GeckoWebDriver/geckodriver" "$CHROMEWEBDRIVER$ChromeWebDriver/chromedriver"; do
             $(command -v xvfb-run) python3 .github/browse.py "$driver" || echo "$driver failed"
           done
+      - if: runner.os == 'macOS'
+        uses: DeterminateSystems/nix-installer-action@v23
+      - name: look
+        if: runner.os == 'macOS'
+        run: |
+          PLAYWRIGHT_BROWSERS_PATH="$(nix build --inputs-from . --no-link --print-out-paths nixpkgs#playwright-driver.browsers)" \
+            nix shell --impure --expr '(import (builtins.getFlake (toString ./.)).inputs.nixpkgs { }).python3.withPackages (p: [ p.playwright ])' \
+            -c python3 .github/browse.py webkit
       - if: always()
         uses: actions/upload-artifact@v7
         with:

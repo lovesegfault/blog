@@ -17,6 +17,15 @@ return [bed ? `${bed.className} ${bed.width}x${bed.height}` : 'removed', `dpr ${
   gl && `error ${gl.getError()} linked ${!!program} drop ${program && [...gl.getUniform(program, gl.getUniformLocation(program, 'drop'))].map(it => it.toFixed(3))}`,
   getComputedStyle(document.querySelector('.figure')).getPropertyValue('--bed'), window.problems].join(' | ');
 """
+DOTS = """
+const bed = document.querySelector('.bed.live'), gl = bed?.getContext('webgl2');
+if (!gl) return null;
+const all = new Uint32Array(bed.width * bed.height), [w, h] = [bed.width >> 2, bed.height >> 2];
+gl.drawArrays(gl.TRIANGLES, 0, 3);
+gl.readPixels(0, 0, bed.width, bed.height, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(all.buffer));
+const some = new Uint8Array(Uint32Array.from({ length: w * h }, (_, i) => all[((i / w) | 0) * 4 * bed.width + (i % w) * 4]).buffer);
+return [`${w}x${h}`, btoa(Array.from(some, (it) => String.fromCharCode(it)).join(''))];
+"""
 CARD = """
 const made = (caveat) => document.createElement('canvas').getContext('webgl2', { failIfMajorPerformanceCaveat: caveat });
 const gl = made(false), info = gl?.getExtension('WEBGL_debug_renderer_info');
@@ -45,7 +54,7 @@ open(script, "w", encoding="utf-8").write(source)
 rules = open(sheet, encoding="utf-8").read().replace("(prefers-reduced-motion: no-preference)", "screen")
 open(sheet, "w", encoding="utf-8").write(rules)
 os.makedirs("shots", exist_ok=True)
-driver = subprocess.Popen([sys.argv[1], "--port=4444"], stdout=subprocess.DEVNULL)
+driver = subprocess.Popen([sys.argv[1].replace("webkit", "true"), "--port=4444"], stdout=subprocess.DEVNULL)
 server = subprocess.Popen([sys.executable, "-m", "http.server", "1313", "-b", "127.0.0.1", "-d", "result"], stderr=subprocess.DEVNULL)
 try:
     time.sleep(4)
@@ -59,6 +68,21 @@ try:
         "moz:firefoxOptions": {"prefs": {"webgl.force-enabled": True}},
         "goog:chromeOptions": {"args": ["--ignore-gpu-blocklist", "--enable-unsafe-swiftshader", "--no-sandbox"]},
     }
+    if sys.argv[1] == "webkit":
+        from playwright.sync_api import sync_playwright
+
+        browser = sync_playwright().start().webkit.launch()
+        page = browser.new_page(device_scale_factor=2)
+        ways = {
+            "session": lambda it: {"sessionId": "end", "capabilities": {"browserName": "webkit", "browserVersion": browser.version}},
+            "rect": lambda it: page.set_viewport_size({"width": it["width"], "height": it["height"]}),
+            "url": lambda it: page.goto(it["url"]),
+            "sync": lambda it: page.evaluate("() => {" + it["script"] + "}"),
+            "actions": lambda it: page.mouse.move(*(it["actions"][0]["actions"][0][side] for side in "xy")),
+            "screenshot": lambda it: base64.b64encode(page.screenshot()),
+            "end": lambda it: browser.close(),
+        }
+        call = lambda method, path, body=None: ways[path.split("/")[-1]](body)
     started = call("POST", "/session", {"capabilities": {"alwaysMatch": {} if "safari" in sys.argv[1] else wanted}})
     session, name = "/session/" + started["sessionId"], started["capabilities"]["browserName"]
     print("SEEN", name, started["capabilities"]["browserVersion"])
@@ -72,6 +96,8 @@ try:
         time.sleep(wait)
         open(f"shots/{name}-{what}.png", "wb").write(base64.b64decode(call("GET", session + "/screenshot")))
         print("SEEN", name, what, run(STATE))
+        if isinstance(dots := run(DOTS), list):
+            open(f"shots/{name}-{what}-{dots[0]}.rgba", "wb").write(base64.b64decode(dots[1]))
 
     size(1400, 900)
     go("/colophon/")

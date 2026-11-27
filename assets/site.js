@@ -177,7 +177,7 @@ async function figure(element) {
     drawn = 0;
     tick(performance.now());
   }).observe(element);
-  new IntersectionObserver(([entry]) => (visible = entry.isIntersecting) && wake()).observe(element);
+  new IntersectionObserver((all) => (visible = all.at(-1).isIntersecting) && wake()).observe(element);
   on(window, "pointermove keydown scroll focus", () => ((stirred = performance.now()), visible && !calm && wake()));
   on(visualViewport, "resize", () => (element.style.touchAction = visualViewport.scale > 1.01 ? "auto" : ""));
   on(element, "pointerdown", (event) => {
@@ -268,7 +268,7 @@ function tide(element) {
   // How far the water is down: by the collision, away from it, and a moment ago.
   const drop = [0, 0, 0];
   let [own, pace, speed, time] = [rising ? +!calm : 1 - (element.dataset.water ?? 1), 2.6, 0, 0];
-  let gl, set, asked, laid, wanted, drawn, waiting, visible;
+  let gl, set, asked, laid, aimed, drawn, waiting, visible;
 
   function compile() {
     const program = gl.createProgram();
@@ -329,10 +329,10 @@ function tide(element) {
     // Rising is slow enough for every other frame.
     if (rising && now > drawn && now < drawn + 30) return (waiting = requestAnimationFrame(tick));
     const [passed, { color, opacity }] = [Math.min(60, now - drawn || 0) / 1000, getComputedStyle(arrow)];
-    [drawn, waiting] = [now, false];
+    [drawn, waiting] = [laid ? now : NaN, false];
     if (!laid) return;
     if (rising) own = Math.max(0, own - passed / 40);
-    const goal = wanted ?? own;
+    const goal = aimed ? 1 - (+aimed.dataset.water || 0) : own;
     speed += (pace * (goal - drop[0]) - 1.6 * speed) * pace * passed;
     drop[0] += speed * passed;
     drop[1] += (drop[0] - drop[1]) * 4 * passed;
@@ -343,6 +343,7 @@ function tide(element) {
     set("ink", ...color.match(/\d+/g).slice(0, 3).map((it) => it / 255), opacity);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (visible && !(still && +opacity === 1)) wake();
+    else drawn = NaN;
   }
   const wake = () => (waiting ||= requestAnimationFrame(tick));
 
@@ -353,7 +354,7 @@ function tide(element) {
     if (!gl || gl.isContextLost()) return canvas.remove();
     compile();
     new ResizeObserver(measure).observe(canvas);
-    new IntersectionObserver(([entry]) => (visible = entry.isIntersecting) && wake()).observe(element);
+    new IntersectionObserver((all) => (visible = all.at(-1).isIntersecting) && wake()).observe(element);
     on(dark, "change", measure);
     on(canvas, "webglcontextlost", (event) => (event.preventDefault(), (canvas.hidden = true), (laid = null)));
     on(canvas, "webglcontextrestored", () => (compile(), (canvas.hidden = false), measure()));
@@ -363,10 +364,10 @@ function tide(element) {
   for (const post of posts) {
     on(post, "pointerenter focus", ({ pointerType }) => {
       if (pointerType ? pointerType === "touch" : !post.matches(":focus-visible")) return;
-      [wanted, pace] = [1 - (+post.dataset.water || 0), 4.4];
+      [aimed, pace] = [post, 4.4];
       wake(start());
     });
-    on(post, "pointerleave blur", () => wake((wanted = null)));
+    on(post, "pointerleave blur", () => aimed === post && wake((aimed = null)));
   }
   // Once the tracks are out.
   setTimeout(() => {
@@ -524,7 +525,7 @@ async function explainer(element) {
   };
   program.send(element.dataset.options);
   program.start();
-  new IntersectionObserver(([entry]) => (visible = entry.isIntersecting) && moving && wake()).observe(element);
+  new IntersectionObserver((all) => (visible = all.at(-1).isIntersecting) && moving && wake()).observe(element);
   on(element, "submit", (event) => event.preventDefault());
   on(element, "focusout", wake);
   on(element, "touchstart", (event) => event.target.closest("[data-drag]") && event.preventDefault());

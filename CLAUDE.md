@@ -68,6 +68,7 @@ These are written in two places, and change together:
 | Indents in formulas      | `site.css` and `INDENT` in `formula.rs`                 |
 | How tracks are drawn     | `site.js` and `tracks` in `figure.rs`                   |
 | The dashes of the arrow  | `site.css` and `SHORE` in `site.js`                     |
+| The line of the shore    | `fire` in the mural and `SHORE` in `site.js`            |
 | The scale of the chart   | `draw.py`, and `SHORE` in `valley.rs` and `site.js`     |
 | Talking to programs      | `site.js`, `programs.rs` and the `extern "C"` functions |
 | What the site is made of | `SOURCES` in `site.rs` and `site` in `flake.nix`        |

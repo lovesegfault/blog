@@ -1,0 +1,81 @@
+# Temporary: looks at the lake in other browsers. Goes away before merging.
+name: verify
+on:
+  push:
+    branches-ignore: [master, "dependabot/**", "update-*"]
+
+permissions: {}
+
+concurrency:
+  group: verify
+  cancel-in-progress: true
+
+jobs:
+  valley:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - name: draw
+        run: nix develop .#valley -c python valley/draw.py && git diff --stat --exit-code
+      - name: style
+        if: always() && runner.os == 'Linux'
+        run: |
+          nix run --inputs-from . nixpkgs#ruff -- format --line-length 120 --diff valley || true
+          SKIP=scrub nix develop -c pre-commit run --all-files --show-diff-on-failure
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - uses: DeterminateSystems/nix-installer-action@v23
+      - uses: actions/cache@v6
+        with:
+          path: ~/built
+          key: ${{ runner.os }}-${{ hashFiles('flake.*', 'Cargo.*', '.cargo/**', 'crates/**') }}
+      - run: |
+          nix copy --no-check-sigs --from "file://$HOME/built" "$(nix eval --raw .#forno)" "$(nix eval --raw .#programs)" || true
+          nix build -L .#forno .#programs
+          time nix build -L
+          nix copy --to "file://$HOME/built" .#forno .#programs
+          tar -czhf site.tar.gz --mode u+w --exclude '*.xz' --exclude '*.pdf' --exclude images --exclude '*.woff2' result
+      - uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: site.tar.gz
+          retention-days: 3
+      - run: nix flake check -L
+  browse:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: site
+      - if: runner.os == 'macOS'
+        run: sudo safaridriver --enable
+      - name: look
+        run: |
+          tar -xzf site.tar.gz
+          for driver in safaridriver "$GECKOWEBDRIVER/geckodriver" "$CHROMEWEBDRIVER/chromedriver"; do
+            $(command -v xvfb-run) python3 .github/browse.py "$driver" || echo "$driver failed"
+          done
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: shots-${{ matrix.os }}
+          path: shots
+          retention-days: 3
